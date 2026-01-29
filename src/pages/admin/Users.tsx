@@ -84,6 +84,7 @@ const Users: React.FC = () => {
             <select className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
               <option value="customer">Customer</option>
               <option value="staff">Staff</option>
+              <option value="cashier">Cashier</option>
               <option value="manager">Manager</option>
               <option value="admin">Admin</option>
             </select>
