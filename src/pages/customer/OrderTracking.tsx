@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2, Clock, Package, ChefHat, Check } from 'lucide-react';
+import { Clock, Package, ChefHat, Check } from 'lucide-react';
 import { MOCK_ORDERS } from '../../utils/mockData';
 import { Badge } from '../../components/ui/Badge';
 import { Card } from '../../components/ui/Card';

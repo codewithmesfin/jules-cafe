@@ -30,10 +30,10 @@ export const AdminLayout: React.FC = () => {
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/admin' },
     { icon: Store, label: 'Branches', path: '/admin/branches', roles: ['admin'] },
-    { icon: TableIcon, label: 'Tables', path: '/admin/tables', roles: ['admin', 'manager'] },
+    { icon: TableIcon, label: 'Tables', path: '/admin/tables', roles: ['admin', 'manager', 'cashier'] },
     { icon: Users, label: 'Users', path: '/admin/users', roles: ['admin'] },
     { icon: Settings, label: 'Categories', path: '/admin/categories', roles: ['admin', 'manager'] },
-    { icon: Utensils, label: 'Menu Items', path: '/admin/menu-items', roles: ['admin', 'manager'] },
+    { icon: Utensils, label: 'Menu Items', path: '/admin/menu-items', roles: ['admin', 'manager', 'cashier'] },
     { icon: ShoppingBag, label: 'Orders', path: '/admin/orders', roles: ['admin', 'manager', 'cashier'] },
     { icon: Calendar, label: 'Reservations', path: '/admin/reservations', roles: ['admin', 'manager', 'cashier'] },
     { icon: ClipboardList, label: 'Recipes', path: '/admin/recipes', roles: ['admin', 'manager'] },
