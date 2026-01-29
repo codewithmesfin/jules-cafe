@@ -1,4 +1,4 @@
-import type { MenuCategory, MenuItem, User, Order, Reservation, Review } from '../types';
+import type { MenuCategory, MenuItem, User, Order, Reservation, Review, Ingredient, StockItem, Recipe } from '../types';
 
 export const MOCK_CATEGORIES: MenuCategory[] = [
   { id: '1', name: 'Appetizers', description: 'Start your meal with these tasty treats', is_active: true, created_at: new Date().toISOString() },
@@ -20,6 +20,7 @@ export const MOCK_USERS: User[] = [
   { id: '1', full_name: 'Admin User', email: 'admin@example.com', phone: '123-456-7890', role: 'admin', status: 'active', created_at: new Date().toISOString() },
   { id: '2', full_name: 'Staff Member', email: 'staff@example.com', phone: '234-567-8901', role: 'staff', status: 'active', created_at: new Date().toISOString() },
   { id: '3', full_name: 'John Customer', email: 'john@example.com', phone: '345-678-9012', role: 'customer', status: 'active', created_at: new Date().toISOString() },
+  { id: '4', full_name: 'Alice Cashier', email: 'cashier@example.com', phone: '456-789-0123', role: 'cashier', status: 'active', created_at: new Date().toISOString() },
 ];
 
 export const MOCK_ORDERS: Order[] = [
@@ -33,4 +34,44 @@ export const MOCK_RESERVATIONS: Reservation[] = [
 
 export const MOCK_REVIEWS: Review[] = [
   { id: '1', customer_id: '3', rating: 5, comment: 'Excellent food and service!', order_id: '1', reservation_id: null, is_visible: true, created_at: new Date().toISOString() },
+];
+
+export const MOCK_INGREDIENTS: Ingredient[] = [
+  { id: '1', name: 'Garlic', unit: 'kg' },
+  { id: '2', name: 'Baguette', unit: 'pcs' },
+  { id: '3', name: 'Butter', unit: 'kg' },
+  { id: '4', name: 'Squid', unit: 'kg' },
+  { id: '5', name: 'Lemon', unit: 'pcs' },
+  { id: '6', name: 'Salmon Fillet', unit: 'kg' },
+  { id: '7', name: 'Beef Patty', unit: 'pcs' },
+];
+
+export const MOCK_STOCK: StockItem[] = [
+  { id: '1', ingredient_id: '1', quantity: 5, min_stock_level: 2, updated_at: new Date().toISOString() },
+  { id: '2', ingredient_id: '2', quantity: 20, min_stock_level: 10, updated_at: new Date().toISOString() },
+  { id: '3', ingredient_id: '3', quantity: 10, min_stock_level: 3, updated_at: new Date().toISOString() },
+  { id: '4', ingredient_id: '4', quantity: 8, min_stock_level: 5, updated_at: new Date().toISOString() },
+  { id: '5', ingredient_id: '5', quantity: 50, min_stock_level: 15, updated_at: new Date().toISOString() },
+  { id: '6', ingredient_id: '6', quantity: 12, min_stock_level: 4, updated_at: new Date().toISOString() },
+  { id: '7', ingredient_id: '7', quantity: 30, min_stock_level: 10, updated_at: new Date().toISOString() },
+];
+
+export const MOCK_RECIPES: Recipe[] = [
+  {
+    id: '1',
+    menu_item_id: '1',
+    ingredients: [
+      { ingredient_id: '2', quantity: 1 },
+      { ingredient_id: '3', quantity: 0.05 },
+      { ingredient_id: '1', quantity: 0.01 },
+    ]
+  },
+  {
+    id: '2',
+    menu_item_id: '2',
+    ingredients: [
+      { ingredient_id: '4', quantity: 0.2 },
+      { ingredient_id: '5', quantity: 0.5 },
+    ]
+  },
 ];

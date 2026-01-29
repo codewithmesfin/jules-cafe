@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { Search, Calendar as CalendarIcon, Check, X, User } from 'lucide-react';
+import { Search, Calendar as CalendarIcon, Check, X, User, Plus } from 'lucide-react';
 import { MOCK_RESERVATIONS, MOCK_USERS } from '../../utils/mockData';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Table } from '../../components/ui/Table';
 import { Badge } from '../../components/ui/Badge';
+import { Modal } from '../../components/ui/Modal';
 
 const Reservations: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   return (
     <div className="space-y-6">
@@ -25,7 +27,9 @@ const Reservations: React.FC = () => {
           <Button variant="outline" size="sm" className="gap-2">
             <CalendarIcon size={16} /> Today
           </Button>
-          <Button variant="outline" size="sm">History</Button>
+          <Button className="gap-2" size="sm" onClick={() => setIsCreateModalOpen(true)}>
+            <Plus size={16} /> Create Reservation
+          </Button>
         </div>
       </div>
 
@@ -83,6 +87,38 @@ const Reservations: React.FC = () => {
           }
         ]}
       />
+      <Modal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        title="Create New Reservation"
+        size="lg"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setIsCreateModalOpen(false)}>Cancel</Button>
+            <Button onClick={() => setIsCreateModalOpen(false)}>Create Reservation</Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Customer</label>
+            <select className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+              {MOCK_USERS.filter(u => u.role === 'customer').map(user => (
+                <option key={user.id} value={user.id}>{user.full_name}</option>
+              ))}
+            </select>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Input label="Date" type="date" />
+            <Input label="Time" type="time" />
+          </div>
+          <Input label="Guests Count" type="number" min="1" defaultValue="2" />
+          <div className="w-full">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+            <textarea className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 min-h-[80px]" />
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
-import { Search, Filter, Eye, CheckCircle, XCircle, Clock } from 'lucide-react';
-import { MOCK_ORDERS, MOCK_USERS } from '../../utils/mockData';
+import { Search, Filter, Eye, CheckCircle, XCircle, Clock, Plus } from 'lucide-react';
+import { MOCK_ORDERS, MOCK_USERS, MOCK_MENU_ITEMS } from '../../utils/mockData';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Table } from '../../components/ui/Table';
 import { Badge } from '../../components/ui/Badge';
 import { Drawer } from '../../components/ui/Drawer';
+import { Modal } from '../../components/ui/Modal';
 import type { Order } from '../../types';
 
 const Orders: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const filteredOrders = MOCK_ORDERS.filter(order =>
     order.order_number.toLowerCase().includes(searchTerm.toLowerCase())
@@ -32,7 +34,9 @@ const Orders: React.FC = () => {
           <Button variant="outline" size="sm" className="gap-2">
             <Filter size={16} /> Filter
           </Button>
-          <Button variant="outline" size="sm">Export CSV</Button>
+          <Button className="gap-2" size="sm" onClick={() => setIsCreateModalOpen(true)}>
+            <Plus size={16} /> Create Order
+          </Button>
         </div>
       </div>
 
@@ -70,6 +74,44 @@ const Orders: React.FC = () => {
           }
         ]}
       />
+
+      <Modal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        title="Create New Order"
+        size="lg"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setIsCreateModalOpen(false)}>Cancel</Button>
+            <Button onClick={() => setIsCreateModalOpen(false)}>Create Order</Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Customer</label>
+            <select className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+              {MOCK_USERS.filter(u => u.role === 'customer').map(user => (
+                <option key={user.id} value={user.id}>{user.full_name}</option>
+              ))}
+              <option value="guest">Walk-in Guest</option>
+            </select>
+          </div>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">Order Items</label>
+            {MOCK_MENU_ITEMS.slice(0, 3).map(item => (
+              <div key={item.id} className="flex items-center justify-between p-2 border rounded-lg">
+                <span>{item.name}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-500">${item.price.toFixed(2)}</span>
+                  <input type="number" min="0" defaultValue="0" className="w-16 px-2 py-1 border rounded" />
+                </div>
+              </div>
+            ))}
+          </div>
+          <Input label="Notes" placeholder="Any special instructions..." />
+        </div>
+      </Modal>
 
       <Drawer
         isOpen={!!selectedOrder}
