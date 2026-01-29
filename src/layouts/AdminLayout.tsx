@@ -11,7 +11,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Utensils,
-  Settings
+  Settings,
+  ClipboardList,
+  Package
 } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { Button } from '../components/ui/Button';
@@ -27,8 +29,10 @@ export const AdminLayout: React.FC = () => {
     { icon: Users, label: 'Users', path: '/admin/users', roles: ['admin'] },
     { icon: Settings, label: 'Categories', path: '/admin/categories' },
     { icon: Utensils, label: 'Menu Items', path: '/admin/menu-items' },
-    { icon: ShoppingBag, label: 'Orders', path: '/admin/orders' },
-    { icon: Calendar, label: 'Reservations', path: '/admin/reservations' },
+    { icon: ShoppingBag, label: 'Orders', path: '/admin/orders', roles: ['admin', 'manager', 'cashier', 'staff'] },
+    { icon: Calendar, label: 'Reservations', path: '/admin/reservations', roles: ['admin', 'manager', 'cashier', 'staff'] },
+    { icon: ClipboardList, label: 'Recipes', path: '/admin/recipes', roles: ['admin', 'manager'] },
+    { icon: Package, label: 'Inventory', path: '/admin/inventory', roles: ['admin', 'manager'] },
     { icon: Star, label: 'Reviews', path: '/admin/reviews' },
     { icon: ShieldCheck, label: 'Roles', path: '/admin/roles', roles: ['admin'] },
   ];

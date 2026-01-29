@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'manager' | 'staff' | 'customer';
+export type UserRole = 'admin' | 'manager' | 'staff' | 'cashier' | 'customer';
 export type UserStatus = 'active' | 'inactive';
 
 export interface User {
@@ -88,4 +88,29 @@ export interface RolePermission {
   can_read: boolean;
   can_write: boolean;
   can_approve: boolean;
+}
+
+export interface Ingredient {
+  id: string;
+  name: string;
+  unit: string;
+}
+
+export interface StockItem {
+  id: string;
+  ingredient_id: string;
+  quantity: number;
+  min_stock_level: number;
+  updated_at: string;
+}
+
+export interface RecipeIngredient {
+  ingredient_id: string;
+  quantity: number;
+}
+
+export interface Recipe {
+  id: string;
+  menu_item_id: string;
+  ingredients: RecipeIngredient[];
 }

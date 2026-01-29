@@ -9,6 +9,7 @@ const Roles: React.FC = () => {
     { name: 'Admin', description: 'Full access to all modules', usersCount: 2, icon: ShieldAlert },
     { name: 'Manager', description: 'Can manage menu and staff', usersCount: 3, icon: ShieldCheck },
     { name: 'Staff', description: 'Can manage orders and reservations', usersCount: 8, icon: Shield },
+    { name: 'Cashier', description: 'Focus on orders and payments', usersCount: 4, icon: Shield },
     { name: 'Customer', description: 'Basic access for ordering', usersCount: 124, icon: Shield },
   ];
 
