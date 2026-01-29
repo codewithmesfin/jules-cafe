@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Search, Star, Eye, Trash2 } from 'lucide-react';
-import { MOCK_REVIEWS, MOCK_USERS } from '../../utils/mockData';
+import { Search, Star, MapPin, Check, X } from 'lucide-react';
+import { MOCK_REVIEWS, MOCK_USERS, MOCK_BRANCHES } from '../../utils/mockData';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Table } from '../../components/ui/Table';
@@ -37,6 +37,14 @@ const Reviews: React.FC = () => {
         data={MOCK_REVIEWS}
         columns={[
           {
+            header: 'Branch',
+            accessor: (rev) => (
+              <div className="flex items-center gap-1 text-xs">
+                <MapPin size={12} /> {MOCK_BRANCHES.find(b => b.id === rev.branch_id)?.name}
+              </div>
+            )
+          },
+          {
             header: 'Customer',
             accessor: (rev) => MOCK_USERS.find(u => u.id === rev.customer_id)?.full_name || 'Guest'
           },
@@ -52,20 +60,26 @@ const Reviews: React.FC = () => {
           },
           { header: 'Comment', accessor: 'comment', className: 'max-w-xs truncate' },
           {
-            header: 'Visible',
+            header: 'Status',
             accessor: (rev) => (
-              <Badge variant={rev.is_visible ? 'success' : 'neutral'}>
-                {rev.is_visible ? 'Public' : 'Hidden'}
+              <Badge variant={rev.is_approved ? 'success' : 'neutral'}>
+                {rev.is_approved ? 'Approved' : 'Pending'}
               </Badge>
             )
           },
           { header: 'Date', accessor: (rev) => new Date(rev.created_at).toLocaleDateString() },
           {
             header: 'Actions',
-            accessor: () => (
+            accessor: (rev) => (
               <div className="flex items-center gap-2">
-                <Button variant="ghost" size="sm" title="Toggle Visibility"><Eye size={16} /></Button>
-                <Button variant="ghost" size="sm" className="text-red-600"><Trash2 size={16} /></Button>
+                {!rev.is_approved && (
+                  <Button variant="outline" size="sm" className="text-green-600 border-green-200">
+                    <Check size={14} className="mr-1" /> Approve
+                  </Button>
+                )}
+                <Button variant="ghost" size="sm" className="text-red-600">
+                  <X size={14} className="mr-1" /> Delete
+                </Button>
               </div>
             )
           }

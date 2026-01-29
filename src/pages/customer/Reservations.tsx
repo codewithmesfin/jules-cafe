@@ -81,7 +81,7 @@ const Reservations: React.FC = () => {
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 text-gray-900 font-bold">
                       <CalendarIcon size={18} className="text-orange-600" />
-                      {new Date(res.reservation_date).toLocaleDateString('en-US', {
+                      {new Date(res.date).toLocaleDateString('en-US', {
                         weekday: 'long',
                         year: 'numeric',
                         month: 'long',
@@ -91,11 +91,11 @@ const Reservations: React.FC = () => {
                     <div className="flex flex-wrap gap-4 text-sm text-gray-500">
                       <div className="flex items-center gap-1">
                         <Clock size={16} />
-                        {res.reservation_time}
+                        {res.time}
                       </div>
                       <div className="flex items-center gap-1">
                         <Users size={16} />
-                        {res.guests_count} Guests
+                        {res.number_of_people} Guests
                       </div>
                     </div>
                     {res.note && (
@@ -108,8 +108,8 @@ const Reservations: React.FC = () => {
                   <div className="flex sm:flex-col items-end justify-between">
                     <Badge
                       variant={
-                        res.status === 'confirmed' ? 'success' :
-                        res.status === 'requested' ? 'warning' :
+                        res.status === 'approved' ? 'success' :
+                        res.status === 'pending' ? 'warning' :
                         res.status === 'cancelled' ? 'error' : 'neutral'
                       }
                       className="capitalize"

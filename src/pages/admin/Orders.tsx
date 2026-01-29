@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Search, Filter, Eye, CheckCircle, XCircle, Clock, Plus } from 'lucide-react';
-import { MOCK_ORDERS, MOCK_USERS, MOCK_MENU_ITEMS } from '../../utils/mockData';
+import { Search, Filter, Eye, CheckCircle, XCircle, Clock, Plus, MapPin } from 'lucide-react';
+import { MOCK_ORDERS, MOCK_USERS, MOCK_MENU_ITEMS, MOCK_BRANCHES, MOCK_TABLES } from '../../utils/mockData';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Table } from '../../components/ui/Table';
@@ -11,24 +11,39 @@ import type { Order } from '../../types';
 
 const Orders: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedBranch, setSelectedBranch] = useState('all');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-  const filteredOrders = MOCK_ORDERS.filter(order =>
-    order.order_number.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredOrders = MOCK_ORDERS.filter(order => {
+    const matchesSearch = order.order_number.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesBranch = selectedBranch === 'all' || order.branch_id === selectedBranch;
+    return matchesSearch && matchesBranch;
+  });
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="relative w-full sm:w-96">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-          <Input
-            placeholder="Search by order number..."
-            className="pl-10"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+        <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Input
+              placeholder="Search orders..."
+              className="pl-10"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <select
+            className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+            value={selectedBranch}
+            onChange={(e) => setSelectedBranch(e.target.value)}
+          >
+            <option value="all">All Branches</option>
+            {MOCK_BRANCHES.map(b => (
+              <option key={b.id} value={b.id}>{b.name}</option>
+            ))}
+          </select>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" className="gap-2">
@@ -45,6 +60,14 @@ const Orders: React.FC = () => {
         columns={[
           { header: 'Order ID', accessor: 'order_number', className: 'font-bold' },
           {
+            header: 'Branch',
+            accessor: (order) => (
+              <div className="flex items-center gap-1 text-xs">
+                <MapPin size={12} /> {MOCK_BRANCHES.find(b => b.id === order.branch_id)?.name}
+              </div>
+            )
+          },
+          {
             header: 'Customer',
             accessor: (order) => MOCK_USERS.find(u => u.id === order.customer_id)?.full_name || 'Guest'
           },
@@ -55,7 +78,7 @@ const Orders: React.FC = () => {
             accessor: (order) => (
               <Badge
                 variant={
-                  order.status === 'completed' ? 'success' :
+                  order.status === 'served' ? 'success' :
                   order.status === 'cancelled' ? 'error' : 'warning'
                 }
                 className="capitalize"
@@ -88,6 +111,25 @@ const Orders: React.FC = () => {
         }
       >
         <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Branch</label>
+              <select className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+                {MOCK_BRANCHES.map(b => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Table (Optional)</label>
+              <select className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+                <option value="">None</option>
+                {MOCK_TABLES.map(t => (
+                  <option key={t.id} value={t.id}>{t.table_number}</option>
+                ))}
+              </select>
+            </div>
+          </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Customer</label>
             <select className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
@@ -103,7 +145,7 @@ const Orders: React.FC = () => {
               <div key={item.id} className="flex items-center justify-between p-2 border rounded-lg">
                 <span>{item.name}</span>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-500">${item.price.toFixed(2)}</span>
+                  <span className="text-sm text-gray-500">${item.base_price.toFixed(2)}</span>
                   <input type="number" min="0" defaultValue="0" className="w-16 px-2 py-1 border rounded" />
                 </div>
               </div>

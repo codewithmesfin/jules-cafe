@@ -25,6 +25,9 @@ import AdminOrders from './pages/admin/Orders';
 import AdminReservations from './pages/admin/Reservations';
 import AdminInventory from './pages/admin/Inventory';
 import AdminRecipes from './pages/admin/Recipes';
+import AdminBranches from './pages/admin/Branches';
+import AdminTables from './pages/admin/Tables';
+import AdminReports from './pages/admin/Reports';
 import AdminReviews from './pages/admin/Reviews';
 import AdminRoles from './pages/admin/Roles';
 
@@ -58,6 +61,9 @@ function App() {
                 <Route path="reservations" element={<AdminReservations />} />
                 <Route path="inventory" element={<AdminInventory />} />
                 <Route path="recipes" element={<AdminRecipes />} />
+                <Route path="branches" element={<AdminBranches />} />
+                <Route path="tables" element={<AdminTables />} />
+                <Route path="reports" element={<AdminReports />} />
                 <Route path="reviews" element={<AdminReviews />} />
                 <Route path="roles" element={<AdminRoles />} />
               </Route>

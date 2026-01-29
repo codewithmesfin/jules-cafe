@@ -8,10 +8,9 @@ import { cn } from '../../utils/cn';
 const OrderTracking: React.FC = () => {
   const steps = [
     { key: 'pending', label: 'Order Placed', icon: Clock },
-    { key: 'accepted', label: 'Accepted', icon: CheckCircle2 },
     { key: 'preparing', label: 'Preparing', icon: ChefHat },
     { key: 'ready', label: 'Ready', icon: Package },
-    { key: 'completed', label: 'Delivered', icon: Check },
+    { key: 'served', label: 'Served', icon: Check },
   ];
 
   const currentOrder = MOCK_ORDERS[1]; // Simulate an active order

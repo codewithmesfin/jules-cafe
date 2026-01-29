@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'manager' | 'staff' | 'cashier' | 'customer';
+export type UserRole = 'admin' | 'manager' | 'cashier' | 'customer';
 export type UserStatus = 'active' | 'inactive';
 
 export interface User {
@@ -8,13 +8,27 @@ export interface User {
   phone: string;
   role: UserRole;
   status: UserStatus;
+  branch_id?: string | null;
+  is_active: boolean;
   created_at: string;
 }
 
-export interface Restaurant {
+export interface Branch {
   id: string;
   name: string;
-  location: string;
+  address: string;
+  phone: string;
+  opening_time: string;
+  closing_time: string;
+  capacity: number;
+  is_active: boolean;
+}
+
+export interface Table {
+  id: string;
+  branch_id: string;
+  table_number: string;
+  capacity: number;
   is_active: boolean;
 }
 
@@ -31,18 +45,35 @@ export interface MenuItem {
   category_id: string;
   name: string;
   description: string;
-  price: number;
+  base_price: number;
+  is_active: boolean;
   image_url: string;
-  is_available: boolean;
   created_at: string;
 }
 
-export type OrderStatus = 'pending' | 'accepted' | 'preparing' | 'ready' | 'completed' | 'cancelled';
+export interface MenuVariant {
+  id: string;
+  menu_item_id: string;
+  name: string;
+  price_modifier: number;
+  is_active: boolean;
+}
+
+export interface BranchMenuItem {
+  id: string;
+  branch_id: string;
+  menu_item_id: string;
+  is_available: boolean;
+}
+
+export type OrderStatus = 'pending' | 'preparing' | 'ready' | 'served' | 'cancelled';
 
 export interface Order {
   id: string;
   order_number: string;
+  branch_id: string;
   customer_id: string;
+  table_id?: string | null;
   status: OrderStatus;
   total_amount: number;
   created_at: string;
@@ -52,19 +83,21 @@ export interface OrderItem {
   id: string;
   order_id: string;
   menu_item_id: string;
-  menu_item_name: string;
+  variant_id?: string | null;
   quantity: number;
   unit_price: number;
+  total_price: number;
 }
 
-export type ReservationStatus = 'requested' | 'confirmed' | 'seated' | 'cancelled' | 'no_show';
+export type ReservationStatus = 'pending' | 'approved' | 'rejected' | 'cancelled';
 
 export interface Reservation {
   id: string;
+  branch_id: string;
   customer_id: string;
-  reservation_date: string;
-  reservation_time: string;
-  guests_count: number;
+  date: string;
+  time: string;
+  number_of_people: number;
   status: ReservationStatus;
   note: string;
   created_at: string;
@@ -72,12 +105,12 @@ export interface Reservation {
 
 export interface Review {
   id: string;
+  branch_id: string;
   customer_id: string;
+  order_id?: string | null;
   rating: number; // 1-5
   comment: string;
-  order_id: string | null;
-  reservation_id: string | null;
-  is_visible: boolean;
+  is_approved: boolean;
   created_at: string;
 }
 

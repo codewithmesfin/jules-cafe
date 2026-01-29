@@ -55,7 +55,7 @@ const Dashboard: React.FC = () => {
                   accessor: (item) => (
                     <Badge
                       variant={
-                        item.status === 'completed' ? 'success' :
+                        item.status === 'served' ? 'success' :
                         item.status === 'cancelled' ? 'error' : 'warning'
                       }
                       className="capitalize"

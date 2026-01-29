@@ -25,6 +25,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       phone: '1234567890',
       role: role,
       status: 'active',
+      is_active: true,
       created_at: new Date().toISOString(),
     };
     setUser(mockUser);

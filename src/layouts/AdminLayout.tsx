@@ -13,7 +13,10 @@ import {
   Utensils,
   Settings,
   ClipboardList,
-  Package
+  Package,
+  Store,
+  Table as TableIcon,
+  BarChart3
 } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { Button } from '../components/ui/Button';
@@ -26,14 +29,17 @@ export const AdminLayout: React.FC = () => {
 
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/admin' },
+    { icon: Store, label: 'Branches', path: '/admin/branches', roles: ['admin'] },
+    { icon: TableIcon, label: 'Tables', path: '/admin/tables', roles: ['admin', 'manager'] },
     { icon: Users, label: 'Users', path: '/admin/users', roles: ['admin'] },
-    { icon: Settings, label: 'Categories', path: '/admin/categories' },
-    { icon: Utensils, label: 'Menu Items', path: '/admin/menu-items' },
-    { icon: ShoppingBag, label: 'Orders', path: '/admin/orders', roles: ['admin', 'manager', 'cashier', 'staff'] },
-    { icon: Calendar, label: 'Reservations', path: '/admin/reservations', roles: ['admin', 'manager', 'cashier', 'staff'] },
+    { icon: Settings, label: 'Categories', path: '/admin/categories', roles: ['admin', 'manager'] },
+    { icon: Utensils, label: 'Menu Items', path: '/admin/menu-items', roles: ['admin', 'manager'] },
+    { icon: ShoppingBag, label: 'Orders', path: '/admin/orders', roles: ['admin', 'manager', 'cashier'] },
+    { icon: Calendar, label: 'Reservations', path: '/admin/reservations', roles: ['admin', 'manager', 'cashier'] },
     { icon: ClipboardList, label: 'Recipes', path: '/admin/recipes', roles: ['admin', 'manager'] },
     { icon: Package, label: 'Inventory', path: '/admin/inventory', roles: ['admin', 'manager'] },
-    { icon: Star, label: 'Reviews', path: '/admin/reviews' },
+    { icon: Star, label: 'Reviews', path: '/admin/reviews', roles: ['admin', 'manager'] },
+    { icon: BarChart3, label: 'Reports', path: '/admin/reports', roles: ['admin'] },
     { icon: ShieldCheck, label: 'Roles', path: '/admin/roles', roles: ['admin'] },
   ];
 

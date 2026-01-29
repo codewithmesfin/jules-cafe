@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Search, Plus, Edit, Trash2 } from 'lucide-react';
-import { MOCK_MENU_ITEMS, MOCK_CATEGORIES } from '../../utils/mockData';
+import { MOCK_MENU_ITEMS, MOCK_CATEGORIES, MOCK_VARIANTS } from '../../utils/mockData';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Table } from '../../components/ui/Table';
@@ -63,12 +63,30 @@ const MenuItems: React.FC = () => {
             header: 'Category',
             accessor: (item) => MOCK_CATEGORIES.find(c => c.id === item.category_id)?.name || 'N/A'
           },
-          { header: 'Price', accessor: (item) => `$${item.price.toFixed(2)}` },
+          {
+            header: 'Base Price',
+            accessor: (item) => `$${item.base_price.toFixed(2)}`
+          },
+          {
+            header: 'Variants',
+            accessor: (item) => {
+              const variants = MOCK_VARIANTS.filter(v => v.menu_item_id === item.id);
+              return variants.length > 0 ? (
+                <div className="flex flex-wrap gap-1">
+                  {variants.map(v => (
+                    <Badge key={v.id} variant="neutral" className="text-[10px] py-0 px-1">
+                      {v.name} (+${v.price_modifier})
+                    </Badge>
+                  ))}
+                </div>
+              ) : <span className="text-gray-400 text-xs">None</span>;
+            }
+          },
           {
             header: 'Availability',
             accessor: (item) => (
-              <Badge variant={item.is_available ? 'success' : 'error'}>
-                {item.is_available ? 'In Stock' : 'Out of Stock'}
+              <Badge variant={item.is_active ? 'success' : 'error'}>
+                {item.is_active ? 'In Stock' : 'Out of Stock'}
               </Badge>
             )
           },
@@ -106,11 +124,24 @@ const MenuItems: React.FC = () => {
               ))}
             </select>
           </div>
-          <Input label="Price" type="number" step="0.01" placeholder="0.00" />
+          <Input label="Base Price" type="number" step="0.01" placeholder="0.00" />
           <Input label="Image URL" placeholder="https://..." />
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
             <textarea className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 min-h-[80px]" />
+          </div>
+          <div className="md:col-span-2">
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-sm font-medium text-gray-700">Variants</label>
+              <Button size="sm" variant="outline" className="gap-1"><Plus size={12} /> Add Variant</Button>
+            </div>
+            <div className="space-y-2">
+              <div className="flex gap-2 items-center">
+                <Input placeholder="Variant Name (e.g. Large)" className="flex-1" />
+                <Input placeholder="Price Modifier" type="number" className="w-32" />
+                <Button variant="ghost" size="sm" className="text-red-500"><Trash2 size={16} /></Button>
+              </div>
+            </div>
           </div>
         </div>
       </Modal>

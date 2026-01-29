@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Search, Calendar as CalendarIcon, Check, X, User, Plus } from 'lucide-react';
-import { MOCK_RESERVATIONS, MOCK_USERS } from '../../utils/mockData';
+import { Search, Calendar as CalendarIcon, Check, X, User, Plus, MapPin } from 'lucide-react';
+import { MOCK_RESERVATIONS, MOCK_USERS, MOCK_BRANCHES } from '../../utils/mockData';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Table } from '../../components/ui/Table';
@@ -9,19 +9,32 @@ import { Modal } from '../../components/ui/Modal';
 
 const Reservations: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedBranch, setSelectedBranch] = useState('all');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="relative w-full sm:w-96">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-          <Input
-            placeholder="Search by customer name..."
-            className="pl-10"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+        <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Input
+              placeholder="Search reservations..."
+              className="pl-10"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <select
+            className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+            value={selectedBranch}
+            onChange={(e) => setSelectedBranch(e.target.value)}
+          >
+            <option value="all">All Branches</option>
+            {MOCK_BRANCHES.map(b => (
+              <option key={b.id} value={b.id}>{b.name}</option>
+            ))}
+          </select>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" className="gap-2">
@@ -37,6 +50,14 @@ const Reservations: React.FC = () => {
         data={MOCK_RESERVATIONS}
         columns={[
           {
+            header: 'Branch',
+            accessor: (res) => (
+              <div className="flex items-center gap-1 text-xs">
+                <MapPin size={12} /> {MOCK_BRANCHES.find(b => b.id === res.branch_id)?.name}
+              </div>
+            )
+          },
+          {
             header: 'Customer',
             accessor: (res) => {
               const customer = MOCK_USERS.find(u => u.id === res.customer_id);
@@ -50,16 +71,16 @@ const Reservations: React.FC = () => {
               );
             }
           },
-          { header: 'Date', accessor: (res) => res.reservation_date },
-          { header: 'Time', accessor: (res) => res.reservation_time },
-          { header: 'Guests', accessor: (res) => res.guests_count },
+          { header: 'Date', accessor: (res) => res.date },
+          { header: 'Time', accessor: (res) => res.time },
+          { header: 'Guests', accessor: (res) => res.number_of_people },
           {
             header: 'Status',
             accessor: (res) => (
               <Badge
                 variant={
-                  res.status === 'confirmed' ? 'success' :
-                  res.status === 'requested' ? 'warning' : 'neutral'
+                  res.status === 'approved' ? 'success' :
+                  res.status === 'pending' ? 'warning' : 'neutral'
                 }
                 className="capitalize"
               >
@@ -71,7 +92,7 @@ const Reservations: React.FC = () => {
             header: 'Actions',
             accessor: (res) => (
               <div className="flex items-center gap-2">
-                {res.status === 'requested' && (
+                {res.status === 'pending' && (
                   <>
                     <Button variant="outline" size="sm" className="text-green-600 border-green-200 hover:bg-green-50">
                       <Check size={16} />
@@ -100,6 +121,14 @@ const Reservations: React.FC = () => {
         }
       >
         <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Branch</label>
+            <select className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+              {MOCK_BRANCHES.map(b => (
+                <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+            </select>
+          </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Customer</label>
             <select className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
