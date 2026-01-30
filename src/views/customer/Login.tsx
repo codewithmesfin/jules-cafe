@@ -6,6 +6,7 @@ import { Input } from '../../components/ui/Input';
 import { Card } from '../../components/ui/Card';
 import { useAuth } from '../../context/AuthContext';
 import type { UserRole } from '../../types';
+import Link from 'next/link';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -66,7 +67,7 @@ const Login: React.FC = () => {
           
           <div className="mt-8 pt-6 border-t border-gray-100">
             <p className="text-center text-sm text-gray-500">
-              Don't have an account? <button className="text-orange-600 font-medium hover:underline">Create an account</button>
+              Don't have an account? <Link href="/signup" className="text-orange-600 font-medium hover:underline">Create an account</Link>
             </p>
           </div>
         </Card>

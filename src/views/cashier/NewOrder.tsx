@@ -7,7 +7,7 @@ import { Card } from '../../components/ui/Card';
 import { Modal } from '../../components/ui/Modal';
 import { useNotification } from '../../context/NotificationContext';
 import { useAuth } from '../../context/AuthContext';
-import type { MenuItem, MenuCategory, Table, User as UserType } from '../../types';
+import type { MenuItem, MenuCategory, Table, User as UserType, Branch } from '../../types';
 
 interface CartItem extends MenuItem {
   quantity: number;
