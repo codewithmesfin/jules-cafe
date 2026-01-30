@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShoppingBag, Users, Calendar, ArrowUpRight, ArrowDownRight, DollarSign } from 'lucide-react';
+import { ShoppingBag, Users, Calendar, ArrowUpRight, ArrowDownRight, DollarSign, Activity, UserPlus, Package, MessageSquare } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Table } from '../../components/ui/Table';
@@ -109,6 +109,32 @@ const Dashboard: React.FC = () => {
                 },
               ]}
             />
+          </Card>
+        </div>
+
+        {/* Recent Activity */}
+        <div className="lg:col-span-1">
+          <Card title="Recent Activity">
+            <div className="space-y-4">
+              {[
+                { user: 'Admin User', action: 'updated menu item', target: 'Grilled Salmon', time: '5m ago', icon: Package, iconColor: 'text-blue-600', bgColor: 'bg-blue-100' },
+                { user: 'Admin User', action: 'added new user', target: 'John Cashier', time: '25m ago', icon: UserPlus, iconColor: 'text-green-600', bgColor: 'bg-green-100' },
+                { user: 'Manager User', action: 'replied to review', target: '#rv1', time: '1h ago', icon: MessageSquare, iconColor: 'text-orange-600', bgColor: 'bg-orange-100' },
+                { user: 'Admin User', action: 'deleted category', target: 'Old Sides', time: '2h ago', icon: Activity, iconColor: 'text-red-600', bgColor: 'bg-red-100' },
+              ].map((activity, i) => (
+                <div key={i} className="flex gap-3">
+                  <div className={cn("p-2 rounded-full h-fit", activity.bgColor, activity.iconColor)}>
+                    <activity.icon size={16} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">
+                      {activity.user} <span className="font-normal text-gray-500">{activity.action}</span> {activity.target}
+                    </p>
+                    <p className="text-xs text-gray-400">{activity.time}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </Card>
         </div>
 
