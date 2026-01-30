@@ -6,14 +6,21 @@ import { Input } from '../../components/ui/Input';
 import { Table } from '../../components/ui/Table';
 import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
+import { ConfirmationDialog } from '../../components/ui/ConfirmationDialog';
+import { useNotification } from '../../context/NotificationContext';
+import type { User } from '../../types';
 
 const Users: React.FC = () => {
+  const { showNotification } = useNotification();
+  const [users, setUsers] = useState<User[]>(MOCK_USERS);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRole, setSelectedRole] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
 
-  const filteredUsers = MOCK_USERS.filter(user => {
+  const filteredUsers = users.filter(user => {
     const matchesSearch = user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user.email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = selectedRole === 'all' || user.role === selectedRole;
@@ -57,7 +64,10 @@ const Users: React.FC = () => {
             <option value="inactive">Inactive</option>
           </select>
         </div>
-        <Button className="gap-2" onClick={() => setIsModalOpen(true)}>
+        <Button className="gap-2" onClick={() => {
+          setEditingUser(null);
+          setIsModalOpen(true);
+        }}>
           <Plus size={20} /> Add User
         </Button>
       </div>
@@ -84,10 +94,26 @@ const Users: React.FC = () => {
           { header: 'Joined Date', accessor: (user) => new Date(user.created_at).toLocaleDateString() },
           {
             header: 'Actions',
-            accessor: () => (
+            accessor: (user) => (
               <div className="flex items-center gap-2">
-                <Button variant="ghost" size="sm"><Edit size={16} /></Button>
-                <Button variant="ghost" size="sm" className="text-red-600"><Trash2 size={16} /></Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setEditingUser(user);
+                    setIsModalOpen(true);
+                  }}
+                >
+                  <Edit size={16} />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-red-600"
+                  onClick={() => setUserToDelete(user)}
+                >
+                  <Trash2 size={16} />
+                </Button>
               </div>
             )
           }
@@ -96,21 +122,41 @@ const Users: React.FC = () => {
 
       <Modal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title="Add New User"
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingUser(null);
+        }}
+        title={editingUser ? "Edit User" : "Add New User"}
         footer={
           <>
-            <Button variant="outline" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-            <Button onClick={() => setIsModalOpen(false)}>Create User</Button>
+            <Button variant="outline" onClick={() => {
+              setIsModalOpen(false);
+              setEditingUser(null);
+            }}>Cancel</Button>
+            <Button onClick={() => {
+              setIsModalOpen(false);
+              if (editingUser) {
+                setUsers(prev => prev.map(u => u.id === editingUser.id ? { ...u, full_name: editingUser.full_name } : u));
+                showNotification("User updated successfully");
+              } else {
+                showNotification("User created successfully");
+              }
+              setEditingUser(null);
+            }}>
+              {editingUser ? "Save Changes" : "Create User"}
+            </Button>
           </>
         }
       >
         <div className="space-y-4">
-          <Input label="Full Name" placeholder="e.g. John Doe" />
-          <Input label="Email Address" type="email" placeholder="john@example.com" />
+          <Input label="Full Name" placeholder="e.g. John Doe" defaultValue={editingUser?.full_name} />
+          <Input label="Email Address" type="email" placeholder="john@example.com" defaultValue={editingUser?.email} />
           <div className="w-full">
             <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-            <select className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+            <select
+              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+              defaultValue={editingUser?.role || "customer"}
+            >
               <option value="customer">Customer</option>
               <option value="staff">Staff</option>
               <option value="cashier">Cashier</option>
@@ -118,8 +164,35 @@ const Users: React.FC = () => {
               <option value="admin">Admin</option>
             </select>
           </div>
+          {editingUser && (
+            <div className="w-full">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <select
+                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                defaultValue={editingUser.status}
+              >
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
+          )}
         </div>
       </Modal>
+
+      <ConfirmationDialog
+        isOpen={!!userToDelete}
+        onClose={() => setUserToDelete(null)}
+        onConfirm={() => {
+          if (userToDelete) {
+            setUsers(prev => prev.filter(u => u.id !== userToDelete.id));
+            showNotification("User deleted successfully", "warning");
+          }
+          setUserToDelete(null);
+        }}
+        title="Delete User"
+        description={`Are you sure you want to delete ${userToDelete?.full_name}? This action cannot be undone.`}
+        confirmLabel="Delete"
+      />
     </div>
   );
 };

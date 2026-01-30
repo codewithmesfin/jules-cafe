@@ -2,6 +2,7 @@ import React from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { Modal } from './Modal';
 import { Button } from './Button';
+import { cn } from '../../utils/cn';
 
 interface ConfirmationDialogProps {
   isOpen: boolean;
@@ -50,5 +51,3 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
     </Modal>
   );
 };
-
-import { cn } from '../../utils/cn';

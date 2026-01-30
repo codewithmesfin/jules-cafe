@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
+import { NotificationProvider } from './context/NotificationContext';
 import { MainLayout } from './layouts/MainLayout';
 import { CustomerLayout } from './layouts/CustomerLayout';
 import { DashboardLayout } from './layouts/DashboardLayout';
@@ -45,8 +46,9 @@ import CashierOrderQueue from './pages/cashier/OrderQueue';
 function App() {
   return (
     <AuthProvider>
-      <CartProvider>
-        <BrowserRouter>
+      <NotificationProvider>
+        <CartProvider>
+          <BrowserRouter>
           <Routes>
             <Route element={<MainLayout />}>
               {/* Customer Routes */}
@@ -112,6 +114,7 @@ function App() {
           </Routes>
         </BrowserRouter>
       </CartProvider>
+      </NotificationProvider>
     </AuthProvider>
   );
 }

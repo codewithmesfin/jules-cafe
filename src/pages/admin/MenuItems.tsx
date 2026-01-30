@@ -6,13 +6,20 @@ import { Input } from '../../components/ui/Input';
 import { Table } from '../../components/ui/Table';
 import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
+import { ConfirmationDialog } from '../../components/ui/ConfirmationDialog';
+import { useNotification } from '../../context/NotificationContext';
+import type { MenuItem } from '../../types';
 
 const MenuItems: React.FC = () => {
+  const { showNotification } = useNotification();
+  const [items, setItems] = useState<MenuItem[]>(MOCK_MENU_ITEMS);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<MenuItem | null>(null);
 
-  const filteredItems = MOCK_MENU_ITEMS.filter(item => {
+  const filteredItems = items.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || item.category_id === selectedCategory;
     return matchesSearch && matchesCategory;
@@ -42,7 +49,10 @@ const MenuItems: React.FC = () => {
             ))}
           </select>
         </div>
-        <Button className="gap-2" onClick={() => setIsModalOpen(true)}>
+        <Button className="gap-2" onClick={() => {
+          setEditingItem(null);
+          setIsModalOpen(true);
+        }}>
           <Plus size={20} /> Add Item
         </Button>
       </div>
@@ -74,10 +84,26 @@ const MenuItems: React.FC = () => {
           },
           {
             header: 'Actions',
-            accessor: () => (
+            accessor: (item) => (
               <div className="flex items-center gap-2">
-                <Button variant="ghost" size="sm"><Edit size={16} /></Button>
-                <Button variant="ghost" size="sm" className="text-red-600"><Trash2 size={16} /></Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setEditingItem(item);
+                    setIsModalOpen(true);
+                  }}
+                >
+                  <Edit size={16} />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-red-600"
+                  onClick={() => setItemToDelete(item)}
+                >
+                  <Trash2 size={16} />
+                </Button>
               </div>
             )
           }
@@ -86,34 +112,81 @@ const MenuItems: React.FC = () => {
 
       <Modal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title="Add Menu Item"
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingItem(null);
+        }}
+        title={editingItem ? "Edit Menu Item" : "Add Menu Item"}
         size="lg"
         footer={
           <>
-            <Button variant="outline" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-            <Button onClick={() => setIsModalOpen(false)}>Create Item</Button>
+            <Button variant="outline" onClick={() => {
+              setIsModalOpen(false);
+              setEditingItem(null);
+            }}>Cancel</Button>
+            <Button onClick={() => {
+              setIsModalOpen(false);
+              if (editingItem) {
+                setItems(prev => prev.map(i => i.id === editingItem.id ? { ...i, name: editingItem.name } : i));
+                showNotification("Item updated successfully");
+              } else {
+                showNotification("Item created successfully");
+              }
+              setEditingItem(null);
+            }}>
+              {editingItem ? "Save Changes" : "Create Item"}
+            </Button>
           </>
         }
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Input label="Item Name" placeholder="e.g. Pasta Carbonara" />
+          <Input label="Item Name" placeholder="e.g. Pasta Carbonara" defaultValue={editingItem?.name} />
           <div className="w-full">
             <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-            <select className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+            <select
+              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+              defaultValue={editingItem?.category_id}
+            >
               {MOCK_CATEGORIES.map(cat => (
                 <option key={cat.id} value={cat.id}>{cat.name}</option>
               ))}
             </select>
           </div>
-          <Input label="Price" type="number" step="0.01" placeholder="0.00" />
-          <Input label="Image URL" placeholder="https://..." />
+          <Input label="Price" type="number" step="0.01" placeholder="0.00" defaultValue={editingItem?.base_price} />
+          <Input label="Image URL" placeholder="https://..." defaultValue={editingItem?.image_url} />
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-            <textarea className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 min-h-[80px]" />
+            <textarea
+              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 min-h-[80px]"
+              defaultValue={editingItem?.description}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="is_active"
+              className="rounded text-orange-600 focus:ring-orange-500"
+              defaultChecked={editingItem ? editingItem.is_active : true}
+            />
+            <label htmlFor="is_active" className="text-sm font-medium text-gray-700">Active</label>
           </div>
         </div>
       </Modal>
+
+      <ConfirmationDialog
+        isOpen={!!itemToDelete}
+        onClose={() => setItemToDelete(null)}
+        onConfirm={() => {
+          if (itemToDelete) {
+            setItems(prev => prev.filter(i => i.id !== itemToDelete.id));
+            showNotification("Item deleted successfully", "warning");
+          }
+          setItemToDelete(null);
+        }}
+        title="Delete Menu Item"
+        description={`Are you sure you want to delete "${itemToDelete?.name}"? This action cannot be undone.`}
+        confirmLabel="Delete"
+      />
     </div>
   );
 };
