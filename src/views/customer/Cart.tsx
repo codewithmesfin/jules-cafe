@@ -5,10 +5,19 @@ import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { useCart } from '../../context/CartContext';
 import { Card } from '../../components/ui/Card';
+import { useAuth } from '../../context/AuthContext';
 
 const Cart: React.FC = () => {
   const { cartItems, removeFromCart, updateQuantity, totalAmount } = useCart();
+  const { user } = useAuth();
   const router = useRouter();
+
+  const discountRate = user?.discount_rate || 0;
+  const discountAmount = (totalAmount * discountRate) / 100;
+  const subtotalAfterDiscount = totalAmount - discountAmount;
+  const serviceFee = subtotalAfterDiscount * 0.05;
+  const tax = subtotalAfterDiscount * 0.08;
+  const finalTotal = subtotalAfterDiscount + serviceFee + tax;
 
   if (cartItems.length === 0) {
     return (
@@ -89,18 +98,24 @@ const Cart: React.FC = () => {
                 <span>Subtotal</span>
                 <span>${totalAmount.toFixed(2)}</span>
               </div>
+              {discountRate > 0 && (
+                <div className="flex justify-between text-green-600">
+                  <span>Discount ({user?.customer_type?.toUpperCase()} {discountRate}%)</span>
+                  <span>-${discountAmount.toFixed(2)}</span>
+                </div>
+              )}
               <div className="flex justify-between text-gray-600">
                 <span>Service Fee (5%)</span>
-                <span>${(totalAmount * 0.05).toFixed(2)}</span>
+                <span>${serviceFee.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-gray-600">
                 <span>Tax (8%)</span>
-                <span>${(totalAmount * 0.08).toFixed(2)}</span>
+                <span>${tax.toFixed(2)}</span>
               </div>
               <hr className="border-gray-100" />
               <div className="flex justify-between text-xl font-bold text-gray-900">
                 <span>Total</span>
-                <span>${(totalAmount * 1.13).toFixed(2)}</span>
+                <span>${finalTotal.toFixed(2)}</span>
               </div>
               <Button
                 className="w-full"
