@@ -71,7 +71,7 @@ export const MOCK_USERS: User[] = [
   { id: 'u1', full_name: 'Admin User', email: 'admin@example.com', phone: '123-456-7890', role: 'admin', status: 'active', created_at: new Date().toISOString() },
   { id: 'u2', full_name: 'Manager User', email: 'manager@example.com', phone: '234-567-8901', role: 'manager', status: 'active', branch_id: 'b1', created_at: new Date().toISOString() },
   { id: 'u3', full_name: 'Cashier User', email: 'cashier@example.com', phone: '345-678-9012', role: 'cashier', status: 'active', branch_id: 'b1', created_at: new Date().toISOString() },
-  { id: 'u4', full_name: 'John Customer', email: 'john@example.com', phone: '456-789-0123', role: 'customer', status: 'active', created_at: new Date().toISOString() },
+  { id: 'u4', full_name: 'John Customer', email: 'john@example.com', phone: '456-789-0123', role: 'customer', status: 'active', customer_type: 'vip', discount_rate: 15, created_at: new Date().toISOString() },
   { id: 'u5', full_name: 'Sarah Waiter', email: 'sarah@example.com', phone: '567-890-1234', role: 'staff', status: 'active', branch_id: 'b1', created_at: new Date().toISOString() },
   { id: 'u6', full_name: 'Mike Waiter', email: 'mike@example.com', phone: '678-901-2345', role: 'staff', status: 'active', branch_id: 'b1', created_at: new Date().toISOString() },
 ];

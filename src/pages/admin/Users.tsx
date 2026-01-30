@@ -25,6 +25,8 @@ const Users: React.FC = () => {
   const [formEmail, setFormEmail] = useState('');
   const [formRole, setFormRole] = useState<UserRole>('customer');
   const [formStatus, setFormStatus] = useState<UserStatus>('active');
+  const [formCustomerType, setFormCustomerType] = useState<'regular' | 'vip' | 'member'>('regular');
+  const [formDiscountRate, setFormDiscountRate] = useState(0);
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -88,9 +90,16 @@ const Users: React.FC = () => {
           { header: 'Full Name', accessor: 'full_name' },
           { header: 'Email', accessor: 'email' },
           {
-            header: 'Role',
+            header: 'Role/Type',
             accessor: (user) => (
-              <Badge variant="neutral" className="capitalize">{user.role}</Badge>
+              <div className="flex flex-col">
+                <Badge variant="neutral" className="capitalize w-fit">{user.role}</Badge>
+                {user.role === 'customer' && user.customer_type && (
+                  <span className="text-[10px] text-gray-500 font-medium uppercase mt-1">
+                    {user.customer_type} ({user.discount_rate}%)
+                  </span>
+                )}
+              </div>
             )
           },
           {
@@ -115,6 +124,8 @@ const Users: React.FC = () => {
                     setFormEmail(user.email);
                     setFormRole(user.role);
                     setFormStatus(user.status);
+                    setFormCustomerType(user.customer_type || 'regular');
+                    setFormDiscountRate(user.discount_rate || 0);
                     setIsModalOpen(true);
                   }}
                 >
@@ -155,7 +166,9 @@ const Users: React.FC = () => {
                   full_name: formFullName,
                   email: formEmail,
                   role: formRole,
-                  status: formStatus
+                  status: formStatus,
+                  customer_type: formRole === 'customer' ? formCustomerType : undefined,
+                  discount_rate: formRole === 'customer' ? formDiscountRate : undefined
                 } : u));
                 showNotification("User updated successfully");
               } else {
@@ -166,6 +179,8 @@ const Users: React.FC = () => {
                   phone: '',
                   role: formRole,
                   status: formStatus,
+                  customer_type: formRole === 'customer' ? formCustomerType : undefined,
+                  discount_rate: formRole === 'customer' ? formDiscountRate : undefined,
                   created_at: new Date().toISOString()
                 };
                 setUsers(prev => [...prev, newUser]);
@@ -206,6 +221,36 @@ const Users: React.FC = () => {
               <option value="admin">Admin</option>
             </select>
           </div>
+
+          {formRole === 'customer' && (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="w-full">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Customer Type</label>
+                <select
+                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  value={formCustomerType}
+                  onChange={(e) => {
+                    const type = e.target.value as 'regular' | 'vip' | 'member';
+                    setFormCustomerType(type);
+                    if (type === 'vip') setFormDiscountRate(15);
+                    else if (type === 'member') setFormDiscountRate(5);
+                    else setFormDiscountRate(0);
+                  }}
+                >
+                  <option value="regular">Regular</option>
+                  <option value="member">Member (5%)</option>
+                  <option value="vip">VIP (15%)</option>
+                </select>
+              </div>
+              <Input
+                label="Discount Rate (%)"
+                type="number"
+                value={formDiscountRate}
+                onChange={(e) => setFormDiscountRate(parseFloat(e.target.value) || 0)}
+              />
+            </div>
+          )}
+
           {editingUser && (
             <div className="w-full">
               <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>

@@ -154,15 +154,17 @@ const Orders: React.FC = () => {
             <div className="space-y-2 text-sm">
               <div className="flex justify-between text-gray-500">
                 <span>Subtotal</span>
-                <span>$25.00</span>
+                <span>${(selectedOrder.total_amount + (selectedOrder.discount_amount || 0)).toFixed(2)}</span>
               </div>
-              <div className="flex justify-between text-gray-500">
-                <span>Tax</span>
-                <span>$2.00</span>
-              </div>
-              <div className="flex justify-between text-base font-bold text-gray-900 pt-2">
+              {selectedOrder.discount_amount && (
+                <div className="flex justify-between text-green-600">
+                  <span>Discount</span>
+                  <span>-${selectedOrder.discount_amount.toFixed(2)}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-base font-bold text-gray-900 pt-2 border-t mt-2">
                 <span>Total</span>
-                <span>$27.00</span>
+                <span>${selectedOrder.total_amount.toFixed(2)}</span>
               </div>
             </div>
 

@@ -23,7 +23,7 @@ const NewOrder: React.FC = () => {
   const [selectedWaiter, setSelectedWaiter] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState('');
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
-  const [newCustomer, setNewCustomer] = useState({ name: '', email: '', phone: '' });
+  const [newCustomer, setNewCustomer] = useState({ name: '', email: '', phone: '', type: 'regular' as 'regular' | 'vip' | 'member', discount: 0 });
 
   const filteredItems = MOCK_MENU_ITEMS.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -51,7 +51,11 @@ const NewOrder: React.FC = () => {
     }).filter(item => item.quantity > 0));
   };
 
+  const customerData = MOCK_USERS.find(u => u.id === selectedCustomer);
+  const discountRate = customerData?.discount_rate || 0;
   const subtotal = cart.reduce((acc, item) => acc + item.base_price * item.quantity, 0);
+  const discountAmount = (subtotal * discountRate) / 100;
+  const total = subtotal - discountAmount;
 
   return (
     <div className="flex flex-col lg:flex-row h-full lg:h-[calc(100vh-120px)] gap-6 overflow-auto lg:overflow-hidden">
@@ -186,9 +190,15 @@ const NewOrder: React.FC = () => {
             <span>Subtotal</span>
             <span>${subtotal.toFixed(2)}</span>
           </div>
+          {discountRate > 0 && (
+            <div className="flex justify-between text-sm text-green-600">
+              <span>Discount ({customerData?.customer_type?.toUpperCase()} {discountRate}%)</span>
+              <span>-${discountAmount.toFixed(2)}</span>
+            </div>
+          )}
           <div className="flex justify-between text-lg font-bold text-gray-900">
             <span>Total</span>
-            <span>${subtotal.toFixed(2)}</span>
+            <span>${total.toFixed(2)}</span>
           </div>
           <Button
             className="w-full"
@@ -239,6 +249,32 @@ const NewOrder: React.FC = () => {
             value={newCustomer.email}
             onChange={(e) => setNewCustomer({...newCustomer, email: e.target.value})}
           />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Customer Type</label>
+              <select
+                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                value={newCustomer.type}
+                onChange={(e) => {
+                  const type = e.target.value as 'regular' | 'vip' | 'member';
+                  let discount = 0;
+                  if (type === 'vip') discount = 15;
+                  else if (type === 'member') discount = 5;
+                  setNewCustomer({...newCustomer, type, discount});
+                }}
+              >
+                <option value="regular">Regular</option>
+                <option value="member">Member (5%)</option>
+                <option value="vip">VIP (15%)</option>
+              </select>
+            </div>
+            <Input
+              label="Custom Discount (%)"
+              type="number"
+              value={newCustomer.discount}
+              onChange={(e) => setNewCustomer({...newCustomer, discount: parseFloat(e.target.value) || 0})}
+            />
+          </div>
         </div>
       </Modal>
     </div>
