@@ -1,16 +1,48 @@
-import React from 'react';
+"use client";
+import React, { useState, useEffect } from 'react';
 import { Card } from '../../components/ui/Card';
 import { ShoppingBag, Calendar, Users, DollarSign } from 'lucide-react';
 import { Badge } from '../../components/ui/Badge';
-import { MOCK_ORDERS, MOCK_RESERVATIONS, MOCK_USERS } from '../../utils/mockData';
+import { api } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
+import type { Order, Reservation, User as UserType } from '../../types';
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [staff, setStaff] = useState<UserType[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const branchOrders = MOCK_ORDERS.filter(o => o.branch_id === user?.branch_id);
-  const branchReservations = MOCK_RESERVATIONS.filter(r => r.branch_id === user?.branch_id);
-  const branchStaff = MOCK_USERS.filter(u => u.role === 'staff' && u.branch_id === user?.branch_id);
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [ordData, resData, userData] = await Promise.all([
+          api.orders.getAll(),
+          api.reservations.getAll(),
+          api.users.getAll(),
+        ]);
+
+        const branchOrders = ordData.filter((o: Order) => o.branch_id === user?.branch_id);
+        const branchReservations = resData.filter((r: Reservation) => r.branch_id === user?.branch_id);
+        const branchStaff = userData.filter((u: UserType) => u.role === 'staff' && u.branch_id === user?.branch_id);
+
+        setOrders(branchOrders);
+        setReservations(branchReservations);
+        setStaff(branchStaff);
+      } catch (error) {
+        console.error('Failed to fetch manager dashboard data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (user?.branch_id) {
+      fetchData();
+    }
+  }, [user?.branch_id]);
+
+  if (loading) return <div className="text-center py-20">Loading Dashboard...</div>;
 
   return (
     <div className="space-y-8">
@@ -25,8 +57,10 @@ const Dashboard: React.FC = () => {
             <DollarSign size={20} />
           </div>
           <div>
-            <p className="text-xs text-gray-500 font-medium">Daily Revenue</p>
-            <h3 className="text-xl font-bold">$1,250</h3>
+            <p className="text-xs text-gray-500 font-medium">Branch Revenue</p>
+            <h3 className="text-xl font-bold">
+              ${orders.reduce((acc, curr) => acc + curr.total_amount, 0).toLocaleString()}
+            </h3>
           </div>
         </Card>
         <Card className="flex items-center gap-4">
@@ -34,8 +68,8 @@ const Dashboard: React.FC = () => {
             <ShoppingBag size={20} />
           </div>
           <div>
-            <p className="text-xs text-gray-500 font-medium">Orders Today</p>
-            <h3 className="text-xl font-bold">{branchOrders.length}</h3>
+            <p className="text-xs text-gray-500 font-medium">Orders</p>
+            <h3 className="text-xl font-bold">{orders.length}</h3>
           </div>
         </Card>
         <Card className="flex items-center gap-4">
@@ -44,7 +78,7 @@ const Dashboard: React.FC = () => {
           </div>
           <div>
             <p className="text-xs text-gray-500 font-medium">Reservations</p>
-            <h3 className="text-xl font-bold">{branchReservations.length}</h3>
+            <h3 className="text-xl font-bold">{reservations.length}</h3>
           </div>
         </Card>
         <Card className="flex items-center gap-4">
@@ -53,7 +87,7 @@ const Dashboard: React.FC = () => {
           </div>
           <div>
             <p className="text-xs text-gray-500 font-medium">Active Staff</p>
-            <h3 className="text-xl font-bold">{branchStaff.length}</h3>
+            <h3 className="text-xl font-bold">{staff.length}</h3>
           </div>
         </Card>
       </div>
@@ -61,23 +95,24 @@ const Dashboard: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <Card title="Staff Workload (Orders Assigned)">
           <div className="space-y-4">
-            {branchStaff.map((staff) => {
-              const assignedCount = MOCK_ORDERS.filter(o => o.waiter_id === staff.id).length;
+            {staff.map((s) => {
+              const assignedCount = orders.filter(o => o.waiter_id === s.id).length;
               return (
-                <div key={staff.id} className="space-y-2">
+                <div key={s.id} className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="font-medium">{staff.full_name}</span>
+                    <span className="font-medium">{s.full_name}</span>
                     <span className="text-gray-500">{assignedCount} active orders</span>
                   </div>
                   <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-blue-500 rounded-full"
-                      style={{ width: `${(assignedCount / 10) * 100}%` }}
+                      style={{ width: `${Math.min(100, (assignedCount / 10) * 100)}%` }}
                     />
                   </div>
                 </div>
               );
             })}
+            {staff.length === 0 && <p className="text-center text-gray-500 text-sm">No staff found for this branch.</p>}
           </div>
         </Card>
 
@@ -85,21 +120,21 @@ const Dashboard: React.FC = () => {
           <div className="flex items-center justify-center h-48 gap-8">
             <div className="flex flex-col items-center">
               <div className="text-2xl font-bold text-orange-600">
-                {branchReservations.filter(r => r.status === 'confirmed').length}
+                {reservations.filter(r => r.status === 'confirmed').length}
               </div>
               <div className="text-xs text-gray-500">Confirmed</div>
             </div>
             <div className="w-px h-12 bg-gray-200" />
             <div className="flex flex-col items-center">
               <div className="text-2xl font-bold text-blue-600">
-                {branchReservations.filter(r => r.status === 'requested').length}
+                {reservations.filter(r => r.status === 'requested').length}
               </div>
               <div className="text-xs text-gray-500">Requested</div>
             </div>
             <div className="w-px h-12 bg-gray-200" />
             <div className="flex flex-col items-center">
               <div className="text-2xl font-bold text-red-600">
-                {branchReservations.filter(r => r.status === 'cancelled').length}
+                {reservations.filter(r => r.status === 'cancelled').length}
               </div>
               <div className="text-xs text-gray-500">Cancelled</div>
             </div>

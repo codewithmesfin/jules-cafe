@@ -22,10 +22,16 @@ async function connectToDatabase() {
   if (!cached.promise) {
     const opts = {
       bufferCommands: false,
+      connectTimeoutMS: 10000,
+      socketTimeoutMS: 45000,
     };
 
     cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongooseInstance) => {
+      console.log('Successfully connected to MongoDB');
       return mongooseInstance;
+    }).catch((error) => {
+      console.error('Error connecting to MongoDB:', error);
+      throw error;
     });
   }
   cached.conn = await cached.promise;
