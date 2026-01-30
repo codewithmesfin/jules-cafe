@@ -72,7 +72,7 @@ const MenuView: React.FC = () => {
                   alt={item.name}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
-                {!item.is_available && (
+                {!item.is_active && (
                   <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                     <Badge variant="error" className="text-sm px-3 py-1">Sold Out</Badge>
                   </div>
@@ -81,12 +81,12 @@ const MenuView: React.FC = () => {
               <div className="p-4">
                 <div className="flex justify-between items-start mb-2">
                   <h3 className="font-bold text-gray-900">{item.name}</h3>
-                  <span className="text-orange-600 font-bold">${item.price.toFixed(2)}</span>
+                  <span className="text-orange-600 font-bold">${item.base_price.toFixed(2)}</span>
                 </div>
                 <p className="text-sm text-gray-500 line-clamp-2 mb-4 h-10">{item.description}</p>
                 <Button
                   onClick={() => addToCart(item)}
-                  disabled={!item.is_available}
+                  disabled={!item.is_active}
                   className="w-full gap-2"
                   size="sm"
                 >

@@ -63,12 +63,12 @@ const MenuItems: React.FC = () => {
             header: 'Category',
             accessor: (item) => MOCK_CATEGORIES.find(c => c.id === item.category_id)?.name || 'N/A'
           },
-          { header: 'Price', accessor: (item) => `$${item.price.toFixed(2)}` },
+          { header: 'Base Price', accessor: (item) => `$${item.base_price.toFixed(2)}` },
           {
-            header: 'Availability',
+            header: 'Status',
             accessor: (item) => (
-              <Badge variant={item.is_available ? 'success' : 'error'}>
-                {item.is_available ? 'In Stock' : 'Out of Stock'}
+              <Badge variant={item.is_active ? 'success' : 'neutral'}>
+                {item.is_active ? 'Active' : 'Inactive'}
               </Badge>
             )
           },

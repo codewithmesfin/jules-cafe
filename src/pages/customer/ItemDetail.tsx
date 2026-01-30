@@ -41,7 +41,7 @@ const ItemDetail: React.FC = () => {
         <div className="flex flex-col justify-center">
           <div className="flex items-center gap-2 mb-4">
             <Badge variant="info">Category Name</Badge>
-            {!item.is_available && <Badge variant="error">Out of Stock</Badge>}
+            {!item.is_active && <Badge variant="error">Out of Stock</Badge>}
           </div>
           <h1 className="text-4xl font-bold text-gray-900 mb-4">{item.name}</h1>
           <div className="flex items-center gap-6 mb-6">
@@ -58,7 +58,7 @@ const ItemDetail: React.FC = () => {
             {item.description}
           </p>
           <div className="text-3xl font-bold text-orange-600 mb-8">
-            ${item.price.toFixed(2)}
+            ${item.base_price.toFixed(2)}
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4">
@@ -80,13 +80,13 @@ const ItemDetail: React.FC = () => {
             <Button
               size="lg"
               className="flex-1 text-lg"
-              disabled={!item.is_available}
+              disabled={!item.is_active}
               onClick={() => {
                 for (let i = 0; i < quantity; i++) addToCart(item);
                 navigate('/cart');
               }}
             >
-              Add to Cart - ${(item.price * quantity).toFixed(2)}
+              Add to Cart - ${(item.base_price * quantity).toFixed(2)}
             </Button>
           </div>
         </div>

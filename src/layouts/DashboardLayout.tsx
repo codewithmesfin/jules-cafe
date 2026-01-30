@@ -6,40 +6,69 @@ import {
   ShoppingBag,
   Calendar,
   Star,
-  ShieldCheck,
   LogOut,
   ChevronLeft,
   ChevronRight,
   Utensils,
   Settings,
-  ClipboardList,
-  Package
+  MapPin,
+  BarChart3,
+  PlusSquare,
+  ListOrdered,
+  Grid
 } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { Button } from '../components/ui/Button';
 import { useAuth } from '../context/AuthContext';
+import type { UserRole } from '../types';
 
-export const AdminLayout: React.FC = () => {
+interface MenuItem {
+  icon: React.ElementType;
+  label: string;
+  path: string;
+}
+
+export const DashboardLayout: React.FC = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const location = useLocation();
   const { user, logout } = useAuth();
 
-  const menuItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/admin' },
-    { icon: Users, label: 'Users', path: '/admin/users', roles: ['admin'] },
-    { icon: Settings, label: 'Categories', path: '/admin/categories' },
-    { icon: Utensils, label: 'Menu Items', path: '/admin/menu-items' },
-    { icon: ShoppingBag, label: 'Orders', path: '/admin/orders', roles: ['admin', 'manager', 'cashier', 'staff'] },
-    { icon: Calendar, label: 'Reservations', path: '/admin/reservations', roles: ['admin', 'manager', 'cashier', 'staff'] },
-    { icon: ClipboardList, label: 'Recipes', path: '/admin/recipes', roles: ['admin', 'manager'] },
-    { icon: Package, label: 'Inventory', path: '/admin/inventory', roles: ['admin', 'manager'] },
-    { icon: Star, label: 'Reviews', path: '/admin/reviews' },
-    { icon: ShieldCheck, label: 'Roles', path: '/admin/roles', roles: ['admin'] },
-  ];
+  const getMenuItems = (role: UserRole): MenuItem[] => {
+    switch (role) {
+      case 'admin':
+        return [
+          { icon: LayoutDashboard, label: 'Dashboard', path: '/admin' },
+          { icon: Users, label: 'Users', path: '/admin/users' },
+          { icon: MapPin, label: 'Branches', path: '/admin/branches' },
+          { icon: Settings, label: 'Categories', path: '/admin/categories' },
+          { icon: Utensils, label: 'Menu Items', path: '/admin/menu-items' },
+          { icon: ShoppingBag, label: 'Orders', path: '/admin/orders' },
+          { icon: Calendar, label: 'Reservations', path: '/admin/reservations' },
+          { icon: Star, label: 'Reviews', path: '/admin/reviews' },
+          { icon: BarChart3, label: 'Reports', path: '/admin/reports' },
+        ];
+      case 'manager':
+        return [
+          { icon: LayoutDashboard, label: 'Dashboard', path: '/manager' },
+          { icon: MapPin, label: 'Branch Profile', path: '/manager/profile' },
+          { icon: Utensils, label: 'Menu Availability', path: '/manager/menu' },
+          { icon: ShoppingBag, label: 'Orders', path: '/manager/orders' },
+          { icon: Calendar, label: 'Reservations', path: '/manager/reservations' },
+          { icon: Grid, label: 'Tables', path: '/manager/tables' },
+          { icon: Star, label: 'Reviews', path: '/manager/reviews' },
+        ];
+      case 'cashier':
+        return [
+          { icon: LayoutDashboard, label: 'Dashboard', path: '/cashier' },
+          { icon: PlusSquare, label: 'New Order', path: '/cashier/new-order' },
+          { icon: ListOrdered, label: 'Order Queue', path: '/cashier/queue' },
+        ];
+      default:
+        return [];
+    }
+  };
 
-  const filteredMenuItems = menuItems.filter(
-    item => !item.roles || (user && item.roles.includes(user.role))
-  );
+  const menuItems = user ? getMenuItems(user.role) : [];
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -52,7 +81,9 @@ export const AdminLayout: React.FC = () => {
       >
         <div className="p-6 flex items-center justify-between">
           {!isSidebarCollapsed && (
-            <span className="text-white font-bold text-xl tracking-tight">AdminPanel</span>
+            <span className="text-white font-bold text-xl tracking-tight capitalize">
+              {user?.role} Panel
+            </span>
           )}
           <button
             onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
@@ -63,7 +94,7 @@ export const AdminLayout: React.FC = () => {
         </div>
 
         <nav className="flex-1 px-4 py-4 space-y-2 overflow-y-auto">
-          {filteredMenuItems.map((item) => (
+          {menuItems.map((item) => (
             <Link
               key={item.path}
               to={item.path}

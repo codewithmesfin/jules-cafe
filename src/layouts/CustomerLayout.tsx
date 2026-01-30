@@ -48,8 +48,10 @@ export const CustomerLayout: React.FC = () => {
                   </Button>
                 </Link>
                 {user.role !== 'customer' && (
-                  <Link to="/admin">
-                    <Button variant="outline" size="sm">Admin</Button>
+                  <Link to={user.role === 'admin' ? '/admin' : user.role === 'manager' ? '/manager' : '/cashier'}>
+                    <Button variant="outline" size="sm" className="capitalize">
+                      {user.role} Panel
+                    </Button>
                   </Link>
                 )}
                 <Button variant="ghost" size="sm" onClick={logout}>Logout</Button>
@@ -83,7 +85,13 @@ export const CustomerLayout: React.FC = () => {
                 <>
                   <Link to="/profile" onClick={() => setIsMenuOpen(false)}>Profile</Link>
                   {user.role !== 'customer' && (
-                    <Link to="/admin" onClick={() => setIsMenuOpen(false)}>Admin Panel</Link>
+                    <Link
+                      to={user.role === 'admin' ? '/admin' : user.role === 'manager' ? '/manager' : '/cashier'}
+                      onClick={() => setIsMenuOpen(false)}
+                      className="capitalize"
+                    >
+                      {user.role} Panel
+                    </Link>
                   )}
                   <button className="text-left text-red-600" onClick={() => { logout(); setIsMenuOpen(false); }}>Logout</button>
                 </>
