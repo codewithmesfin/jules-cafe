@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { ShoppingCart, Plus, Minus, Search, Grid, User } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, Search, Grid, User, UserPlus } from 'lucide-react';
 import { MOCK_MENU_ITEMS, MOCK_CATEGORIES, MOCK_TABLES, MOCK_USERS } from '../../utils/mockData';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Card } from '../../components/ui/Card';
+import { Modal } from '../../components/ui/Modal';
+import { useNotification } from '../../context/NotificationContext';
 import { useAuth } from '../../context/AuthContext';
 import type { MenuItem } from '../../types';
 
@@ -13,11 +15,15 @@ interface CartItem extends MenuItem {
 
 const NewOrder: React.FC = () => {
   const { user } = useAuth();
+  const { showNotification } = useNotification();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedTable, setSelectedTable] = useState('');
   const [selectedWaiter, setSelectedWaiter] = useState('');
+  const [selectedCustomer, setSelectedCustomer] = useState('');
+  const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
+  const [newCustomer, setNewCustomer] = useState({ name: '', email: '', phone: '' });
 
   const filteredItems = MOCK_MENU_ITEMS.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -129,6 +135,27 @@ const NewOrder: React.FC = () => {
               ))}
             </select>
           </div>
+
+          <div className="flex items-center gap-2">
+            <User size={16} className="text-orange-600" />
+            <select
+              className="flex-1 text-sm border-none bg-transparent focus:ring-0 font-medium"
+              value={selectedCustomer}
+              onChange={(e) => setSelectedCustomer(e.target.value)}
+            >
+              <option value="">Select Customer *</option>
+              {MOCK_USERS.filter(u => u.role === 'customer').map(u => (
+                <option key={u.id} value={u.id}>{u.full_name} ({u.phone})</option>
+              ))}
+            </select>
+            <button
+              onClick={() => setIsCustomerModalOpen(true)}
+              className="p-1 text-orange-600 hover:bg-orange-50 rounded"
+              title="Add New Customer"
+            >
+              <UserPlus size={18} />
+            </button>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -163,11 +190,57 @@ const NewOrder: React.FC = () => {
             <span>Total</span>
             <span>${subtotal.toFixed(2)}</span>
           </div>
-          <Button className="w-full" size="lg" disabled={cart.length === 0}>
+          <Button
+            className="w-full"
+            size="lg"
+            disabled={cart.length === 0 || !selectedCustomer}
+            onClick={() => {
+              showNotification("Order placed successfully!");
+              setCart([]);
+              setSelectedCustomer('');
+            }}
+          >
             Place Order
           </Button>
         </div>
       </Card>
+
+      <Modal
+        isOpen={isCustomerModalOpen}
+        onClose={() => setIsCustomerModalOpen(false)}
+        title="Add New Customer"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setIsCustomerModalOpen(false)}>Cancel</Button>
+            <Button onClick={() => {
+              showNotification("Customer added successfully!");
+              setIsCustomerModalOpen(false);
+            }}>Add Customer</Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <Input
+            label="Full Name"
+            placeholder="John Doe"
+            value={newCustomer.name}
+            onChange={(e) => setNewCustomer({...newCustomer, name: e.target.value})}
+          />
+          <Input
+            label="Phone Number"
+            placeholder="555-0123"
+            value={newCustomer.phone}
+            onChange={(e) => setNewCustomer({...newCustomer, phone: e.target.value})}
+          />
+          <Input
+            label="Email Address (Optional)"
+            type="email"
+            placeholder="john@example.com"
+            value={newCustomer.email}
+            onChange={(e) => setNewCustomer({...newCustomer, email: e.target.value})}
+          />
+        </div>
+      </Modal>
     </div>
   );
 };

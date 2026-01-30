@@ -5,6 +5,7 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Card } from '../../components/ui/Card';
 import { useAuth } from '../../context/AuthContext';
+import type { UserRole } from '../../types';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -14,10 +15,18 @@ const Login: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Simple logic: if email contains 'admin', log in as admin, else customer
-    const role = email.includes('admin') ? 'admin' : 'customer';
+    // Simple logic: determine role based on email content
+    let role: UserRole = 'customer';
+    if (email.includes('admin')) role = 'admin';
+    else if (email.includes('manager')) role = 'manager';
+    else if (email.includes('cashier')) role = 'cashier';
+
     login(email, role);
-    navigate(role === 'admin' ? '/admin' : '/');
+
+    if (role === 'admin') navigate('/admin');
+    else if (role === 'manager') navigate('/manager');
+    else if (role === 'cashier') navigate('/cashier');
+    else navigate('/');
   };
 
   return (

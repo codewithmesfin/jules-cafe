@@ -7,6 +7,7 @@ import { Table } from '../../components/ui/Table';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
+import { ConfirmationDialog } from '../../components/ui/ConfirmationDialog';
 import { calculateAvailablePortions } from '../../utils/recipeUtils';
 import { useNotification } from '../../context/NotificationContext';
 import type { Recipe } from '../../types';
@@ -17,6 +18,8 @@ const Recipes: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBranchId, setSelectedBranchId] = useState(MOCK_BRANCHES[0].id);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [recipeToDelete, setRecipeToDelete] = useState<Recipe | null>(null);
   const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null);
   const [formIngredients, setFormIngredients] = useState<{item_name: string, quantity: number, unit: string}[]>([]);
   const [formInstructions, setFormInstructions] = useState('');
@@ -167,7 +170,15 @@ const Recipes: React.FC = () => {
                 }}>
                   <Edit size={16} />
                 </Button>
-                <Button variant="ghost" size="sm" className="text-red-600">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-red-600"
+                  onClick={() => {
+                    setRecipeToDelete(r);
+                    setIsDeleteDialogOpen(true);
+                  }}
+                >
                   <Trash2 size={16} />
                 </Button>
               </div>
@@ -297,6 +308,23 @@ const Recipes: React.FC = () => {
           </div>
         </div>
       </Modal>
+
+      <ConfirmationDialog
+        isOpen={isDeleteDialogOpen}
+        onClose={() => setIsDeleteDialogOpen(false)}
+        onConfirm={() => {
+          if (recipeToDelete) {
+            setRecipes(prev => prev.filter(r => r.id !== recipeToDelete.id));
+            showNotification("Recipe deleted successfully", "success");
+            setIsDeleteDialogOpen(false);
+            setRecipeToDelete(null);
+          }
+        }}
+        title="Delete Recipe"
+        description="Are you sure you want to delete this recipe? This action cannot be undone."
+        confirmLabel="Delete"
+        variant="danger"
+      />
     </div>
   );
 };

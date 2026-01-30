@@ -8,7 +8,7 @@ import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
 import { ConfirmationDialog } from '../../components/ui/ConfirmationDialog';
 import { useNotification } from '../../context/NotificationContext';
-import type { User } from '../../types';
+import type { User, UserRole, UserStatus } from '../../types';
 
 const Users: React.FC = () => {
   const { showNotification } = useNotification();
@@ -23,8 +23,8 @@ const Users: React.FC = () => {
   // Form state
   const [formFullName, setFormFullName] = useState('');
   const [formEmail, setFormEmail] = useState('');
-  const [formRole, setFormRole] = useState<any>('customer');
-  const [formStatus, setFormStatus] = useState<any>('active');
+  const [formRole, setFormRole] = useState<UserRole>('customer');
+  const [formStatus, setFormStatus] = useState<UserStatus>('active');
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -197,7 +197,7 @@ const Users: React.FC = () => {
             <select
               className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
               value={formRole}
-              onChange={(e) => setFormRole(e.target.value)}
+              onChange={(e) => setFormRole(e.target.value as UserRole)}
             >
               <option value="customer">Customer</option>
               <option value="staff">Staff</option>
@@ -212,7 +212,7 @@ const Users: React.FC = () => {
               <select
                 className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
                 value={formStatus}
-                onChange={(e) => setFormStatus(e.target.value)}
+                onChange={(e) => setFormStatus(e.target.value as UserStatus)}
               >
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
