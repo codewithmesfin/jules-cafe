@@ -1,20 +1,55 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Filter, Eye, CheckCircle, XCircle, Clock, Plus } from 'lucide-react';
-import { MOCK_ORDERS, MOCK_USERS, MOCK_MENU_ITEMS } from '../../utils/mockData';
+import { api } from '../../utils/api';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Table } from '../../components/ui/Table';
 import { Badge } from '../../components/ui/Badge';
 import { Drawer } from '../../components/ui/Drawer';
 import { Modal } from '../../components/ui/Modal';
-import type { Order } from '../../types';
+import type { Order, User, MenuItem } from '../../types';
 
 const Orders: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-  const filteredOrders = MOCK_ORDERS.filter(order =>
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [ordData, userData, menuData] = await Promise.all([
+        api.orders.getAll(),
+        api.users.getAll(),
+        api.menuItems.getAll(),
+      ]);
+      setOrders(ordData);
+      setUsers(userData);
+      setMenuItems(menuData);
+    } catch (error) {
+      console.error('Failed to fetch orders:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchOrderDetails = async (order: Order) => {
+    try {
+      const details = await api.orders.getOne(order.id);
+      setSelectedOrder(details);
+    } catch (error) {
+      console.error('Failed to fetch order details:', error);
+    }
+  };
+
+  const filteredOrders = orders.filter(order =>
     order.order_number.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -40,40 +75,47 @@ const Orders: React.FC = () => {
         </div>
       </div>
 
-      <Table
-        data={filteredOrders}
-        columns={[
-          { header: 'Order ID', accessor: 'order_number', className: 'font-bold' },
-          {
-            header: 'Customer',
-            accessor: (order) => MOCK_USERS.find(u => u.id === order.customer_id)?.full_name || 'Guest'
-          },
-          { header: 'Date', accessor: (order) => new Date(order.created_at).toLocaleString() },
-          { header: 'Total', accessor: (order) => `$${order.total_amount.toFixed(2)}` },
-          {
-            header: 'Status',
-            accessor: (order) => (
-              <Badge
-                variant={
-                  order.status === 'completed' ? 'success' :
-                  order.status === 'cancelled' ? 'error' : 'warning'
-                }
-                className="capitalize"
-              >
-                {order.status}
-              </Badge>
-            )
-          },
-          {
-            header: 'Actions',
-            accessor: (order) => (
-              <Button variant="ghost" size="sm" onClick={() => setSelectedOrder(order)}>
-                <Eye size={16} className="mr-2" /> View Details
-              </Button>
-            )
-          }
-        ]}
-      />
+      {loading ? (
+        <div className="text-center py-10">Loading orders...</div>
+      ) : (
+        <Table
+          data={filteredOrders}
+          columns={[
+            { header: 'Order ID', accessor: 'order_number', className: 'font-bold' },
+            {
+              header: 'Customer',
+              accessor: (order) => {
+                const customer = users.find(u => u.id === order.customer_id);
+                return customer?.full_name || 'Guest';
+              }
+            },
+            { header: 'Date', accessor: (order) => new Date(order.created_at).toLocaleString() },
+            { header: 'Total', accessor: (order) => `$${order.total_amount.toFixed(2)}` },
+            {
+              header: 'Status',
+              accessor: (order) => (
+                <Badge
+                  variant={
+                    order.status === 'completed' ? 'success' :
+                    order.status === 'cancelled' ? 'error' : 'warning'
+                  }
+                  className="capitalize"
+                >
+                  {order.status}
+                </Badge>
+              )
+            },
+            {
+              header: 'Actions',
+              accessor: (order) => (
+                <Button variant="ghost" size="sm" onClick={() => fetchOrderDetails(order)}>
+                  <Eye size={16} className="mr-2" /> View Details
+                </Button>
+              )
+            }
+          ]}
+        />
+      )}
 
       <Modal
         isOpen={isCreateModalOpen}
@@ -91,7 +133,7 @@ const Orders: React.FC = () => {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Customer</label>
             <select className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
-              {MOCK_USERS.filter(u => u.role === 'customer').map(user => (
+              {users.filter(u => u.role === 'customer').map(user => (
                 <option key={user.id} value={user.id}>{user.full_name}</option>
               ))}
               <option value="guest">Walk-in Guest</option>
@@ -99,7 +141,7 @@ const Orders: React.FC = () => {
           </div>
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700">Order Items</label>
-            {MOCK_MENU_ITEMS.slice(0, 3).map(item => (
+            {menuItems.slice(0, 5).map(item => (
               <div key={item.id} className="flex items-center justify-between p-2 border rounded-lg">
                 <span>{item.name}</span>
                 <div className="flex items-center gap-2">
@@ -134,16 +176,16 @@ const Orders: React.FC = () => {
             <div>
               <h4 className="font-bold text-gray-900 mb-4">Order Items</h4>
               <div className="space-y-4">
-                {[1, 2].map((i) => (
-                  <div key={i} className="flex justify-between items-center">
+                {selectedOrder.items?.map((item: any) => (
+                  <div key={item.id} className="flex justify-between items-center">
                     <div className="flex gap-3">
                       <div className="w-10 h-10 bg-gray-100 rounded-lg" />
                       <div>
-                        <p className="text-sm font-medium">Menu Item Name</p>
-                        <p className="text-xs text-gray-500">Qty: 1</p>
+                        <p className="text-sm font-medium">{item.menu_item_name}</p>
+                        <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
                       </div>
                     </div>
-                    <span className="text-sm font-bold">$12.50</span>
+                    <span className="text-sm font-bold">${(item.unit_price * item.quantity).toFixed(2)}</span>
                   </div>
                 ))}
               </div>
@@ -171,9 +213,8 @@ const Orders: React.FC = () => {
             <div className="space-y-4">
               <h4 className="font-bold text-gray-900">Customer Details</h4>
               <div className="text-sm space-y-2">
-                <p><span className="text-gray-500">Name:</span> John Customer</p>
-                <p><span className="text-gray-500">Email:</span> john@example.com</p>
-                <p><span className="text-gray-500">Table:</span> 12</p>
+                <p><span className="text-gray-500">Name:</span> {users.find(u => u.id === selectedOrder.customer_id)?.full_name || 'Guest'}</p>
+                <p><span className="text-gray-500">Email:</span> {users.find(u => u.id === selectedOrder.customer_id)?.email || 'N/A'}</p>
               </div>
             </div>
 

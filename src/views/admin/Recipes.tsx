@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Plus, Edit, Trash2, UtensilsCrossed, AlertCircle } from 'lucide-react';
-import { MOCK_RECIPES, MOCK_MENU_ITEMS, MOCK_INVENTORY, MOCK_BRANCHES } from '../../utils/mockData';
+import { api } from '../../utils/api';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Table } from '../../components/ui/Table';
@@ -10,27 +10,98 @@ import { Modal } from '../../components/ui/Modal';
 import { ConfirmationDialog } from '../../components/ui/ConfirmationDialog';
 import { calculateAvailablePortions } from '../../utils/recipeUtils';
 import { useNotification } from '../../context/NotificationContext';
-import type { Recipe } from '../../types';
+import type { Recipe, MenuItem, Branch, InventoryItem } from '../../types';
 
 const Recipes: React.FC = () => {
   const { showNotification } = useNotification();
-  const [recipes, setRecipes] = useState<Recipe[]>(MOCK_RECIPES);
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedBranchId, setSelectedBranchId] = useState(MOCK_BRANCHES[0].id);
+  const [selectedBranchId, setSelectedBranchId] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [recipeToDelete, setRecipeToDelete] = useState<Recipe | null>(null);
   const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null);
+
   const [formIngredients, setFormIngredients] = useState<{item_name: string, quantity: number, unit: string}[]>([]);
   const [formInstructions, setFormInstructions] = useState('');
   const [formMenuItemId, setFormMenuItemId] = useState('');
 
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [recData, itemData, brData, invData] = await Promise.all([
+        api.recipes.getAll(),
+        api.menuItems.getAll(),
+        api.branches.getAll(),
+        api.inventory.getAll(),
+      ]);
+      setRecipes(recData);
+      setMenuItems(itemData);
+      setBranches(brData);
+      setInventory(invData);
+      if (brData.length > 0) setSelectedBranchId(brData[0].id);
+    } catch (error) {
+      console.error('Failed to fetch recipes data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const filteredRecipes = recipes.filter(recipe => {
-    const menuItem = MOCK_MENU_ITEMS.find(m => m.id === recipe.menu_item_id);
+    const menuItemId = typeof recipe.menu_item_id === 'string' ? recipe.menu_item_id : (recipe.menu_item_id as any).id;
+    const menuItem = menuItems.find(m => m.id === menuItemId);
     return menuItem?.name.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
-  const branchInventory = MOCK_INVENTORY.filter(i => i.branch_id === selectedBranchId);
+  const branchInventory = inventory.filter(i => i.branch_id === selectedBranchId);
+
+  const handleSave = async () => {
+    try {
+      const recipeData = {
+        menu_item_id: formMenuItemId,
+        ingredients: formIngredients,
+        instructions: formInstructions
+      };
+
+      if (editingRecipe) {
+        await api.recipes.update(editingRecipe.id, recipeData);
+        showNotification("Recipe updated successfully");
+      } else {
+        await api.recipes.create(recipeData);
+        showNotification("Recipe created successfully");
+      }
+      setIsModalOpen(false);
+      setEditingRecipe(null);
+      fetchData();
+    } catch (error) {
+      showNotification("Failed to save recipe", "error");
+    }
+  };
+
+  const handleDelete = async () => {
+    if (recipeToDelete) {
+      try {
+        await api.recipes.delete(recipeToDelete.id);
+        showNotification("Recipe deleted successfully", "success");
+        setIsDeleteDialogOpen(false);
+        setRecipeToDelete(null);
+        fetchData();
+      } catch (error) {
+        showNotification("Failed to delete recipe", "error");
+      }
+    }
+  };
+
+  if (loading) return <div className="text-center py-20">Loading Recipes...</div>;
 
   return (
     <div className="space-y-6">
@@ -50,7 +121,7 @@ const Recipes: React.FC = () => {
             value={selectedBranchId}
             onChange={(e) => setSelectedBranchId(e.target.value)}
           >
-            {MOCK_BRANCHES.map(b => (
+            {branches.map(b => (
               <option key={b.id} value={b.id}>Inventory: {b.name}</option>
             ))}
           </select>
@@ -59,7 +130,7 @@ const Recipes: React.FC = () => {
           setEditingRecipe(null);
           setFormIngredients([{ item_name: '', quantity: 0, unit: '' }]);
           setFormInstructions('');
-          setFormMenuItemId(MOCK_MENU_ITEMS[0]?.id || '');
+          setFormMenuItemId(menuItems[0]?.id || '');
           setIsModalOpen(true);
         }}>
           <Plus size={20} /> Create Recipe
@@ -79,8 +150,9 @@ const Recipes: React.FC = () => {
           </div>
         </Card>
 
-        {filteredRecipes.map(recipe => {
-          const menuItem = MOCK_MENU_ITEMS.find(m => m.id === recipe.menu_item_id);
+        {filteredRecipes.slice(0, 6).map(recipe => {
+          const menuItemId = typeof recipe.menu_item_id === 'string' ? recipe.menu_item_id : (recipe.menu_item_id as any).id;
+          const menuItem = menuItems.find(m => m.id === menuItemId);
           const available = calculateAvailablePortions(recipe, branchInventory);
 
           return (
@@ -116,7 +188,7 @@ const Recipes: React.FC = () => {
                   setEditingRecipe(recipe);
                   setFormIngredients([...recipe.ingredients]);
                   setFormInstructions(recipe.instructions || '');
-                  setFormMenuItemId(recipe.menu_item_id);
+                  setFormMenuItemId(menuItemId);
                   setIsModalOpen(true);
                 }}>
                   Edit Recipe
@@ -132,7 +204,10 @@ const Recipes: React.FC = () => {
         columns={[
           {
             header: 'Menu Item',
-            accessor: (r) => MOCK_MENU_ITEMS.find(m => m.id === r.menu_item_id)?.name || 'Unknown'
+            accessor: (r) => {
+              const menuItemId = typeof r.menu_item_id === 'string' ? r.menu_item_id : (r.menu_item_id as any).id;
+              return menuItems.find(m => m.id === menuItemId)?.name || 'Unknown';
+            }
           },
           {
             header: 'Ingredients',
@@ -162,10 +237,11 @@ const Recipes: React.FC = () => {
             accessor: (r) => (
               <div className="flex items-center gap-2">
                 <Button variant="ghost" size="sm" onClick={() => {
+                  const menuItemId = typeof r.menu_item_id === 'string' ? r.menu_item_id : (r.menu_item_id as any).id;
                   setEditingRecipe(r);
                   setFormIngredients([...r.ingredients]);
                   setFormInstructions(r.instructions || '');
-                  setFormMenuItemId(r.menu_item_id);
+                  setFormMenuItemId(menuItemId);
                   setIsModalOpen(true);
                 }}>
                   <Edit size={16} />
@@ -202,7 +278,7 @@ const Recipes: React.FC = () => {
                 value={formMenuItemId}
                 onChange={(e) => setFormMenuItemId(e.target.value)}
               >
-                {MOCK_MENU_ITEMS.map(m => (
+                {menuItems.map(m => (
                   <option key={m.id} value={m.id}>{m.name}</option>
                 ))}
               </select>
@@ -284,27 +360,7 @@ const Recipes: React.FC = () => {
 
           <div className="pt-4 flex justify-end gap-3">
             <Button variant="outline" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-            <Button onClick={() => {
-              setIsModalOpen(false);
-              if (editingRecipe) {
-                setRecipes(prev => prev.map(r => r.id === editingRecipe.id ? {
-                  ...r,
-                  ingredients: formIngredients,
-                  instructions: formInstructions,
-                  menu_item_id: formMenuItemId
-                } : r));
-                showNotification("Recipe updated successfully");
-              } else {
-                const newRecipe: Recipe = {
-                  id: `r${Date.now()}`,
-                  menu_item_id: formMenuItemId,
-                  ingredients: formIngredients,
-                  instructions: formInstructions
-                };
-                setRecipes(prev => [...prev, newRecipe]);
-                showNotification("Recipe created successfully");
-              }
-            }}>Save Recipe</Button>
+            <Button onClick={handleSave}>Save Recipe</Button>
           </div>
         </div>
       </Modal>
@@ -312,14 +368,7 @@ const Recipes: React.FC = () => {
       <ConfirmationDialog
         isOpen={isDeleteDialogOpen}
         onClose={() => setIsDeleteDialogOpen(false)}
-        onConfirm={() => {
-          if (recipeToDelete) {
-            setRecipes(prev => prev.filter(r => r.id !== recipeToDelete.id));
-            showNotification("Recipe deleted successfully", "success");
-            setIsDeleteDialogOpen(false);
-            setRecipeToDelete(null);
-          }
-        }}
+        onConfirm={handleDelete}
         title="Delete Recipe"
         description="Are you sure you want to delete this recipe? This action cannot be undone."
         confirmLabel="Delete"
