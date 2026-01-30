@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Search, Plus, Package, History, AlertTriangle } from 'lucide-react';
-import { MOCK_INVENTORY } from '../../utils/mockData';
+import { MOCK_INVENTORY, MOCK_RECIPES } from '../../utils/mockData';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Table } from '../../components/ui/Table';
@@ -15,6 +15,18 @@ const Inventory: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
 
+  // Form state
+  const [formItemName, setFormItemName] = useState('');
+  const [formCategory, setFormCategory] = useState('');
+  const [formUnit, setFormUnit] = useState('');
+  const [formQuantity, setFormQuantity] = useState(0);
+  const [formMinStock, setFormMinStock] = useState(0);
+
+  // Get all unique ingredient names from recipes as suggested items
+  const suggestedItems = Array.from(new Set(
+    MOCK_RECIPES.flatMap(r => r.ingredients.map(i => i.item_name))
+  )).sort();
+
   const branchInventory = MOCK_INVENTORY.filter(item =>
     item.branch_id === user?.branch_id &&
     item.item_name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -22,6 +34,19 @@ const Inventory: React.FC = () => {
 
   const handleOpenModal = (item: InventoryItem | null = null) => {
     setSelectedItem(item);
+    if (item) {
+      setFormItemName(item.item_name);
+      setFormCategory(item.category);
+      setFormUnit(item.unit);
+      setFormQuantity(0);
+      setFormMinStock(item.min_stock);
+    } else {
+      setFormItemName(suggestedItems[0] || '');
+      setFormCategory('');
+      setFormUnit('');
+      setFormQuantity(0);
+      setFormMinStock(0);
+    }
     setIsModalOpen(true);
   };
 
@@ -127,25 +152,61 @@ const Inventory: React.FC = () => {
         }
       >
         <div className="space-y-4">
-          {!selectedItem && (
+          {!selectedItem ? (
             <>
-              <Input label="Item Name" placeholder="e.g. Tomato Sauce" />
-              <Input label="Category" placeholder="e.g. Canned Goods" />
-              <Input label="Unit" placeholder="e.g. kg, liters, units" />
+              <div className="w-full">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Item Name</label>
+                <select
+                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  value={formItemName}
+                  onChange={(e) => setFormItemName(e.target.value)}
+                >
+                  <option value="">Select an Item</option>
+                  {suggestedItems.map(name => (
+                    <option key={name} value={name}>{name}</option>
+                  ))}
+                  <option value="other">Other (New Ingredient)</option>
+                </select>
+              </div>
+              {formItemName === 'other' && (
+                <Input
+                  label="Custom Item Name"
+                  placeholder="e.g. Tomato Sauce"
+                  onChange={(e) => setFormItemName(e.target.value)}
+                />
+              )}
+              <Input
+                label="Category"
+                placeholder="e.g. Canned Goods"
+                value={formCategory}
+                onChange={(e) => setFormCategory(e.target.value)}
+              />
+              <Input
+                label="Unit"
+                placeholder="e.g. kg, liters, units"
+                value={formUnit}
+                onChange={(e) => setFormUnit(e.target.value)}
+              />
             </>
-          )}
+          ) : null}
           <Input
             label={selectedItem ? "Add/Remove Quantity" : "Initial Quantity"}
             type="number"
             placeholder="0"
-            defaultValue={selectedItem ? 0 : ""}
+            value={formQuantity}
+            onChange={(e) => setFormQuantity(parseFloat(e.target.value) || 0)}
           />
           {selectedItem && (
             <p className="text-xs text-gray-500">
               Current quantity: {selectedItem.quantity} {selectedItem.unit}. Enter a positive number to add, negative to remove.
             </p>
           )}
-          <Input label="Minimum Stock Level" type="number" defaultValue={selectedItem?.min_stock} />
+          <Input
+            label="Minimum Stock Level"
+            type="number"
+            value={formMinStock}
+            onChange={(e) => setFormMinStock(parseFloat(e.target.value) || 0)}
+          />
         </div>
       </Modal>
     </div>

@@ -9,6 +9,8 @@ export interface User {
   role: UserRole;
   status: UserStatus;
   branch_id?: string; // Optional for admin, required for others
+  customer_type?: 'regular' | 'vip' | 'member';
+  discount_rate?: number; // percentage, e.g. 10 for 10%
   created_at: string;
 }
 
@@ -78,6 +80,7 @@ export interface Order {
   status: OrderStatus;
   type: OrderType;
   total_amount: number;
+  discount_amount?: number;
   created_at: string;
   cancel_reason?: string;
 }
@@ -136,4 +139,17 @@ export interface InventoryItem {
   unit: string;
   min_stock: number;
   last_updated: string;
+}
+
+export interface RecipeIngredient {
+  item_name: string;
+  quantity: number;
+  unit: string;
+}
+
+export interface Recipe {
+  id: string;
+  menu_item_id: string;
+  ingredients: RecipeIngredient[];
+  instructions?: string;
 }
