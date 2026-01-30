@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Plus, Edit, Trash2 } from 'lucide-react';
-import { MOCK_CATEGORIES } from '../../utils/mockData';
+import { api } from '../../utils/api';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Table } from '../../components/ui/Table';
@@ -12,7 +12,8 @@ import type { MenuCategory } from '../../types';
 
 const Categories: React.FC = () => {
   const { showNotification } = useNotification();
-  const [categories, setCategories] = useState<MenuCategory[]>(MOCK_CATEGORIES);
+  const [categories, setCategories] = useState<MenuCategory[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -24,6 +25,22 @@ const Categories: React.FC = () => {
   const [formDescription, setFormDescription] = useState('');
   const [formIsActive, setFormIsActive] = useState(true);
 
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    try {
+      setLoading(true);
+      const data = await api.categories.getAll();
+      setCategories(data);
+    } catch (error) {
+      console.error('Failed to fetch categories:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const filteredCategories = categories.filter(cat => {
     const matchesSearch = cat.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' ||
@@ -31,6 +48,46 @@ const Categories: React.FC = () => {
                          (statusFilter === 'inactive' && !cat.is_active);
     return matchesSearch && matchesStatus;
   });
+
+  const handleSave = async () => {
+    try {
+      if (editingCategory) {
+        await api.categories.update(editingCategory.id, {
+          name: formName,
+          description: formDescription,
+          is_active: formIsActive
+        });
+        showNotification("Category updated successfully");
+      } else {
+        await api.categories.create({
+          name: formName,
+          description: formDescription,
+          is_active: formIsActive,
+          created_at: new Date().toISOString()
+        });
+        showNotification("Category created successfully");
+      }
+      setIsModalOpen(false);
+      setEditingCategory(null);
+      fetchCategories();
+    } catch (error) {
+      showNotification("Failed to save category", "error");
+    }
+  };
+
+  const handleDelete = async () => {
+    if (categoryToDelete) {
+      try {
+        await api.categories.delete(categoryToDelete.id);
+        showNotification("Category deleted successfully", "warning");
+        fetchCategories();
+      } catch (error) {
+        showNotification("Failed to delete category", "error");
+      } finally {
+        setCategoryToDelete(null);
+      }
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -66,50 +123,54 @@ const Categories: React.FC = () => {
         </Button>
       </div>
 
-      <Table
-        data={filteredCategories}
-        columns={[
-          { header: 'Name', accessor: 'name', className: 'font-bold text-gray-900' },
-          { header: 'Description', accessor: 'description', className: 'max-w-xs truncate' },
-          {
-            header: 'Status',
-            accessor: (cat) => (
-              <Badge variant={cat.is_active ? 'success' : 'neutral'}>
-                {cat.is_active ? 'Active' : 'Inactive'}
-              </Badge>
-            )
-          },
-          { header: 'Created At', accessor: (cat) => new Date(cat.created_at).toLocaleDateString() },
-          {
-            header: 'Actions',
-            accessor: (cat) => (
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setEditingCategory(cat);
-                    setFormName(cat.name);
-                    setFormDescription(cat.description);
-                    setFormIsActive(cat.is_active);
-                    setIsModalOpen(true);
-                  }}
-                >
-                  <Edit size={16} />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-red-600"
-                  onClick={() => setCategoryToDelete(cat)}
-                >
-                  <Trash2 size={16} />
-                </Button>
-              </div>
-            )
-          }
-        ]}
-      />
+      {loading ? (
+        <div className="text-center py-10">Loading categories...</div>
+      ) : (
+        <Table
+          data={filteredCategories}
+          columns={[
+            { header: 'Name', accessor: 'name', className: 'font-bold text-gray-900' },
+            { header: 'Description', accessor: 'description', className: 'max-w-xs truncate' },
+            {
+              header: 'Status',
+              accessor: (cat) => (
+                <Badge variant={cat.is_active ? 'success' : 'neutral'}>
+                  {cat.is_active ? 'Active' : 'Inactive'}
+                </Badge>
+              )
+            },
+            { header: 'Created At', accessor: (cat) => new Date(cat.created_at).toLocaleDateString() },
+            {
+              header: 'Actions',
+              accessor: (cat) => (
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setEditingCategory(cat);
+                      setFormName(cat.name);
+                      setFormDescription(cat.description);
+                      setFormIsActive(cat.is_active);
+                      setIsModalOpen(true);
+                    }}
+                  >
+                    <Edit size={16} />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-red-600"
+                    onClick={() => setCategoryToDelete(cat)}
+                  >
+                    <Trash2 size={16} />
+                  </Button>
+                </div>
+              )
+            }
+          ]}
+        />
+      )}
 
       <Modal
         isOpen={isModalOpen}
@@ -124,29 +185,7 @@ const Categories: React.FC = () => {
               setIsModalOpen(false);
               setEditingCategory(null);
             }}>Cancel</Button>
-            <Button onClick={() => {
-              setIsModalOpen(false);
-              if (editingCategory) {
-                setCategories(prev => prev.map(c => c.id === editingCategory.id ? {
-                  ...c,
-                  name: formName,
-                  description: formDescription,
-                  is_active: formIsActive
-                } : c));
-                showNotification("Category updated successfully");
-              } else {
-                const newCategory: MenuCategory = {
-                  id: `c${Date.now()}`,
-                  name: formName,
-                  description: formDescription,
-                  is_active: formIsActive,
-                  created_at: new Date().toISOString()
-                };
-                setCategories(prev => [...prev, newCategory]);
-                showNotification("Category created successfully");
-              }
-              setEditingCategory(null);
-            }}>Save</Button>
+            <Button onClick={handleSave}>Save</Button>
           </>
         }
       >
@@ -181,13 +220,7 @@ const Categories: React.FC = () => {
       <ConfirmationDialog
         isOpen={!!categoryToDelete}
         onClose={() => setCategoryToDelete(null)}
-        onConfirm={() => {
-          if (categoryToDelete) {
-            setCategories(prev => prev.filter(c => c.id !== categoryToDelete.id));
-            showNotification("Category deleted successfully", "warning");
-          }
-          setCategoryToDelete(null);
-        }}
+        onConfirm={handleDelete}
         title="Delete Category"
         description={`Are you sure you want to delete the category "${categoryToDelete?.name}"? This action cannot be undone.`}
         confirmLabel="Delete"

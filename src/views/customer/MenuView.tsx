@@ -1,17 +1,40 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Plus } from 'lucide-react';
-import { MOCK_CATEGORIES, MOCK_MENU_ITEMS } from '../../utils/mockData';
+import { api } from '../../utils/api';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Badge } from '../../components/ui/Badge';
 import { useCart } from '../../context/CartContext';
+import type { MenuItem, MenuCategory } from '../../types';
 
 const MenuView: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [categories, setCategories] = useState<MenuCategory[]>([]);
+  const [loading, setLoading] = useState(true);
   const { addToCart } = useCart();
 
-  const filteredItems = MOCK_MENU_ITEMS.filter(item => {
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [items, cats] = await Promise.all([
+          api.menuItems.getAll(),
+          api.categories.getAll(),
+        ]);
+        setMenuItems(items);
+        setCategories(cats);
+      } catch (error) {
+        console.error('Failed to fetch data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const filteredItems = menuItems.filter(item => {
     const matchesCategory = selectedCategory === 'all' || item.category_id === selectedCategory;
     const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                         item.description.toLowerCase().includes(searchQuery.toLowerCase());
@@ -48,7 +71,7 @@ const MenuView: React.FC = () => {
         >
           All Items
         </Button>
-        {MOCK_CATEGORIES.map(category => (
+        {categories.map(category => (
           <Button
             key={category.id}
             variant={selectedCategory === category.id ? 'primary' : 'outline'}
@@ -62,7 +85,9 @@ const MenuView: React.FC = () => {
       </div>
 
       {/* Grid */}
-      {filteredItems.length > 0 ? (
+      {loading ? (
+        <div className="text-center py-20 text-gray-500">Loading menu...</div>
+      ) : filteredItems.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredItems.map(item => (
             <div key={item.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden group hover:shadow-md transition-shadow">

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Plus, Edit, Trash2 } from 'lucide-react';
-import { MOCK_USERS } from '../../utils/mockData';
+import { api } from '../../utils/api';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Table } from '../../components/ui/Table';
@@ -12,7 +12,8 @@ import type { User, UserRole, UserStatus } from '../../types';
 
 const Users: React.FC = () => {
   const { showNotification } = useNotification();
-  const [users, setUsers] = useState<User[]>(MOCK_USERS);
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRole, setSelectedRole] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
@@ -28,6 +29,22 @@ const Users: React.FC = () => {
   const [formCustomerType, setFormCustomerType] = useState<'regular' | 'vip' | 'member'>('regular');
   const [formDiscountRate, setFormDiscountRate] = useState(0);
 
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const data = await api.users.getAll();
+      setUsers(data);
+    } catch (error) {
+      console.error('Failed to fetch users:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user.email.toLowerCase().includes(searchTerm.toLowerCase());
@@ -36,6 +53,53 @@ const Users: React.FC = () => {
 
     return matchesSearch && matchesRole && matchesStatus;
   });
+
+  const handleSave = async () => {
+    try {
+      if (editingUser) {
+        await api.users.update(editingUser.id, {
+          full_name: formFullName,
+          email: formEmail,
+          role: formRole,
+          status: formStatus,
+          customer_type: formRole === 'customer' ? formCustomerType : undefined,
+          discount_rate: formRole === 'customer' ? formDiscountRate : undefined
+        });
+        showNotification("User updated successfully");
+      } else {
+        await api.users.create({
+          full_name: formFullName,
+          email: formEmail,
+          phone: '', // Defaulting for now
+          role: formRole,
+          status: formStatus,
+          customer_type: formRole === 'customer' ? formCustomerType : undefined,
+          discount_rate: formRole === 'customer' ? formDiscountRate : undefined,
+          created_at: new Date().toISOString()
+        });
+        showNotification("User created successfully");
+      }
+      setIsModalOpen(false);
+      setEditingUser(null);
+      fetchUsers();
+    } catch (error) {
+      showNotification("Failed to save user", "error");
+    }
+  };
+
+  const handleDelete = async () => {
+    if (userToDelete) {
+      try {
+        await api.users.delete(userToDelete.id);
+        showNotification("User deleted successfully", "warning");
+        fetchUsers();
+      } catch (error) {
+        showNotification("Failed to delete user", "error");
+      } finally {
+        setUserToDelete(null);
+      }
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -84,66 +148,70 @@ const Users: React.FC = () => {
         </Button>
       </div>
 
-      <Table
-        data={filteredUsers}
-        columns={[
-          { header: 'Full Name', accessor: 'full_name' },
-          { header: 'Email', accessor: 'email' },
-          {
-            header: 'Role/Type',
-            accessor: (user) => (
-              <div className="flex flex-col">
-                <Badge variant="neutral" className="capitalize w-fit">{user.role}</Badge>
-                {user.role === 'customer' && user.customer_type && (
-                  <span className="text-[10px] text-gray-500 font-medium uppercase mt-1">
-                    {user.customer_type} ({user.discount_rate}%)
-                  </span>
-                )}
-              </div>
-            )
-          },
-          {
-            header: 'Status',
-            accessor: (user) => (
-              <Badge variant={user.status === 'active' ? 'success' : 'error'} className="capitalize">
-                {user.status}
-              </Badge>
-            )
-          },
-          { header: 'Joined Date', accessor: (user) => new Date(user.created_at).toLocaleDateString() },
-          {
-            header: 'Actions',
-            accessor: (user) => (
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setEditingUser(user);
-                    setFormFullName(user.full_name);
-                    setFormEmail(user.email);
-                    setFormRole(user.role);
-                    setFormStatus(user.status);
-                    setFormCustomerType(user.customer_type || 'regular');
-                    setFormDiscountRate(user.discount_rate || 0);
-                    setIsModalOpen(true);
-                  }}
-                >
-                  <Edit size={16} />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-red-600"
-                  onClick={() => setUserToDelete(user)}
-                >
-                  <Trash2 size={16} />
-                </Button>
-              </div>
-            )
-          }
-        ]}
-      />
+      {loading ? (
+        <div className="text-center py-10">Loading users...</div>
+      ) : (
+        <Table
+          data={filteredUsers}
+          columns={[
+            { header: 'Full Name', accessor: 'full_name' },
+            { header: 'Email', accessor: 'email' },
+            {
+              header: 'Role/Type',
+              accessor: (user) => (
+                <div className="flex flex-col">
+                  <Badge variant="neutral" className="capitalize w-fit">{user.role}</Badge>
+                  {user.role === 'customer' && user.customer_type && (
+                    <span className="text-[10px] text-gray-500 font-medium uppercase mt-1">
+                      {user.customer_type} ({user.discount_rate}%)
+                    </span>
+                  )}
+                </div>
+              )
+            },
+            {
+              header: 'Status',
+              accessor: (user) => (
+                <Badge variant={user.status === 'active' ? 'success' : 'error'} className="capitalize">
+                  {user.status}
+                </Badge>
+              )
+            },
+            { header: 'Joined Date', accessor: (user) => new Date(user.created_at).toLocaleDateString() },
+            {
+              header: 'Actions',
+              accessor: (user) => (
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setEditingUser(user);
+                      setFormFullName(user.full_name);
+                      setFormEmail(user.email);
+                      setFormRole(user.role);
+                      setFormStatus(user.status);
+                      setFormCustomerType(user.customer_type || 'regular');
+                      setFormDiscountRate(user.discount_rate || 0);
+                      setIsModalOpen(true);
+                    }}
+                  >
+                    <Edit size={16} />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-red-600"
+                    onClick={() => setUserToDelete(user)}
+                  >
+                    <Trash2 size={16} />
+                  </Button>
+                </div>
+              )
+            }
+          ]}
+        />
+      )}
 
       <Modal
         isOpen={isModalOpen}
@@ -158,36 +226,7 @@ const Users: React.FC = () => {
               setIsModalOpen(false);
               setEditingUser(null);
             }}>Cancel</Button>
-            <Button onClick={() => {
-              setIsModalOpen(false);
-              if (editingUser) {
-                setUsers(prev => prev.map(u => u.id === editingUser.id ? {
-                  ...u,
-                  full_name: formFullName,
-                  email: formEmail,
-                  role: formRole,
-                  status: formStatus,
-                  customer_type: formRole === 'customer' ? formCustomerType : undefined,
-                  discount_rate: formRole === 'customer' ? formDiscountRate : undefined
-                } : u));
-                showNotification("User updated successfully");
-              } else {
-                const newUser: User = {
-                  id: `u${Date.now()}`,
-                  full_name: formFullName,
-                  email: formEmail,
-                  phone: '',
-                  role: formRole,
-                  status: formStatus,
-                  customer_type: formRole === 'customer' ? formCustomerType : undefined,
-                  discount_rate: formRole === 'customer' ? formDiscountRate : undefined,
-                  created_at: new Date().toISOString()
-                };
-                setUsers(prev => [...prev, newUser]);
-                showNotification("User created successfully");
-              }
-              setEditingUser(null);
-            }}>
+            <Button onClick={handleSave}>
               {editingUser ? "Save Changes" : "Create User"}
             </Button>
           </>
@@ -270,13 +309,7 @@ const Users: React.FC = () => {
       <ConfirmationDialog
         isOpen={!!userToDelete}
         onClose={() => setUserToDelete(null)}
-        onConfirm={() => {
-          if (userToDelete) {
-            setUsers(prev => prev.filter(u => u.id !== userToDelete.id));
-            showNotification("User deleted successfully", "warning");
-          }
-          setUserToDelete(null);
-        }}
+        onConfirm={handleDelete}
         title="Delete User"
         description={`Are you sure you want to delete ${userToDelete?.full_name}? This action cannot be undone.`}
         confirmLabel="Delete"

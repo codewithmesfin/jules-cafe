@@ -1,14 +1,36 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { User, Calendar, Shield, ShoppingBag, Star, Heart } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
+import { api } from '../../utils/api';
+import { useNotification } from '../../context/NotificationContext';
 
 const Profile: React.FC = () => {
   const { user } = useAuth();
+  const { showNotification } = useNotification();
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    full_name: user?.full_name || '',
+    phone: user?.phone || '',
+  });
 
   if (!user) return null;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setLoading(true);
+      await api.users.update(user.id, formData);
+      showNotification("Profile updated successfully");
+      // Note: Ideally we would refresh the auth user state here too
+    } catch (error) {
+      showNotification("Failed to update profile", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -64,13 +86,21 @@ const Profile: React.FC = () => {
 
         <div className="lg:col-span-2">
           <Card title="Personal Details">
-            <form className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Input label="Full Name" defaultValue={user.full_name} />
+                <Input
+                  label="Full Name"
+                  value={formData.full_name}
+                  onChange={(e) => setFormData({...formData, full_name: e.target.value})}
+                />
                 <Input label="Email Address" defaultValue={user.email} disabled />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Input label="Phone Number" defaultValue={user.phone} />
+                <Input
+                  label="Phone Number"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                />
               </div>
               <div className="w-full">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Bio</label>
@@ -80,8 +110,8 @@ const Profile: React.FC = () => {
                 />
               </div>
               <div className="flex justify-end gap-3">
-                <Button variant="outline">Cancel</Button>
-                <Button>Save Changes</Button>
+                <Button variant="outline" type="button">Cancel</Button>
+                <Button type="submit" disabled={loading}>{loading ? 'Saving...' : 'Save Changes'}</Button>
               </div>
             </form>
           </Card>

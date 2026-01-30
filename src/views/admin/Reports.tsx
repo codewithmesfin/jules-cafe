@@ -1,29 +1,29 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '../../components/ui/Card';
 import { ShoppingBag, TrendingUp, Star } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import { api } from '../../utils/api';
 
 const Reports: React.FC = () => {
-  const branchData = [
-    { name: 'Downtown', value: 400, max: 500, color: 'bg-orange-500' },
-    { name: 'Westside', value: 300, max: 500, color: 'bg-orange-500' },
-    { name: 'North End', value: 200, max: 500, color: 'bg-orange-500' },
-    { name: 'East Side', value: 278, max: 500, color: 'bg-orange-500' },
-  ];
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  const itemData = [
-    { name: 'Garlic Bread', value: 450, total: 1440, color: 'bg-orange-500' },
-    { name: 'Beef Burger', value: 380, total: 1440, color: 'bg-blue-500' },
-    { name: 'Calamari', value: 320, total: 1440, color: 'bg-green-500' },
-    { name: 'Grilled Salmon', value: 290, total: 1440, color: 'bg-purple-500' },
-  ];
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const data = await api.stats.getDashboard();
+        setStats(data);
+      } catch (error) {
+        console.error('Failed to fetch stats:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
-  const ratingData = [
-    { name: 'Downtown', rating: 4.8 },
-    { name: 'Westside', rating: 4.5 },
-    { name: 'North End', rating: 4.2 },
-    { name: 'East Side', rating: 4.6 },
-  ];
+  if (loading) return <div className="text-center py-20">Loading Reports...</div>;
 
   return (
     <div className="space-y-8">
@@ -34,7 +34,7 @@ const Reports: React.FC = () => {
           </div>
           <div>
             <p className="text-sm text-gray-500 font-medium">Total Orders</p>
-            <h3 className="text-2xl font-bold text-gray-900">1,178</h3>
+            <h3 className="text-2xl font-bold text-gray-900">{stats?.totalOrders || 0}</h3>
           </div>
         </Card>
         <Card className="flex items-center gap-4">
@@ -43,7 +43,9 @@ const Reports: React.FC = () => {
           </div>
           <div>
             <p className="text-sm text-gray-500 font-medium">Gross Sales</p>
-            <h3 className="text-2xl font-bold text-gray-900">$24,840</h3>
+            <h3 className="text-2xl font-bold text-gray-900">
+              ${stats?.revenuePerDay.reduce((acc: number, curr: any) => acc + curr.total, 0).toLocaleString()}
+            </h3>
           </div>
         </Card>
         <Card className="flex items-center gap-4">
@@ -52,7 +54,7 @@ const Reports: React.FC = () => {
           </div>
           <div>
             <p className="text-sm text-gray-500 font-medium">Avg Rating</p>
-            <h3 className="text-2xl font-bold text-gray-900">4.6</h3>
+            <h3 className="text-2xl font-bold text-gray-900">{stats?.avgRating.toFixed(1) || '0.0'}</h3>
           </div>
         </Card>
       </div>
@@ -60,16 +62,16 @@ const Reports: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <Card title="Orders per Branch">
           <div className="space-y-6 py-4">
-            {branchData.map((branch) => (
+            {stats?.topBranches.map((branch: any) => (
               <div key={branch.name} className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="font-medium text-gray-700">{branch.name}</span>
-                  <span className="text-gray-500">{branch.value} orders</span>
+                  <span className="text-gray-500">{branch.count} orders</span>
                 </div>
                 <div className="w-full h-4 bg-gray-100 rounded-full overflow-hidden">
                   <div
-                    className={cn("h-full rounded-full transition-all duration-1000", branch.color)}
-                    style={{ width: `${(branch.value / branch.max) * 100}%` }}
+                    className="h-full rounded-full transition-all duration-1000 bg-orange-500"
+                    style={{ width: `${Math.min(100, (branch.count / (stats.totalOrders || 1)) * 100)}%` }}
                   />
                 </div>
               </div>
@@ -77,40 +79,18 @@ const Reports: React.FC = () => {
           </div>
         </Card>
 
-        <Card title="Top Selling Items">
+        <Card title="Revenue Growth (Daily)">
           <div className="space-y-6 py-4">
-            {itemData.map((item) => (
-              <div key={item.name} className="space-y-2">
+            {stats?.revenuePerDay.map((day: any) => (
+              <div key={day._id} className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="font-medium text-gray-700">{item.name}</span>
-                  <span className="text-gray-500">{item.value} units</span>
+                  <span className="font-medium text-gray-700">{day._id}</span>
+                  <span className="text-gray-500">${day.total.toLocaleString()}</span>
                 </div>
                 <div className="w-full h-4 bg-gray-100 rounded-full overflow-hidden">
                   <div
-                    className={cn("h-full rounded-full transition-all duration-1000", item.color)}
-                    style={{ width: `${(item.value / 500) * 100}%` }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
-
-        <Card title="Average Rating per Branch" className="lg:col-span-2">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6 py-4">
-            {ratingData.map((branch) => (
-              <div key={branch.name} className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="font-medium text-gray-700">{branch.name}</span>
-                  <div className="flex items-center gap-1">
-                    <Star size={14} className="fill-orange-400 text-orange-400" />
-                    <span className="font-bold">{branch.rating}</span>
-                  </div>
-                </div>
-                <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-orange-400 rounded-full"
-                    style={{ width: `${(branch.rating / 5) * 100}%` }}
+                    className="h-full rounded-full transition-all duration-1000 bg-blue-500"
+                    style={{ width: `${Math.min(100, (day.total / (stats.revenuePerDay.reduce((a: any, b: any) => Math.max(a, b.total), 0) || 1)) * 100)}%` }}
                   />
                 </div>
               </div>

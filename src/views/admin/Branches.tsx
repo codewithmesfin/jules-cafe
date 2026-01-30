@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Plus, Edit, Trash2, MapPin, Clock, Users } from 'lucide-react';
-import { MOCK_BRANCHES } from '../../utils/mockData';
+import { api } from '../../utils/api';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Table } from '../../components/ui/Table';
@@ -12,8 +12,26 @@ const Branches: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filteredBranches = MOCK_BRANCHES.filter(branch =>
+  useEffect(() => {
+    fetchBranches();
+  }, []);
+
+  const fetchBranches = async () => {
+    try {
+      setLoading(true);
+      const data = await api.branches.getAll();
+      setBranches(data);
+    } catch (error) {
+      console.error('Failed to fetch branches:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredBranches = branches.filter(branch =>
     branch.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     branch.location.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -21,6 +39,17 @@ const Branches: React.FC = () => {
   const handleOpenModal = (branch: Branch | null = null) => {
     setSelectedBranch(branch);
     setIsModalOpen(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (confirm('Are you sure you want to delete this branch?')) {
+      try {
+        await api.branches.delete(id);
+        fetchBranches();
+      } catch (error) {
+        alert('Failed to delete branch');
+      }
+    }
   };
 
   return (
@@ -42,56 +71,60 @@ const Branches: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-3">
-          <Table
-            data={filteredBranches}
-            columns={[
-              {
-                header: 'Branch Name',
-                accessor: (b) => (
-                  <div className="flex items-center gap-2 font-bold text-gray-900">
-                    <MapPin size={16} className="text-orange-600" />
-                    {b.name}
-                  </div>
-                )
-              },
-              { header: 'Location', accessor: 'location' },
-              {
-                header: 'Capacity',
-                accessor: (b) => (
-                  <div className="flex items-center gap-1">
-                    <Users size={14} className="text-gray-400" />
-                    {b.capacity} people
-                  </div>
-                )
-              },
-              {
-                header: 'Hours',
-                accessor: (b) => (
-                  <div className="flex items-center gap-1 text-sm">
-                    <Clock size={14} className="text-gray-400" />
-                    {b.operating_hours.open} - {b.operating_hours.close}
-                  </div>
-                )
-              },
-              {
-                header: 'Status',
-                accessor: (b) => (
-                  <Badge variant={b.is_active ? 'success' : 'error'}>
-                    {b.is_active ? 'Active' : 'Inactive'}
-                  </Badge>
-                )
-              },
-              {
-                header: 'Actions',
-                accessor: (b) => (
-                  <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="sm" onClick={() => handleOpenModal(b)}><Edit size={16} /></Button>
-                    <Button variant="ghost" size="sm" className="text-red-600"><Trash2 size={16} /></Button>
-                  </div>
-                )
-              }
-            ]}
-          />
+          {loading ? (
+            <div className="text-center py-10">Loading branches...</div>
+          ) : (
+            <Table
+              data={filteredBranches}
+              columns={[
+                {
+                  header: 'Branch Name',
+                  accessor: (b) => (
+                    <div className="flex items-center gap-2 font-bold text-gray-900">
+                      <MapPin size={16} className="text-orange-600" />
+                      {b.name}
+                    </div>
+                  )
+                },
+                { header: 'Location', accessor: 'location' },
+                {
+                  header: 'Capacity',
+                  accessor: (b) => (
+                    <div className="flex items-center gap-1">
+                      <Users size={14} className="text-gray-400" />
+                      {b.capacity} people
+                    </div>
+                  )
+                },
+                {
+                  header: 'Hours',
+                  accessor: (b) => (
+                    <div className="flex items-center gap-1 text-sm">
+                      <Clock size={14} className="text-gray-400" />
+                      {b.operating_hours.open} - {b.operating_hours.close}
+                    </div>
+                  )
+                },
+                {
+                  header: 'Status',
+                  accessor: (b) => (
+                    <Badge variant={b.is_active ? 'success' : 'error'}>
+                      {b.is_active ? 'Active' : 'Inactive'}
+                    </Badge>
+                  )
+                },
+                {
+                  header: 'Actions',
+                  accessor: (b) => (
+                    <div className="flex items-center gap-2">
+                      <Button variant="ghost" size="sm" onClick={() => handleOpenModal(b)}><Edit size={16} /></Button>
+                      <Button variant="ghost" size="sm" className="text-red-600" onClick={() => handleDelete(b.id)}><Trash2 size={16} /></Button>
+                    </div>
+                  )
+                }
+              ]}
+            />
+          )}
         </div>
       </div>
 
