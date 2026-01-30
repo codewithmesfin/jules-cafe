@@ -6,7 +6,7 @@ import { MOCK_USERS } from '../utils/mockData';
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password?: string) => Promise<void>;
+  login: (email: string, password?: string) => Promise<User>;
   logout: () => void;
   isAuthenticated: boolean;
 }
@@ -26,14 +26,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password?: string) => {
     console.log('Login attempt with:', email, password ? '******' : 'no password');
-    // In a real app, this would be an API call
-    const foundUser = MOCK_USERS.find(u => u.email === email);
 
-    if (foundUser) {
+    const response = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+
+    if (response.ok) {
+      const foundUser = await response.json();
       setUser(foundUser);
       localStorage.setItem('user', JSON.stringify(foundUser));
+      return foundUser;
     } else {
-      throw new Error('User not found');
+      const error = await response.json();
+      throw new Error(error.error || 'Login failed');
     }
   };
 

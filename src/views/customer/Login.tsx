@@ -13,20 +13,18 @@ const Login: React.FC = () => {
   const { login } = useAuth();
   const router = useRouter();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simple logic: determine role based on email content
-    let role: UserRole = 'customer';
-    if (email.includes('admin')) role = 'admin';
-    else if (email.includes('manager')) role = 'manager';
-    else if (email.includes('cashier')) role = 'cashier';
+    try {
+      const user = await login(email, password);
 
-    login(email, role);
-
-    if (role === 'admin') router.push('/admin');
-    else if (role === 'manager') router.push('/manager');
-    else if (role === 'cashier') router.push('/cashier');
-    else router.push('/');
+      if (user.role === 'admin') router.push('/admin');
+      else if (user.role === 'manager') router.push('/manager');
+      else if (user.role === 'cashier') router.push('/cashier');
+      else router.push('/');
+    } catch (error: any) {
+      alert(error.message);
+    }
   };
 
   return (

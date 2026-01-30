@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Plus, Edit, Trash2, UtensilsCrossed } from 'lucide-react';
-import { MOCK_MENU_ITEMS, MOCK_CATEGORIES, MOCK_RECIPES, MOCK_INVENTORY, MOCK_BRANCHES } from '../../utils/mockData';
+import { api } from '../../utils/api';
 import { Button } from '../../components/ui/Button';
 import { calculateAvailablePortions } from '../../utils/recipeUtils';
 import { Input } from '../../components/ui/Input';
@@ -9,18 +9,23 @@ import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
 import { ConfirmationDialog } from '../../components/ui/ConfirmationDialog';
 import { useNotification } from '../../context/NotificationContext';
-import type { MenuItem } from '../../types';
+import type { MenuItem, MenuCategory, Recipe, InventoryItem, Branch } from '../../types';
 
 const MenuItems: React.FC = () => {
   const { showNotification } = useNotification();
-  const [items, setItems] = useState<MenuItem[]>(MOCK_MENU_ITEMS);
+  const [items, setItems] = useState<MenuItem[]>([]);
+  const [categories, setCategories] = useState<MenuCategory[]>([]);
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [itemToDelete, setItemToDelete] = useState<MenuItem | null>(null);
   const [viewingRecipe, setViewingRecipe] = useState<MenuItem | null>(null);
-  const [selectedBranchId, setSelectedBranchId] = useState(MOCK_BRANCHES[0].id);
+  const [selectedBranchId, setSelectedBranchId] = useState('');
 
   // Form state
   const [formName, setFormName] = useState('');
@@ -30,11 +35,81 @@ const MenuItems: React.FC = () => {
   const [formDescription, setFormDescription] = useState('');
   const [formIsActive, setFormIsActive] = useState(true);
 
+  useEffect(() => {
+    fetchAllData();
+  }, []);
+
+  const fetchAllData = async () => {
+    try {
+      setLoading(true);
+      const [itemsData, catsData, recipesData, invData, branchesData] = await Promise.all([
+        api.menuItems.getAll(),
+        api.categories.getAll(),
+        api.recipes.getAll(),
+        api.inventory.getAll(),
+        api.branches.getAll(),
+      ]);
+      setItems(itemsData);
+      setCategories(catsData);
+      setRecipes(recipesData);
+      setInventory(invData);
+      setBranches(branchesData);
+      if (branchesData.length > 0) setSelectedBranchId(branchesData[0].id);
+    } catch (error) {
+      console.error('Failed to fetch data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const filteredItems = items.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || item.category_id === selectedCategory;
     return matchesSearch && matchesCategory;
   });
+
+  const handleSave = async () => {
+    try {
+      const itemData = {
+        name: formName,
+        category_id: formCategoryId,
+        base_price: formBasePrice,
+        image_url: formImageUrl,
+        description: formDescription,
+        is_active: formIsActive
+      };
+
+      if (editingItem) {
+        await api.menuItems.update(editingItem.id, itemData);
+        showNotification("Item updated successfully");
+      } else {
+        await api.menuItems.create({
+          ...itemData,
+          created_at: new Date().toISOString()
+        });
+        showNotification("Item created successfully");
+      }
+      setIsModalOpen(false);
+      setEditingItem(null);
+      fetchAllData();
+    } catch (error) {
+      showNotification("Failed to save item", "error");
+    }
+  };
+
+  const handleDelete = async () => {
+    if (itemToDelete) {
+      try {
+        await api.menuItems.delete(itemToDelete.id);
+        showNotification("Item deleted successfully", "warning");
+        fetchAllData();
+      } catch (error) {
+        showNotification("Failed to delete item", "error");
+      } finally {
+        setItemToDelete(null);
+      }
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -55,7 +130,7 @@ const MenuItems: React.FC = () => {
             onChange={(e) => setSelectedCategory(e.target.value)}
           >
             <option value="all">All Categories</option>
-            {MOCK_CATEGORIES.map(cat => (
+            {categories.map(cat => (
               <option key={cat.id} value={cat.id}>{cat.name}</option>
             ))}
           </select>
@@ -63,7 +138,7 @@ const MenuItems: React.FC = () => {
         <Button className="gap-2" onClick={() => {
           setEditingItem(null);
           setFormName('');
-          setFormCategoryId(MOCK_CATEGORIES[0]?.id || '');
+          setFormCategoryId(categories[0]?.id || '');
           setFormBasePrice(0);
           setFormImageUrl('');
           setFormDescription('');
@@ -74,73 +149,77 @@ const MenuItems: React.FC = () => {
         </Button>
       </div>
 
-      <Table
-        data={filteredItems}
-        columns={[
-          {
-            header: 'Item',
-            accessor: (item) => (
-              <div className="flex items-center gap-3">
-                <img src={item.image_url} alt={item.name} className="w-10 h-10 rounded-lg object-cover" />
-                <span className="font-bold text-gray-900">{item.name}</span>
-              </div>
-            )
-          },
-          {
-            header: 'Category',
-            accessor: (item) => MOCK_CATEGORIES.find(c => c.id === item.category_id)?.name || 'N/A'
-          },
-          { header: 'Base Price', accessor: (item) => `$${item.base_price.toFixed(2)}` },
-          {
-            header: 'Status',
-            accessor: (item) => (
-              <Badge variant={item.is_active ? 'success' : 'neutral'}>
-                {item.is_active ? 'Active' : 'Inactive'}
-              </Badge>
-            )
-          },
-          {
-            header: 'Actions',
-            accessor: (item) => (
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-orange-600"
-                  onClick={() => setViewingRecipe(item)}
-                  title="View Recipe"
-                >
-                  <UtensilsCrossed size={16} />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setEditingItem(item);
-                    setFormName(item.name);
-                    setFormCategoryId(item.category_id);
-                    setFormBasePrice(item.base_price);
-                    setFormImageUrl(item.image_url);
-                    setFormDescription(item.description);
-                    setFormIsActive(item.is_active);
-                    setIsModalOpen(true);
-                  }}
-                >
-                  <Edit size={16} />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-red-600"
-                  onClick={() => setItemToDelete(item)}
-                >
-                  <Trash2 size={16} />
-                </Button>
-              </div>
-            )
-          }
-        ]}
-      />
+      {loading ? (
+        <div className="text-center py-10">Loading menu items...</div>
+      ) : (
+        <Table
+          data={filteredItems}
+          columns={[
+            {
+              header: 'Item',
+              accessor: (item) => (
+                <div className="flex items-center gap-3">
+                  <img src={item.image_url} alt={item.name} className="w-10 h-10 rounded-lg object-cover" />
+                  <span className="font-bold text-gray-900">{item.name}</span>
+                </div>
+              )
+            },
+            {
+              header: 'Category',
+              accessor: (item) => categories.find(c => c.id === item.category_id)?.name || 'N/A'
+            },
+            { header: 'Base Price', accessor: (item) => `$${item.base_price.toFixed(2)}` },
+            {
+              header: 'Status',
+              accessor: (item) => (
+                <Badge variant={item.is_active ? 'success' : 'neutral'}>
+                  {item.is_active ? 'Active' : 'Inactive'}
+                </Badge>
+              )
+            },
+            {
+              header: 'Actions',
+              accessor: (item) => (
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-orange-600"
+                    onClick={() => setViewingRecipe(item)}
+                    title="View Recipe"
+                  >
+                    <UtensilsCrossed size={16} />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setEditingItem(item);
+                      setFormName(item.name);
+                      setFormCategoryId(item.category_id);
+                      setFormBasePrice(item.base_price);
+                      setFormImageUrl(item.image_url);
+                      setFormDescription(item.description);
+                      setFormIsActive(item.is_active);
+                      setIsModalOpen(true);
+                    }}
+                  >
+                    <Edit size={16} />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-red-600"
+                    onClick={() => setItemToDelete(item)}
+                  >
+                    <Trash2 size={16} />
+                  </Button>
+                </div>
+              )
+            }
+          ]}
+        />
+      )}
 
       <Modal
         isOpen={isModalOpen}
@@ -156,35 +235,7 @@ const MenuItems: React.FC = () => {
               setIsModalOpen(false);
               setEditingItem(null);
             }}>Cancel</Button>
-            <Button onClick={() => {
-              setIsModalOpen(false);
-              if (editingItem) {
-                setItems(prev => prev.map(i => i.id === editingItem.id ? {
-                  ...i,
-                  name: formName,
-                  category_id: formCategoryId,
-                  base_price: formBasePrice,
-                  image_url: formImageUrl,
-                  description: formDescription,
-                  is_active: formIsActive
-                } : i));
-                showNotification("Item updated successfully");
-              } else {
-                const newItem: MenuItem = {
-                  id: `m${Date.now()}`,
-                  name: formName,
-                  category_id: formCategoryId,
-                  base_price: formBasePrice,
-                  image_url: formImageUrl,
-                  description: formDescription,
-                  is_active: formIsActive,
-                  created_at: new Date().toISOString()
-                };
-                setItems(prev => [...prev, newItem]);
-                showNotification("Item created successfully");
-              }
-              setEditingItem(null);
-            }}>
+            <Button onClick={handleSave}>
               {editingItem ? "Save Changes" : "Create Item"}
             </Button>
           </>
@@ -204,7 +255,7 @@ const MenuItems: React.FC = () => {
               value={formCategoryId}
               onChange={(e) => setFormCategoryId(e.target.value)}
             >
-              {MOCK_CATEGORIES.map(cat => (
+              {categories.map(cat => (
                 <option key={cat.id} value={cat.id}>{cat.name}</option>
               ))}
             </select>
@@ -258,9 +309,9 @@ const MenuItems: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <span className="text-2xl font-bold text-blue-900">
                     {(() => {
-                      const recipe = MOCK_RECIPES.find(r => r.menu_item_id === viewingRecipe.id);
+                      const recipe = recipes.find(r => r.menu_item_id === viewingRecipe.id);
                       if (!recipe) return 0;
-                      const branchInv = MOCK_INVENTORY.filter(i => i.branch_id === selectedBranchId);
+                      const branchInv = inventory.filter(i => i.branch_id === selectedBranchId);
                       return calculateAvailablePortions(recipe, branchInv);
                     })()}
                   </span>
@@ -274,7 +325,7 @@ const MenuItems: React.FC = () => {
                   value={selectedBranchId}
                   onChange={(e) => setSelectedBranchId(e.target.value)}
                 >
-                  {MOCK_BRANCHES.map(b => (
+                  {branches.map(b => (
                     <option key={b.id} value={b.id}>{b.name}</option>
                   ))}
                 </select>
@@ -295,7 +346,7 @@ const MenuItems: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {MOCK_RECIPES.find(r => r.menu_item_id === viewingRecipe.id)?.ingredients.map((ing, idx) => (
+                    {recipes.find(r => r.menu_item_id === viewingRecipe.id)?.ingredients.map((ing, idx) => (
                       <tr key={idx}>
                         <td className="px-4 py-2">{ing.item_name}</td>
                         <td className="px-4 py-2 text-right">{ing.quantity} {ing.unit}</td>
@@ -310,11 +361,11 @@ const MenuItems: React.FC = () => {
               </div>
             </div>
 
-            {MOCK_RECIPES.find(r => r.menu_item_id === viewingRecipe.id) && (
+            {recipes.find(r => r.menu_item_id === viewingRecipe.id) && (
               <div>
                 <h4 className="text-sm font-semibold text-gray-900 mb-2">Instructions</h4>
                 <p className="text-sm text-gray-600 bg-orange-50 p-4 rounded-lg border border-orange-100">
-                  {MOCK_RECIPES.find(r => r.menu_item_id === viewingRecipe.id)?.instructions}
+                  {recipes.find(r => r.menu_item_id === viewingRecipe.id)?.instructions}
                 </p>
               </div>
             )}
@@ -329,13 +380,7 @@ const MenuItems: React.FC = () => {
       <ConfirmationDialog
         isOpen={!!itemToDelete}
         onClose={() => setItemToDelete(null)}
-        onConfirm={() => {
-          if (itemToDelete) {
-            setItems(prev => prev.filter(i => i.id !== itemToDelete.id));
-            showNotification("Item deleted successfully", "warning");
-          }
-          setItemToDelete(null);
-        }}
+        onConfirm={handleDelete}
         title="Delete Menu Item"
         description={`Are you sure you want to delete "${itemToDelete?.name}"? This action cannot be undone.`}
         confirmLabel="Delete"

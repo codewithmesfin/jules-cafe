@@ -1,15 +1,53 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Calendar as CalendarIcon, Check, X, User, Plus } from 'lucide-react';
-import { MOCK_RESERVATIONS, MOCK_USERS } from '../../utils/mockData';
+import { api } from '../../utils/api';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Table } from '../../components/ui/Table';
 import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
+import type { Reservation, User as UserType } from '../../types';
 
 const Reservations: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [users, setUsers] = useState<UserType[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [resData, userData] = await Promise.all([
+        api.reservations.getAll(),
+        api.users.getAll(),
+      ]);
+      setReservations(resData);
+      setUsers(userData);
+    } catch (error) {
+      console.error('Failed to fetch reservations:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredReservations = reservations.filter(res => {
+    const customer = users.find(u => u.id === res.customer_id);
+    return customer?.full_name.toLowerCase().includes(searchTerm.toLowerCase());
+  });
+
+  const handleUpdateStatus = async (id: string, status: string) => {
+    try {
+      await api.reservations.update(id, { status });
+      fetchData();
+    } catch (error) {
+      alert('Failed to update status');
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -33,60 +71,70 @@ const Reservations: React.FC = () => {
         </div>
       </div>
 
-      <Table
-        data={MOCK_RESERVATIONS}
-        columns={[
-          {
-            header: 'Customer',
-            accessor: (res) => {
-              const customer = MOCK_USERS.find(u => u.id === res.customer_id);
-              return (
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-400">
-                    <User size={16} />
+      {loading ? (
+        <div className="text-center py-10">Loading reservations...</div>
+      ) : (
+        <Table
+          data={filteredReservations}
+          columns={[
+            {
+              header: 'Customer',
+              accessor: (res) => {
+                const customer = users.find(u => u.id === res.customer_id);
+                return (
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-400">
+                      <User size={16} />
+                    </div>
+                    <span className="font-medium text-gray-900">{customer?.full_name || 'Guest'}</span>
                   </div>
-                  <span className="font-medium text-gray-900">{customer?.full_name || 'Guest'}</span>
+                );
+              }
+            },
+            { header: 'Date', accessor: (res) => res.reservation_date },
+            { header: 'Time', accessor: (res) => res.reservation_time },
+            { header: 'Guests', accessor: (res) => res.guests_count },
+            {
+              header: 'Status',
+              accessor: (res) => (
+                <Badge
+                  variant={
+                    res.status === 'confirmed' ? 'success' :
+                    res.status === 'requested' ? 'warning' : 'neutral'
+                  }
+                  className="capitalize"
+                >
+                  {res.status}
+                </Badge>
+              )
+            },
+            {
+              header: 'Actions',
+              accessor: (res) => (
+                <div className="flex items-center gap-2">
+                  {res.status === 'requested' && (
+                    <>
+                      <button
+                        onClick={() => handleUpdateStatus(res.id, 'confirmed')}
+                        className="p-1 text-green-600 hover:bg-green-50 rounded border border-green-200"
+                      >
+                        <Check size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleUpdateStatus(res.id, 'cancelled')}
+                        className="p-1 text-red-600 hover:bg-red-50 rounded border border-red-200"
+                      >
+                        <X size={16} />
+                      </button>
+                    </>
+                  )}
+                  <Button variant="ghost" size="sm">Details</Button>
                 </div>
-              );
+              )
             }
-          },
-          { header: 'Date', accessor: (res) => res.reservation_date },
-          { header: 'Time', accessor: (res) => res.reservation_time },
-          { header: 'Guests', accessor: (res) => res.guests_count },
-          {
-            header: 'Status',
-            accessor: (res) => (
-              <Badge
-                variant={
-                  res.status === 'confirmed' ? 'success' :
-                  res.status === 'requested' ? 'warning' : 'neutral'
-                }
-                className="capitalize"
-              >
-                {res.status}
-              </Badge>
-            )
-          },
-          {
-            header: 'Actions',
-            accessor: (res) => (
-              <div className="flex items-center gap-2">
-                {res.status === 'requested' && (
-                  <>
-                    <Button variant="outline" size="sm" className="text-green-600 border-green-200 hover:bg-green-50">
-                      <Check size={16} />
-                    </Button>
-                    <Button variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50">
-                      <X size={16} />
-                    </Button>
-                  </>
-                )}
-                <Button variant="ghost" size="sm">Details</Button>
-              </div>
-            )
-          }
-        ]}
-      />
+          ]}
+        />
+      )}
       <Modal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
@@ -103,7 +151,7 @@ const Reservations: React.FC = () => {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Customer</label>
             <select className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
-              {MOCK_USERS.filter(u => u.role === 'customer').map(user => (
+              {users.filter(u => u.role === 'customer').map(user => (
                 <option key={user.id} value={user.id}>{user.full_name}</option>
               ))}
             </select>

@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShoppingCart, Plus, Minus, Search, Grid, User, UserPlus } from 'lucide-react';
-import { MOCK_MENU_ITEMS, MOCK_CATEGORIES, MOCK_TABLES, MOCK_USERS } from '../../utils/mockData';
+import { api } from '../../utils/api';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Card } from '../../components/ui/Card';
 import { Modal } from '../../components/ui/Modal';
 import { useNotification } from '../../context/NotificationContext';
 import { useAuth } from '../../context/AuthContext';
-import type { MenuItem } from '../../types';
+import type { MenuItem, MenuCategory, Table, User as UserType } from '../../types';
 
 interface CartItem extends MenuItem {
   quantity: number;
@@ -25,7 +25,39 @@ const NewOrder: React.FC = () => {
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
   const [newCustomer, setNewCustomer] = useState({ name: '', email: '', phone: '', type: 'regular' as 'regular' | 'vip' | 'member', discount: 0 });
 
-  const filteredItems = MOCK_MENU_ITEMS.filter(item => {
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [categories, setCategories] = useState<MenuCategory[]>([]);
+  const [tables, setTables] = useState<Table[]>([]);
+  const [users, setUsers] = useState<UserType[]>([]);
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [items, cats, tbls, usrs, brnchs] = await Promise.all([
+          api.menuItems.getAll(),
+          api.categories.getAll(),
+          api.tables.getAll(),
+          api.users.getAll(),
+          api.branches.getAll(),
+        ]);
+        setMenuItems(items);
+        setCategories(cats);
+        setTables(tbls);
+        setUsers(usrs);
+        setBranches(brnchs);
+      } catch (error) {
+        console.error('Failed to fetch data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const filteredItems = menuItems.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || item.category_id === selectedCategory;
     return matchesSearch && matchesCategory;
@@ -51,11 +83,41 @@ const NewOrder: React.FC = () => {
     }).filter(item => item.quantity > 0));
   };
 
-  const customerData = MOCK_USERS.find(u => u.id === selectedCustomer);
+  const customerData = users.find(u => u.id === selectedCustomer);
   const discountRate = customerData?.discount_rate || 0;
   const subtotal = cart.reduce((acc, item) => acc + item.base_price * item.quantity, 0);
   const discountAmount = (subtotal * discountRate) / 100;
   const total = subtotal - discountAmount;
+
+  const handlePlaceOrder = async () => {
+    try {
+      const orderData = {
+        customer_id: selectedCustomer,
+        branch_id: user?.branch_id || (branches.length > 0 ? branches[0].id : ''), // Fallback if user branch not set
+        table_id: selectedTable || undefined,
+        waiter_id: selectedWaiter || undefined,
+        status: 'pending',
+        type: 'walk-in',
+        total_amount: total,
+        discount_amount: discountAmount,
+        items: cart.map(item => ({
+          menu_item_id: item.id,
+          menu_item_name: item.name,
+          quantity: item.quantity,
+          unit_price: item.base_price
+        }))
+      };
+
+      await api.orders.create(orderData);
+      showNotification("Order placed successfully!");
+      setCart([]);
+      setSelectedCustomer('');
+      setSelectedTable('');
+      setSelectedWaiter('');
+    } catch (error) {
+      showNotification("Failed to place order", "error");
+    }
+  };
 
   return (
     <div className="flex flex-col lg:flex-row h-full lg:h-[calc(100vh-120px)] gap-6 overflow-auto lg:overflow-hidden">
@@ -77,31 +139,35 @@ const NewOrder: React.FC = () => {
             onChange={(e) => setSelectedCategory(e.target.value)}
           >
             <option value="all">All Categories</option>
-            {MOCK_CATEGORIES.map(cat => (
+            {categories.map(cat => (
               <option key={cat.id} value={cat.id}>{cat.name}</option>
             ))}
           </select>
         </div>
 
-        <div className="flex-1 overflow-y-auto pr-2 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filteredItems.map(item => (
-            <Card
-              key={item.id}
-              className="p-3 cursor-pointer hover:border-orange-500 transition-colors flex flex-col"
-              onClick={() => addToCart(item)}
-            >
-              <img src={item.image_url} alt={item.name} className="w-full h-32 object-cover rounded-lg mb-3" />
-              <div className="flex-1">
-                <h4 className="font-bold text-gray-900 mb-1">{item.name}</h4>
-                <p className="text-xs text-gray-500 line-clamp-1 mb-2">{item.description}</p>
-              </div>
-              <div className="flex justify-between items-center mt-auto">
-                <span className="font-bold text-orange-600">${item.base_price.toFixed(2)}</span>
-                <Button size="sm" variant="outline"><Plus size={14} /></Button>
-              </div>
-            </Card>
-          ))}
-        </div>
+        {loading ? (
+          <div className="text-center py-10 text-gray-500">Loading menu...</div>
+        ) : (
+          <div className="flex-1 overflow-y-auto pr-2 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+            {filteredItems.map(item => (
+              <Card
+                key={item.id}
+                className="p-3 cursor-pointer hover:border-orange-500 transition-colors flex flex-col"
+                onClick={() => addToCart(item)}
+              >
+                <img src={item.image_url} alt={item.name} className="w-full h-32 object-cover rounded-lg mb-3" />
+                <div className="flex-1">
+                  <h4 className="font-bold text-gray-900 mb-1">{item.name}</h4>
+                  <p className="text-xs text-gray-500 line-clamp-1 mb-2">{item.description}</p>
+                </div>
+                <div className="flex justify-between items-center mt-auto">
+                  <span className="font-bold text-orange-600">${item.base_price.toFixed(2)}</span>
+                  <Button size="sm" variant="outline"><Plus size={14} /></Button>
+                </div>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Cart & Checkout */}
@@ -120,7 +186,7 @@ const NewOrder: React.FC = () => {
               onChange={(e) => setSelectedTable(e.target.value)}
             >
               <option value="">Select Table (Optional)</option>
-              {MOCK_TABLES.filter(t => t.branch_id === user?.branch_id).map(t => (
+              {tables.filter(t => t.branch_id === user?.branch_id).map(t => (
                 <option key={t.id} value={t.id}>Table {t.table_number} ({t.capacity} seats)</option>
               ))}
             </select>
@@ -134,7 +200,7 @@ const NewOrder: React.FC = () => {
               onChange={(e) => setSelectedWaiter(e.target.value)}
             >
               <option value="">Assign Waiter (Optional)</option>
-              {MOCK_USERS.filter(u => u.role === 'staff' && u.branch_id === user?.branch_id).map(u => (
+              {users.filter(u => u.role === 'staff' && u.branch_id === user?.branch_id).map(u => (
                 <option key={u.id} value={u.id}>{u.full_name}</option>
               ))}
             </select>
@@ -148,7 +214,7 @@ const NewOrder: React.FC = () => {
               onChange={(e) => setSelectedCustomer(e.target.value)}
             >
               <option value="">Select Customer *</option>
-              {MOCK_USERS.filter(u => u.role === 'customer').map(u => (
+              {users.filter(u => u.role === 'customer').map(u => (
                 <option key={u.id} value={u.id}>{u.full_name} ({u.phone})</option>
               ))}
             </select>
@@ -204,11 +270,7 @@ const NewOrder: React.FC = () => {
             className="w-full"
             size="lg"
             disabled={cart.length === 0 || !selectedCustomer}
-            onClick={() => {
-              showNotification("Order placed successfully!");
-              setCart([]);
-              setSelectedCustomer('');
-            }}
+            onClick={handlePlaceOrder}
           >
             Place Order
           </Button>
@@ -222,9 +284,23 @@ const NewOrder: React.FC = () => {
         footer={
           <>
             <Button variant="outline" onClick={() => setIsCustomerModalOpen(false)}>Cancel</Button>
-            <Button onClick={() => {
-              showNotification("Customer added successfully!");
-              setIsCustomerModalOpen(false);
+            <Button onClick={async () => {
+              try {
+                await api.users.create({
+                  ...newCustomer,
+                  full_name: newCustomer.name,
+                  role: 'customer',
+                  status: 'active',
+                  created_at: new Date().toISOString()
+                });
+                showNotification("Customer added successfully!");
+                setIsCustomerModalOpen(false);
+                // Refresh users
+                const usrs = await api.users.getAll();
+                setUsers(usrs);
+              } catch (error) {
+                showNotification("Failed to add customer", "error");
+              }
             }}>Add Customer</Button>
           </>
         }
