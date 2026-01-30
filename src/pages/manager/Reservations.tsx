@@ -57,6 +57,14 @@ const Reservations: React.FC = () => {
             )
           },
           {
+            header: 'Waiter',
+            accessor: (res) => (
+              <span className="text-sm text-gray-600">
+                {MOCK_USERS.find(u => u.id === res.waiter_id)?.full_name || '-'}
+              </span>
+            )
+          },
+          {
             header: 'Date & Time',
             accessor: (res) => (
               <div className="text-sm">
@@ -133,7 +141,18 @@ const Reservations: React.FC = () => {
             <Input label="Date" type="date" defaultValue={selectedRes?.reservation_date} />
             <Input label="Time" type="time" defaultValue={selectedRes?.reservation_time} />
           </div>
-          <Input label="Number of Guests" type="number" defaultValue={selectedRes?.guests_count} />
+          <div className="grid grid-cols-2 gap-4">
+            <Input label="Number of Guests" type="number" defaultValue={selectedRes?.guests_count} />
+            <div className="w-full">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Assigned Waiter</label>
+              <select className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500" defaultValue={selectedRes?.waiter_id}>
+                <option value="">Unassigned</option>
+                {MOCK_USERS.filter(u => u.role === 'staff' && u.branch_id === user?.branch_id).map(u => (
+                  <option key={u.id} value={u.id}>{u.full_name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
           <div className="w-full">
             <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
             <select className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500" defaultValue={selectedRes?.status || 'confirmed'}>

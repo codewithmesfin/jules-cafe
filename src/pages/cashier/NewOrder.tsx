@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { ShoppingCart, Plus, Minus, Search, Grid } from 'lucide-react';
-import { MOCK_MENU_ITEMS, MOCK_CATEGORIES, MOCK_TABLES } from '../../utils/mockData';
+import { ShoppingCart, Plus, Minus, Search, Grid, User } from 'lucide-react';
+import { MOCK_MENU_ITEMS, MOCK_CATEGORIES, MOCK_TABLES, MOCK_USERS } from '../../utils/mockData';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Card } from '../../components/ui/Card';
@@ -17,6 +17,7 @@ const NewOrder: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedTable, setSelectedTable] = useState('');
+  const [selectedWaiter, setSelectedWaiter] = useState('');
 
   const filteredItems = MOCK_MENU_ITEMS.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -111,6 +112,20 @@ const NewOrder: React.FC = () => {
               <option value="">Select Table (Optional)</option>
               {MOCK_TABLES.filter(t => t.branch_id === user?.branch_id).map(t => (
                 <option key={t.id} value={t.id}>Table {t.table_number} ({t.capacity} seats)</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <User size={16} className="text-gray-400" />
+            <select
+              className="flex-1 text-sm border-none bg-transparent focus:ring-0"
+              value={selectedWaiter}
+              onChange={(e) => setSelectedWaiter(e.target.value)}
+            >
+              <option value="">Assign Waiter (Optional)</option>
+              {MOCK_USERS.filter(u => u.role === 'staff' && u.branch_id === user?.branch_id).map(u => (
+                <option key={u.id} value={u.id}>{u.full_name}</option>
               ))}
             </select>
           </div>
