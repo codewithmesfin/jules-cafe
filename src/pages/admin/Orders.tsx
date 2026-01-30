@@ -103,7 +103,7 @@ const Orders: React.FC = () => {
               <div key={item.id} className="flex items-center justify-between p-2 border rounded-lg">
                 <span>{item.name}</span>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-500">${item.price.toFixed(2)}</span>
+                  <span className="text-sm text-gray-500">${item.base_price.toFixed(2)}</span>
                   <input type="number" min="0" defaultValue="0" className="w-16 px-2 py-1 border rounded" />
                 </div>
               </div>

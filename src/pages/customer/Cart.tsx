@@ -73,7 +73,7 @@ const Cart: React.FC = () => {
                         <Plus size={16} />
                       </button>
                     </div>
-                    <span className="font-bold text-lg">${(item.price * item.quantity).toFixed(2)}</span>
+                    <span className="font-bold text-lg">${(item.base_price * item.quantity).toFixed(2)}</span>
                   </div>
                 </div>
               </div>

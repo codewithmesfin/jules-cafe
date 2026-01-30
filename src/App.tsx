@@ -3,7 +3,8 @@ import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import { MainLayout } from './layouts/MainLayout';
 import { CustomerLayout } from './layouts/CustomerLayout';
-import { AdminLayout } from './layouts/AdminLayout';
+import { DashboardLayout } from './layouts/DashboardLayout';
+import { RoleGuard } from './components/RoleGuard';
 
 // Customer Pages
 import Home from './pages/customer/Home';
@@ -19,14 +20,27 @@ import Login from './pages/customer/Login';
 // Admin Pages
 import AdminDashboard from './pages/admin/Dashboard';
 import AdminUsers from './pages/admin/Users';
+import AdminBranches from './pages/admin/Branches';
 import AdminCategories from './pages/admin/Categories';
 import AdminMenuItems from './pages/admin/MenuItems';
 import AdminOrders from './pages/admin/Orders';
 import AdminReservations from './pages/admin/Reservations';
-import AdminInventory from './pages/admin/Inventory';
-import AdminRecipes from './pages/admin/Recipes';
 import AdminReviews from './pages/admin/Reviews';
-import AdminRoles from './pages/admin/Roles';
+import AdminReports from './pages/admin/Reports';
+
+// Manager Pages
+import ManagerDashboard from './pages/manager/Dashboard';
+import ManagerBranchProfile from './pages/manager/BranchProfile';
+import ManagerOrders from './pages/manager/Orders';
+import ManagerReservations from './pages/manager/Reservations';
+import ManagerTables from './pages/manager/Tables';
+import ManagerReviews from './pages/manager/Reviews';
+import ManagerInventory from './pages/manager/Inventory';
+
+// Cashier Pages
+import CashierDashboard from './pages/cashier/Dashboard';
+import CashierNewOrder from './pages/cashier/NewOrder';
+import CashierOrderQueue from './pages/cashier/OrderQueue';
 
 function App() {
   return (
@@ -48,18 +62,49 @@ function App() {
                 <Route path="/login" element={<Login />} />
               </Route>
 
-              {/* Admin Routes */}
-              <Route path="/admin" element={<AdminLayout />}>
+              {/* Admin Panel */}
+              <Route path="/admin" element={
+                <RoleGuard allowedRoles={['admin']}>
+                  <DashboardLayout />
+                </RoleGuard>
+              }>
                 <Route index element={<AdminDashboard />} />
                 <Route path="users" element={<AdminUsers />} />
+                <Route path="branches" element={<AdminBranches />} />
                 <Route path="categories" element={<AdminCategories />} />
                 <Route path="menu-items" element={<AdminMenuItems />} />
                 <Route path="orders" element={<AdminOrders />} />
                 <Route path="reservations" element={<AdminReservations />} />
-                <Route path="inventory" element={<AdminInventory />} />
-                <Route path="recipes" element={<AdminRecipes />} />
                 <Route path="reviews" element={<AdminReviews />} />
-                <Route path="roles" element={<AdminRoles />} />
+                <Route path="reports" element={<AdminReports />} />
+              </Route>
+
+              {/* Manager Panel */}
+              <Route path="/manager" element={
+                <RoleGuard allowedRoles={['manager']}>
+                  <DashboardLayout />
+                </RoleGuard>
+              }>
+                <Route index element={<ManagerDashboard />} />
+                <Route path="profile" element={<ManagerBranchProfile />} />
+                <Route path="categories" element={<AdminCategories />} />
+                <Route path="menu-items" element={<AdminMenuItems />} />
+                <Route path="inventory" element={<ManagerInventory />} />
+                <Route path="orders" element={<ManagerOrders />} />
+                <Route path="reservations" element={<ManagerReservations />} />
+                <Route path="tables" element={<ManagerTables />} />
+                <Route path="reviews" element={<ManagerReviews />} />
+              </Route>
+
+              {/* Cashier Panel */}
+              <Route path="/cashier" element={
+                <RoleGuard allowedRoles={['cashier']}>
+                  <DashboardLayout />
+                </RoleGuard>
+              }>
+                <Route index element={<CashierDashboard />} />
+                <Route path="new-order" element={<CashierNewOrder />} />
+                <Route path="queue" element={<CashierOrderQueue />} />
               </Route>
             </Route>
             

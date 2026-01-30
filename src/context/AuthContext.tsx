@@ -1,10 +1,11 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useState } from 'react';
 import type { User } from '../types';
+import { MOCK_USERS } from '../utils/mockData';
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, role: User['role']) => void;
+  login: (email: string, password?: string) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
 }
@@ -17,18 +18,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return saved ? JSON.parse(saved) : null;
   });
 
-  const login = (email: string, role: User['role']) => {
-    const mockUser: User = {
-      id: '1',
-      full_name: role === 'customer' ? 'John Customer' : 'Jane Admin',
-      email: email,
-      phone: '1234567890',
-      role: role,
-      status: 'active',
-      created_at: new Date().toISOString(),
-    };
-    setUser(mockUser);
-    localStorage.setItem('user', JSON.stringify(mockUser));
+  const login = async (email: string, password?: string) => {
+    console.log('Login attempt with:', email, password ? '******' : 'no password');
+    // In a real app, this would be an API call
+    const foundUser = MOCK_USERS.find(u => u.email === email);
+
+    if (foundUser) {
+      setUser(foundUser);
+      localStorage.setItem('user', JSON.stringify(foundUser));
+    } else {
+      throw new Error('User not found');
+    }
   };
 
   const logout = () => {

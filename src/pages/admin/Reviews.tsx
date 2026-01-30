@@ -52,10 +52,10 @@ const Reviews: React.FC = () => {
           },
           { header: 'Comment', accessor: 'comment', className: 'max-w-xs truncate' },
           {
-            header: 'Visible',
+            header: 'Status',
             accessor: (rev) => (
-              <Badge variant={rev.is_visible ? 'success' : 'neutral'}>
-                {rev.is_visible ? 'Public' : 'Hidden'}
+              <Badge variant={rev.is_approved ? 'success' : 'neutral'}>
+                {rev.is_approved ? 'Approved' : 'Pending'}
               </Badge>
             )
           },
