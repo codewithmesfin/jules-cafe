@@ -92,6 +92,7 @@ async function seed() {
       const { id, branch_id, ...data } = u;
       const doc = await UserModel.create({
         ...data,
+        password: 'password123', // Default password for all mock users
         branch_id: branch_id ? idMap[branch_id] : undefined
       });
       idMap[id] = doc._id;

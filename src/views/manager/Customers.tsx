@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+"use client";
+import React, { useState, useEffect } from 'react';
 import { Search, Plus, Edit, Trash2, User as UserIcon } from 'lucide-react';
-import { MOCK_USERS } from '../../utils/mockData';
+import { api } from '../../utils/api';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Table } from '../../components/ui/Table';
@@ -12,10 +13,8 @@ import type { User, UserStatus } from '../../types';
 
 const Customers: React.FC = () => {
   const { showNotification } = useNotification();
-  // We only care about customers in this view
-  const [customers, setCustomers] = useState<User[]>(
-    MOCK_USERS.filter(u => u.role === 'customer')
-  );
+  const [customers, setCustomers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<User | null>(null);
@@ -29,47 +28,77 @@ const Customers: React.FC = () => {
   const [formCustomerType, setFormCustomerType] = useState<'regular' | 'vip' | 'member'>('regular');
   const [formDiscountRate, setFormDiscountRate] = useState(0);
 
+  useEffect(() => {
+    fetchCustomers();
+  }, []);
+
+  const fetchCustomers = async () => {
+    try {
+      setLoading(true);
+      const data = await api.users.getAll();
+      setCustomers(data.filter((u: User) => u.role === 'customer'));
+    } catch (error) {
+      console.error('Failed to fetch customers:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const filteredCustomers = customers.filter(customer => {
     const matchesSearch = customer.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         customer.phone.toLowerCase().includes(searchTerm.toLowerCase());
+                         (customer.phone && customer.phone.toLowerCase().includes(searchTerm.toLowerCase()));
     return matchesSearch;
   });
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formFullName || !formEmail) {
       showNotification("Please fill in required fields", "error");
       return;
     }
 
-    if (editingCustomer) {
-      setCustomers(prev => prev.map(c => c.id === editingCustomer.id ? {
-        ...c,
+    try {
+      const customerData = {
         full_name: formFullName,
         email: formEmail,
         phone: formPhone,
-        status: formStatus,
-        customer_type: formCustomerType,
-        discount_rate: formDiscountRate
-      } : c));
-      showNotification("Customer updated successfully");
-    } else {
-      const newCustomer: User = {
-        id: `u${Date.now()}`,
-        full_name: formFullName,
-        email: formEmail,
-        phone: formPhone,
-        role: 'customer',
         status: formStatus,
         customer_type: formCustomerType,
         discount_rate: formDiscountRate,
-        created_at: new Date().toISOString()
+        role: 'customer'
       };
-      setCustomers(prev => [...prev, newCustomer]);
-      showNotification("Customer created successfully");
+
+      if (editingCustomer) {
+        await api.users.update(editingCustomer.id, customerData);
+        showNotification("Customer updated successfully");
+      } else {
+        await api.users.create({
+          ...customerData,
+          password: 'password123', // Default password for new customers added by manager
+          created_at: new Date().toISOString()
+        });
+        showNotification("Customer created successfully");
+      }
+      setIsModalOpen(false);
+      resetForm();
+      fetchCustomers();
+    } catch (error) {
+      showNotification("Failed to save customer", "error");
     }
-    setIsModalOpen(false);
-    resetForm();
+  };
+
+  const handleDelete = async () => {
+    if (customerToDelete) {
+      try {
+        await api.users.delete(customerToDelete.id);
+        showNotification("Customer deleted successfully", "warning");
+        fetchCustomers();
+      } catch (error) {
+        showNotification("Failed to delete customer", "error");
+      } finally {
+        setCustomerToDelete(null);
+      }
+    }
   };
 
   const resetForm = () => {
@@ -102,76 +131,80 @@ const Customers: React.FC = () => {
         </Button>
       </div>
 
-      <Table
-        data={filteredCustomers}
-        columns={[
-          {
-            header: 'Customer',
-            accessor: (customer) => (
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center font-bold">
-                  {customer.full_name.charAt(0)}
+      {loading ? (
+        <div className="text-center py-10">Loading customers...</div>
+      ) : (
+        <Table
+          data={filteredCustomers}
+          columns={[
+            {
+              header: 'Customer',
+              accessor: (customer) => (
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center font-bold">
+                    {customer.full_name.charAt(0)}
+                  </div>
+                  <div>
+                    <div className="font-medium text-gray-900">{customer.full_name}</div>
+                    <div className="text-xs text-gray-500">{customer.email}</div>
+                  </div>
                 </div>
-                <div>
-                  <div className="font-medium text-gray-900">{customer.full_name}</div>
-                  <div className="text-xs text-gray-500">{customer.email}</div>
+              )
+            },
+            { header: 'Phone', accessor: 'phone' },
+            {
+              header: 'Type & Discount',
+              accessor: (customer) => (
+                <div className="flex flex-col">
+                  <Badge variant="neutral" className="capitalize w-fit">{customer.customer_type || 'regular'}</Badge>
+                  <span className="text-xs text-orange-600 font-medium mt-1">
+                    {customer.discount_rate || 0}% Discount
+                  </span>
                 </div>
-              </div>
-            )
-          },
-          { header: 'Phone', accessor: 'phone' },
-          {
-            header: 'Type & Discount',
-            accessor: (customer) => (
-              <div className="flex flex-col">
-                <Badge variant="neutral" className="capitalize w-fit">{customer.customer_type || 'regular'}</Badge>
-                <span className="text-xs text-orange-600 font-medium mt-1">
-                  {customer.discount_rate || 0}% Discount
-                </span>
-              </div>
-            )
-          },
-          {
-            header: 'Status',
-            accessor: (customer) => (
-              <Badge variant={customer.status === 'active' ? 'success' : 'error'} className="capitalize">
-                {customer.status}
-              </Badge>
-            )
-          },
-          {
-            header: 'Actions',
-            accessor: (customer) => (
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setEditingCustomer(customer);
-                    setFormFullName(customer.full_name);
-                    setFormEmail(customer.email);
-                    setFormPhone(customer.phone);
-                    setFormStatus(customer.status);
-                    setFormCustomerType(customer.customer_type || 'regular');
-                    setFormDiscountRate(customer.discount_rate || 0);
-                    setIsModalOpen(true);
-                  }}
-                >
-                  <Edit size={16} />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-red-600"
-                  onClick={() => setCustomerToDelete(customer)}
-                >
-                  <Trash2 size={16} />
-                </Button>
-              </div>
-            )
-          }
-        ]}
-      />
+              )
+            },
+            {
+              header: 'Status',
+              accessor: (customer) => (
+                <Badge variant={customer.status === 'active' ? 'success' : 'error'} className="capitalize">
+                  {customer.status}
+                </Badge>
+              )
+            },
+            {
+              header: 'Actions',
+              accessor: (customer) => (
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setEditingCustomer(customer);
+                      setFormFullName(customer.full_name);
+                      setFormEmail(customer.email);
+                      setFormPhone(customer.phone || '');
+                      setFormStatus(customer.status);
+                      setFormCustomerType(customer.customer_type || 'regular');
+                      setFormDiscountRate(customer.discount_rate || 0);
+                      setIsModalOpen(true);
+                    }}
+                  >
+                    <Edit size={16} />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-red-600"
+                    onClick={() => setCustomerToDelete(customer)}
+                  >
+                    <Trash2 size={16} />
+                  </Button>
+                </div>
+              )
+            }
+          ]}
+        />
+      )}
 
       <Modal
         isOpen={isModalOpen}
@@ -260,13 +293,7 @@ const Customers: React.FC = () => {
       <ConfirmationDialog
         isOpen={!!customerToDelete}
         onClose={() => setCustomerToDelete(null)}
-        onConfirm={() => {
-          if (customerToDelete) {
-            setCustomers(prev => prev.filter(c => c.id !== customerToDelete.id));
-            showNotification("Customer deleted successfully", "warning");
-          }
-          setCustomerToDelete(null);
-        }}
+        onConfirm={handleDelete}
         title="Delete Customer"
         description={`Are you sure you want to delete ${customerToDelete?.full_name}? This action cannot be undone.`}
         confirmLabel="Delete"

@@ -1,22 +1,74 @@
-import React, { useState } from 'react';
+"use client";
+import React, { useState, useEffect } from 'react';
 import { Calendar as CalendarIcon, Clock, Users, MessageSquare } from 'lucide-react';
+import { api } from '../../utils/api';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
-import { MOCK_RESERVATIONS } from '../../utils/mockData';
+import { useAuth } from '../../context/AuthContext';
+import { useNotification } from '../../context/NotificationContext';
+import type { Reservation, Branch } from '../../types';
 
 const Reservations: React.FC = () => {
+  const { user } = useAuth();
+  const { showNotification } = useNotification();
+  const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [loading, setLoading] = useState(true);
+
   const [formData, setFormData] = useState({
+    branch_id: '',
     date: '',
-    time: '',
+    time: '19:00',
     guests: '2',
     note: '',
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    fetchData();
+  }, [user?.id]);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [resData, brData] = await Promise.all([
+        api.reservations.getAll(),
+        api.branches.getAll(),
+      ]);
+      setReservations(resData.filter((r: Reservation) => r.customer_id === user?.id));
+      setBranches(brData);
+      if (brData.length > 0) setFormData(prev => ({ ...prev, branch_id: brData[0].id }));
+    } catch (error) {
+      console.error('Failed to fetch user reservations:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert('Reservation requested! We will notify you once it is confirmed.');
+    if (!user) {
+      showNotification('Please login to make a reservation', 'error');
+      return;
+    }
+
+    try {
+      await api.reservations.create({
+        customer_id: user.id,
+        branch_id: formData.branch_id,
+        reservation_date: formData.date,
+        reservation_time: formData.time,
+        guests_count: parseInt(formData.guests),
+        note: formData.note,
+        status: 'requested',
+        created_at: new Date().toISOString()
+      });
+      showNotification('Reservation requested! We will notify you once it is confirmed.');
+      fetchData();
+    } catch (error) {
+      showNotification('Failed to book reservation', 'error');
+    }
   };
 
   return (
@@ -28,6 +80,18 @@ const Reservations: React.FC = () => {
         <div>
           <Card title="Book a Table" subtitle="Fill in the details to reserve your spot">
             <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="w-full">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Select Branch</label>
+                <select
+                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  value={formData.branch_id}
+                  onChange={(e) => setFormData({ ...formData, branch_id: e.target.value })}
+                >
+                  {branches.map(b => (
+                    <option key={b.id} value={b.id}>{b.name} - {b.location}</option>
+                  ))}
+                </select>
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Input
                   label="Date"
@@ -74,8 +138,10 @@ const Reservations: React.FC = () => {
         {/* Reservation History */}
         <div className="space-y-6">
           <h2 className="text-xl font-bold text-gray-900">Your Recent Reservations</h2>
-          {MOCK_RESERVATIONS.length > 0 ? (
-            MOCK_RESERVATIONS.map((res) => (
+          {loading ? (
+            <div className="text-center py-12">Loading...</div>
+          ) : reservations.length > 0 ? (
+            reservations.map((res) => (
               <Card key={res.id}>
                 <div className="flex flex-col sm:flex-row justify-between gap-4">
                   <div className="space-y-2">
@@ -87,6 +153,9 @@ const Reservations: React.FC = () => {
                         month: 'long',
                         day: 'numeric',
                       })}
+                    </div>
+                    <div className="text-xs text-gray-500 mb-1">
+                      {branches.find(b => b.id === res.branch_id)?.name}
                     </div>
                     <div className="flex flex-wrap gap-4 text-sm text-gray-500">
                       <div className="flex items-center gap-1">

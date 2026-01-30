@@ -1,17 +1,23 @@
-import React, { useState } from 'react';
+"use client";
+import React, { useState, useEffect } from 'react';
 import { Search, Plus, Package, History, AlertTriangle } from 'lucide-react';
-import { MOCK_INVENTORY, MOCK_RECIPES } from '../../utils/mockData';
+import { api } from '../../utils/api';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Table } from '../../components/ui/Table';
 import { Modal } from '../../components/ui/Modal';
 import { Card } from '../../components/ui/Card';
 import { useAuth } from '../../context/AuthContext';
-import type { InventoryItem } from '../../types';
+import { useNotification } from '../../context/NotificationContext';
+import type { InventoryItem, Recipe } from '../../types';
 
 const Inventory: React.FC = () => {
   const { user } = useAuth();
+  const { showNotification } = useNotification();
   const [searchTerm, setSearchTerm] = useState('');
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
 
@@ -22,15 +28,29 @@ const Inventory: React.FC = () => {
   const [formQuantity, setFormQuantity] = useState(0);
   const [formMinStock, setFormMinStock] = useState(0);
 
-  // Get all unique ingredient names from recipes as suggested items
-  const suggestedItems = Array.from(new Set(
-    MOCK_RECIPES.flatMap(r => r.ingredients.map(i => i.item_name))
-  )).sort();
+  useEffect(() => {
+    fetchData();
+  }, [user?.branch_id]);
 
-  const branchInventory = MOCK_INVENTORY.filter(item =>
-    item.branch_id === user?.branch_id &&
-    item.item_name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [invData, recData] = await Promise.all([
+        api.inventory.getAll(),
+        api.recipes.getAll(),
+      ]);
+      setInventory(invData.filter((i: InventoryItem) => i.branch_id === user?.branch_id));
+      setRecipes(recData);
+    } catch (error) {
+      console.error('Failed to fetch inventory:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const suggestedItems = Array.from(new Set(
+    recipes.flatMap(r => r.ingredients.map(i => i.item_name))
+  )).sort();
 
   const handleOpenModal = (item: InventoryItem | null = null) => {
     setSelectedItem(item);
@@ -49,6 +69,39 @@ const Inventory: React.FC = () => {
     }
     setIsModalOpen(true);
   };
+
+  const handleSave = async () => {
+    try {
+      if (selectedItem) {
+        // Update: quantity in form is DELTA
+        const newQuantity = selectedItem.quantity + formQuantity;
+        await api.inventory.update(selectedItem.id, {
+          quantity: Math.max(0, newQuantity),
+          min_stock: formMinStock
+        });
+        showNotification('Inventory updated');
+      } else {
+        await api.inventory.create({
+          branch_id: user?.branch_id,
+          item_name: formItemName,
+          category: formCategory,
+          quantity: formQuantity,
+          unit: formUnit,
+          min_stock: formMinStock,
+          last_updated: new Date().toISOString()
+        });
+        showNotification('Item added to inventory');
+      }
+      setIsModalOpen(false);
+      fetchData();
+    } catch (error) {
+      showNotification('Failed to save inventory item', 'error');
+    }
+  };
+
+  const filteredInventory = inventory.filter(item =>
+    item.item_name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div className="space-y-6">
@@ -74,7 +127,7 @@ const Inventory: React.FC = () => {
           </div>
           <div>
             <p className="text-sm text-gray-500 font-medium">Total Items</p>
-            <h3 className="text-2xl font-bold">{branchInventory.length}</h3>
+            <h3 className="text-2xl font-bold">{inventory.length}</h3>
           </div>
         </Card>
         <Card className="flex items-center gap-4 border-orange-200 bg-orange-50">
@@ -84,7 +137,7 @@ const Inventory: React.FC = () => {
           <div>
             <p className="text-sm text-gray-500 font-medium">Low Stock</p>
             <h3 className="text-2xl font-bold">
-              {branchInventory.filter(i => i.quantity <= i.min_stock).length}
+              {inventory.filter(i => i.quantity <= i.min_stock).length}
             </h3>
           </div>
         </Card>
@@ -94,49 +147,53 @@ const Inventory: React.FC = () => {
           </div>
           <div>
             <p className="text-sm text-gray-500 font-medium">Last Update</p>
-            <h3 className="text-lg font-bold">Today, 10:45 AM</h3>
+            <h3 className="text-lg font-bold">Recently</h3>
           </div>
         </Card>
       </div>
 
-      <Table
-        data={branchInventory}
-        columns={[
-          {
-            header: 'Item Name',
-            accessor: (i) => (
-              <span className="font-bold text-gray-900">{i.item_name}</span>
-            )
-          },
-          { header: 'Category', accessor: 'category' },
-          {
-            header: 'Quantity',
-            accessor: (i) => (
-              <div className="flex items-center gap-2">
-                <span className={i.quantity <= i.min_stock ? 'text-red-600 font-bold' : 'text-gray-900'}>
-                  {i.quantity} {i.unit}
-                </span>
-                {i.quantity <= i.min_stock && <AlertTriangle size={14} className="text-red-600" />}
-              </div>
-            )
-          },
-          { header: 'Min Stock', accessor: (i) => `${i.min_stock} ${i.unit}` },
-          {
-            header: 'Last Updated',
-            accessor: (i) => new Date(i.last_updated).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })
-          },
-          {
-            header: 'Actions',
-            accessor: (i) => (
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={() => handleOpenModal(i)}>
-                  Update Stock
-                </Button>
-              </div>
-            )
-          }
-        ]}
-      />
+      {loading ? (
+        <div className="text-center py-10">Loading inventory...</div>
+      ) : (
+        <Table
+          data={filteredInventory}
+          columns={[
+            {
+              header: 'Item Name',
+              accessor: (i) => (
+                <span className="font-bold text-gray-900">{i.item_name}</span>
+              )
+            },
+            { header: 'Category', accessor: 'category' },
+            {
+              header: 'Quantity',
+              accessor: (i) => (
+                <div className="flex items-center gap-2">
+                  <span className={i.quantity <= i.min_stock ? 'text-red-600 font-bold' : 'text-gray-900'}>
+                    {i.quantity} {i.unit}
+                  </span>
+                  {i.quantity <= i.min_stock && <AlertTriangle size={14} className="text-red-600" />}
+                </div>
+              )
+            },
+            { header: 'Min Stock', accessor: (i) => `${i.min_stock} ${i.unit}` },
+            {
+              header: 'Last Updated',
+              accessor: (i) => new Date(i.last_updated || Date.now()).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })
+            },
+            {
+              header: 'Actions',
+              accessor: (i) => (
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={() => handleOpenModal(i)}>
+                    Update Stock
+                  </Button>
+                </div>
+              )
+            }
+          ]}
+        />
+      )}
 
       <Modal
         isOpen={isModalOpen}
@@ -145,7 +202,7 @@ const Inventory: React.FC = () => {
         footer={
           <>
             <Button variant="outline" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-            <Button onClick={() => setIsModalOpen(false)}>
+            <Button onClick={handleSave}>
               {selectedItem ? 'Update' : 'Add'}
             </Button>
           </>

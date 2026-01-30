@@ -1,24 +1,70 @@
-import React, { useState } from 'react';
+"use client";
+import React, { useState, useEffect } from 'react';
 import { Search, CheckCircle2, XCircle } from 'lucide-react';
-import { MOCK_MENU_ITEMS, MOCK_BRANCH_MENU_ITEMS, MOCK_CATEGORIES } from '../../utils/mockData';
+import { api } from '../../utils/api';
 import { Input } from '../../components/ui/Input';
 import { Table } from '../../components/ui/Table';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { useAuth } from '../../context/AuthContext';
+import { useNotification } from '../../context/NotificationContext';
+import type { MenuItem, MenuCategory, BranchMenuItem } from '../../types';
 
 const MenuAvailability: React.FC = () => {
   const { user } = useAuth();
+  const { showNotification } = useNotification();
   const [searchTerm, setSearchTerm] = useState('');
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [categories, setCategories] = useState<MenuCategory[]>([]);
+  const [branchMenuItems, setBranchMenuItems] = useState<BranchMenuItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Get items and their availability for this branch
-  const branchItems = MOCK_MENU_ITEMS.map(item => {
-    const branchInfo = MOCK_BRANCH_MENU_ITEMS.find(
-      bm => bm.menu_item_id === item.id && bm.branch_id === user?.branch_id
-    );
+  useEffect(() => {
+    fetchData();
+  }, [user?.branch_id]);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [items, cats, bmItems] = await Promise.all([
+        api.menuItems.getAll(),
+        api.categories.getAll(),
+        api.branchMenuItems.getAll(),
+      ]);
+      setMenuItems(items);
+      setCategories(cats);
+      setBranchMenuItems(bmItems.filter((bm: BranchMenuItem) => bm.branch_id === user?.branch_id));
+    } catch (error) {
+      console.error('Failed to fetch menu availability:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleToggle = async (item: MenuItem, currentAvailability: boolean) => {
+    try {
+      const bmItem = branchMenuItems.find(bm => bm.menu_item_id === item.id);
+      if (bmItem) {
+        await api.branchMenuItems.update(bmItem.id, { is_available: !currentAvailability });
+      } else {
+        await api.branchMenuItems.create({
+          branch_id: user?.branch_id,
+          menu_item_id: item.id,
+          is_available: !currentAvailability
+        });
+      }
+      showNotification(`Updated availability for ${item.name}`);
+      fetchData();
+    } catch (error) {
+      showNotification('Failed to update availability', 'error');
+    }
+  };
+
+  const branchItems = menuItems.map(item => {
+    const branchInfo = branchMenuItems.find(bm => bm.menu_item_id === item.id);
     return {
       ...item,
-      is_available: branchInfo ? branchInfo.is_available : false
+      is_available: branchInfo ? branchInfo.is_available : true // Default to available if no record
     };
   }).filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
@@ -36,52 +82,57 @@ const MenuAvailability: React.FC = () => {
         </div>
       </div>
 
-      <Table
-        data={branchItems}
-        columns={[
-          {
-            header: 'Item',
-            accessor: (item) => (
-              <div className="flex items-center gap-3">
-                <img src={item.image_url} alt={item.name} className="w-10 h-10 rounded-lg object-cover" />
-                <div>
-                  <p className="font-bold text-gray-900">{item.name}</p>
-                  <p className="text-xs text-gray-500">{MOCK_CATEGORIES.find(c => c.id === item.category_id)?.name}</p>
+      {loading ? (
+        <div className="text-center py-10">Loading menu...</div>
+      ) : (
+        <Table
+          data={branchItems}
+          columns={[
+            {
+              header: 'Item',
+              accessor: (item) => (
+                <div className="flex items-center gap-3">
+                  <img src={item.image_url} alt={item.name} className="w-10 h-10 rounded-lg object-cover" />
+                  <div>
+                    <p className="font-bold text-gray-900">{item.name}</p>
+                    <p className="text-xs text-gray-500">{categories.find(c => c.id === item.category_id)?.name}</p>
+                  </div>
                 </div>
-              </div>
-            )
-          },
-          { header: 'Base Price', accessor: (item) => `$${item.base_price.toFixed(2)}` },
-          {
-            header: 'Status',
-            accessor: (item) => (
-              <Badge variant={item.is_available ? 'success' : 'error'}>
-                {item.is_available ? 'Available' : 'Unavailable'}
-              </Badge>
-            )
-          },
-          {
-            header: 'Toggle Availability',
-            accessor: (item) => (
-              <Button
-                variant={item.is_available ? 'outline' : 'primary'}
-                size="sm"
-                className="gap-2"
-              >
-                {item.is_available ? (
-                  <>
-                    <XCircle size={16} /> Mark Unavailable
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle2 size={16} /> Mark Available
-                  </>
-                )}
-              </Button>
-            )
-          }
-        ]}
-      />
+              )
+            },
+            { header: 'Base Price', accessor: (item) => `$${item.base_price.toFixed(2)}` },
+            {
+              header: 'Status',
+              accessor: (item) => (
+                <Badge variant={item.is_available ? 'success' : 'error'}>
+                  {item.is_available ? 'Available' : 'Unavailable'}
+                </Badge>
+              )
+            },
+            {
+              header: 'Toggle Availability',
+              accessor: (item) => (
+                <Button
+                  variant={item.is_available ? 'outline' : 'primary'}
+                  size="sm"
+                  className="gap-2"
+                  onClick={() => handleToggle(item, item.is_available)}
+                >
+                  {item.is_available ? (
+                    <>
+                      <XCircle size={16} /> Mark Unavailable
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 size={16} /> Mark Available
+                    </>
+                  )}
+                </Button>
+              )
+            }
+          ]}
+        />
+      )}
     </div>
   );
 };
