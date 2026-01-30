@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Clock, MoreVertical } from 'lucide-react';
+import { Clock, MoreVertical, Edit2 } from 'lucide-react';
 import { MOCK_ORDERS, MOCK_USERS } from '../../utils/mockData';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
@@ -75,12 +75,18 @@ const OrderQueue: React.FC = () => {
                   >
                     {order.status}
                   </Badge>
-                  <Button variant="ghost" size="sm"><MoreVertical size={14} /></Button>
+                  <div className="flex gap-1">
+                    <Button variant="ghost" size="sm" title="Edit Order"><Edit2 size={14} /></Button>
+                    <Button variant="ghost" size="sm"><MoreVertical size={14} /></Button>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
                   <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Quick Actions</div>
                   <div className="flex gap-2">
+                    {order.status === 'pending' && (
+                      <Button size="sm" className="w-full bg-orange-600 hover:bg-orange-700">Accept</Button>
+                    )}
                     {order.status === 'preparing' && (
                       <Button size="sm" className="w-full bg-green-600 hover:bg-green-700">Ready</Button>
                     )}

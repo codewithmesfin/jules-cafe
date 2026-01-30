@@ -124,3 +124,14 @@ export interface Report {
   top_selling_items: { item_name: string; count: number }[];
   average_rating_per_branch: { branch_name: string; rating: number }[];
 }
+
+export interface InventoryItem {
+  id: string;
+  branch_id: string;
+  item_name: string;
+  category: string;
+  quantity: number;
+  unit: string;
+  min_stock: number;
+  last_updated: string;
+}

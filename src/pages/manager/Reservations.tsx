@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Plus, CheckCircle, XCircle, Calendar, User, Users } from 'lucide-react';
+import { Search, Plus, CheckCircle, XCircle, Calendar, User, Users, Trash2 } from 'lucide-react';
 import { MOCK_RESERVATIONS, MOCK_USERS } from '../../utils/mockData';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -94,10 +94,11 @@ const Reservations: React.FC = () => {
             accessor: (res) => (
               <div className="flex items-center gap-2">
                 <Button variant="ghost" size="sm" onClick={() => handleOpenModal(res)} title="View/Edit"><Calendar size={16} /></Button>
+                <Button variant="ghost" size="sm" className="text-red-600" title="Delete"><Trash2 size={16} /></Button>
                 {res.status === 'requested' && (
                   <>
-                    <Button variant="ghost" size="sm" className="text-green-600"><CheckCircle size={16} /></Button>
-                    <Button variant="ghost" size="sm" className="text-red-600"><XCircle size={16} /></Button>
+                    <Button variant="ghost" size="sm" className="text-green-600" title="Approve"><CheckCircle size={16} /></Button>
+                    <Button variant="ghost" size="sm" className="text-red-600" title="Reject"><XCircle size={16} /></Button>
                   </>
                 )}
               </div>

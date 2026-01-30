@@ -31,11 +31,11 @@ import AdminReports from './pages/admin/Reports';
 // Manager Pages
 import ManagerDashboard from './pages/manager/Dashboard';
 import ManagerBranchProfile from './pages/manager/BranchProfile';
-import ManagerMenuAvailability from './pages/manager/MenuAvailability';
 import ManagerOrders from './pages/manager/Orders';
 import ManagerReservations from './pages/manager/Reservations';
 import ManagerTables from './pages/manager/Tables';
 import ManagerReviews from './pages/manager/Reviews';
+import ManagerInventory from './pages/manager/Inventory';
 
 // Cashier Pages
 import CashierDashboard from './pages/cashier/Dashboard';
@@ -87,7 +87,9 @@ function App() {
               }>
                 <Route index element={<ManagerDashboard />} />
                 <Route path="profile" element={<ManagerBranchProfile />} />
-                <Route path="menu" element={<ManagerMenuAvailability />} />
+                <Route path="categories" element={<AdminCategories />} />
+                <Route path="menu-items" element={<AdminMenuItems />} />
+                <Route path="inventory" element={<ManagerInventory />} />
                 <Route path="orders" element={<ManagerOrders />} />
                 <Route path="reservations" element={<ManagerReservations />} />
                 <Route path="tables" element={<ManagerTables />} />

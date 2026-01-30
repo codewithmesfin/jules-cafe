@@ -47,7 +47,7 @@ const NewOrder: React.FC = () => {
   const subtotal = cart.reduce((acc, item) => acc + item.base_price * item.quantity, 0);
 
   return (
-    <div className="flex h-[calc(100vh-120px)] gap-6">
+    <div className="flex flex-col lg:flex-row h-full lg:h-[calc(100vh-120px)] gap-6 overflow-auto lg:overflow-hidden">
       {/* Menu Selection */}
       <div className="flex-1 flex flex-col min-w-0">
         <div className="flex flex-col sm:flex-row gap-4 mb-6">
@@ -94,7 +94,7 @@ const NewOrder: React.FC = () => {
       </div>
 
       {/* Cart & Checkout */}
-      <Card className="w-96 flex flex-col p-0 overflow-hidden shrink-0">
+      <Card className="w-full lg:w-96 flex flex-col p-0 overflow-hidden shrink-0">
         <div className="p-4 border-b bg-gray-50 flex items-center gap-2">
           <ShoppingCart size={20} className="text-orange-600" />
           <h3 className="font-bold text-gray-900">Current Order</h3>

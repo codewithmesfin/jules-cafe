@@ -9,7 +9,8 @@ import type {
   Order,
   OrderItem,
   Reservation,
-  Review
+  Review,
+  InventoryItem
 } from '../types';
 
 export const MOCK_BRANCHES: Branch[] = [
@@ -88,4 +89,11 @@ export const MOCK_RESERVATIONS: Reservation[] = [
 
 export const MOCK_REVIEWS: Review[] = [
   { id: 'rv1', customer_id: 'u4', branch_id: 'b1', rating: 5, comment: 'Excellent food and service!', order_id: 'o1', is_approved: true, created_at: new Date().toISOString() },
+];
+
+export const MOCK_INVENTORY: InventoryItem[] = [
+  { id: 'i1', branch_id: 'b1', item_name: 'Flour', category: 'Dry Goods', quantity: 50, unit: 'kg', min_stock: 10, last_updated: new Date().toISOString() },
+  { id: 'i2', branch_id: 'b1', item_name: 'Milk', category: 'Dairy', quantity: 12, unit: 'liters', min_stock: 5, last_updated: new Date().toISOString() },
+  { id: 'i3', branch_id: 'b1', item_name: 'Eggs', category: 'Dairy', quantity: 120, unit: 'units', min_stock: 30, last_updated: new Date().toISOString() },
+  { id: 'i4', branch_id: 'b1', item_name: 'Coffee Beans', category: 'Beverages', quantity: 8, unit: 'kg', min_stock: 2, last_updated: new Date().toISOString() },
 ];
