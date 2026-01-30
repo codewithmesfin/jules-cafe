@@ -28,6 +28,7 @@ import AdminOrders from './pages/admin/Orders';
 import AdminReservations from './pages/admin/Reservations';
 import AdminReviews from './pages/admin/Reviews';
 import AdminReports from './pages/admin/Reports';
+import AdminRecipes from './pages/admin/Recipes';
 
 // Manager Pages
 import ManagerDashboard from './pages/manager/Dashboard';
@@ -79,6 +80,7 @@ function App() {
                 <Route path="reservations" element={<AdminReservations />} />
                 <Route path="reviews" element={<AdminReviews />} />
                 <Route path="reports" element={<AdminReports />} />
+                <Route path="recipes" element={<AdminRecipes />} />
               </Route>
 
               {/* Manager Panel */}
@@ -96,6 +98,7 @@ function App() {
                 <Route path="reservations" element={<ManagerReservations />} />
                 <Route path="tables" element={<ManagerTables />} />
                 <Route path="reviews" element={<ManagerReviews />} />
+                <Route path="recipes" element={<AdminRecipes />} />
               </Route>
 
               {/* Cashier Panel */}

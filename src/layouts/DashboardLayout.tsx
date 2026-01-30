@@ -50,6 +50,7 @@ export const DashboardLayout: React.FC = () => {
           { icon: Calendar, label: 'Reservations', path: '/admin/reservations' },
           { icon: Star, label: 'Reviews', path: '/admin/reviews' },
           { icon: BarChart3, label: 'Reports', path: '/admin/reports' },
+          { icon: Utensils, label: 'Recipes', path: '/admin/recipes' },
         ];
       case 'manager':
         return [
@@ -59,6 +60,7 @@ export const DashboardLayout: React.FC = () => {
           { icon: Utensils, label: 'Menu Items', path: '/manager/menu-items' },
           { icon: Package, label: 'Inventory', path: '/manager/inventory' },
           { icon: ShoppingBag, label: 'Orders', path: '/manager/orders' },
+          { icon: Utensils, label: 'Recipes', path: '/manager/recipes' },
           { icon: Calendar, label: 'Reservations', path: '/manager/reservations' },
           { icon: Grid, label: 'Tables', path: '/manager/tables' },
           { icon: Star, label: 'Reviews', path: '/manager/reviews' },

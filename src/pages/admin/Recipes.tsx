@@ -1,0 +1,304 @@
+import React, { useState } from 'react';
+import { Search, Plus, Edit, Trash2, UtensilsCrossed, AlertCircle } from 'lucide-react';
+import { MOCK_RECIPES, MOCK_MENU_ITEMS, MOCK_INVENTORY, MOCK_BRANCHES } from '../../utils/mockData';
+import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/Input';
+import { Table } from '../../components/ui/Table';
+import { Card } from '../../components/ui/Card';
+import { Badge } from '../../components/ui/Badge';
+import { Modal } from '../../components/ui/Modal';
+import { calculateAvailablePortions } from '../../utils/recipeUtils';
+import { useNotification } from '../../context/NotificationContext';
+import type { Recipe } from '../../types';
+
+const Recipes: React.FC = () => {
+  const { showNotification } = useNotification();
+  const [recipes, setRecipes] = useState<Recipe[]>(MOCK_RECIPES);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedBranchId, setSelectedBranchId] = useState(MOCK_BRANCHES[0].id);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null);
+  const [formIngredients, setFormIngredients] = useState<{item_name: string, quantity: number, unit: string}[]>([]);
+  const [formInstructions, setFormInstructions] = useState('');
+  const [formMenuItemId, setFormMenuItemId] = useState('');
+
+  const filteredRecipes = recipes.filter(recipe => {
+    const menuItem = MOCK_MENU_ITEMS.find(m => m.id === recipe.menu_item_id);
+    return menuItem?.name.toLowerCase().includes(searchTerm.toLowerCase());
+  });
+
+  const branchInventory = MOCK_INVENTORY.filter(i => i.branch_id === selectedBranchId);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+          <div className="relative w-full sm:w-96">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Input
+              placeholder="Search recipes by menu item..."
+              className="pl-10"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <select
+            className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+            value={selectedBranchId}
+            onChange={(e) => setSelectedBranchId(e.target.value)}
+          >
+            {MOCK_BRANCHES.map(b => (
+              <option key={b.id} value={b.id}>Inventory: {b.name}</option>
+            ))}
+          </select>
+        </div>
+        <Button className="gap-2" onClick={() => {
+          setEditingRecipe(null);
+          setFormIngredients([{ item_name: '', quantity: 0, unit: '' }]);
+          setFormInstructions('');
+          setFormMenuItemId(MOCK_MENU_ITEMS[0]?.id || '');
+          setIsModalOpen(true);
+        }}>
+          <Plus size={20} /> Create Recipe
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="bg-orange-50 border-orange-100">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-orange-100 text-orange-600 rounded-full">
+              <UtensilsCrossed size={24} />
+            </div>
+            <div>
+              <p className="text-xs text-orange-600 font-bold uppercase">Total Recipes</p>
+              <h3 className="text-2xl font-bold text-orange-900">{recipes.length}</h3>
+            </div>
+          </div>
+        </Card>
+
+        {filteredRecipes.map(recipe => {
+          const menuItem = MOCK_MENU_ITEMS.find(m => m.id === recipe.menu_item_id);
+          const available = calculateAvailablePortions(recipe, branchInventory);
+
+          return (
+            <Card key={recipe.id} className="relative overflow-hidden">
+              {available < 5 && (
+                <div className="absolute top-0 right-0 p-2">
+                  <Badge variant="error" className="flex items-center gap-1">
+                    <AlertCircle size={12} /> Low Stock
+                  </Badge>
+                </div>
+              )}
+              <div className="flex items-start gap-4 mb-4">
+                <img
+                  src={menuItem?.image_url}
+                  alt={menuItem?.name}
+                  className="w-12 h-12 rounded-lg object-cover border border-gray-100"
+                />
+                <div>
+                  <h4 className="font-bold text-gray-900">{menuItem?.name}</h4>
+                  <p className="text-xs text-gray-500">{recipe.ingredients.length} ingredients</p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg mb-4">
+                <span className="text-sm text-gray-600 font-medium">Available to serve</span>
+                <span className={`text-lg font-bold ${available < 5 ? 'text-red-600' : 'text-green-600'}`}>
+                  {available}
+                </span>
+              </div>
+
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" className="flex-1" onClick={() => {
+                  setEditingRecipe(recipe);
+                  setFormIngredients([...recipe.ingredients]);
+                  setFormInstructions(recipe.instructions || '');
+                  setFormMenuItemId(recipe.menu_item_id);
+                  setIsModalOpen(true);
+                }}>
+                  Edit Recipe
+                </Button>
+              </div>
+            </Card>
+          );
+        })}
+      </div>
+
+      <Table
+        data={filteredRecipes}
+        columns={[
+          {
+            header: 'Menu Item',
+            accessor: (r) => MOCK_MENU_ITEMS.find(m => m.id === r.menu_item_id)?.name || 'Unknown'
+          },
+          {
+            header: 'Ingredients',
+            accessor: (r) => (
+              <div className="flex flex-wrap gap-1">
+                {r.ingredients.map((ing, idx) => (
+                  <Badge key={idx} variant="neutral" className="text-[10px]">
+                    {ing.item_name}: {ing.quantity}{ing.unit}
+                  </Badge>
+                ))}
+              </div>
+            )
+          },
+          {
+            header: 'Available (Portions)',
+            accessor: (r) => {
+              const available = calculateAvailablePortions(r, branchInventory);
+              return (
+                <span className={available < 5 ? 'text-red-600 font-bold' : 'text-green-600 font-bold'}>
+                  {available}
+                </span>
+              );
+            }
+          },
+          {
+            header: 'Actions',
+            accessor: (r) => (
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="sm" onClick={() => {
+                  setEditingRecipe(r);
+                  setFormIngredients([...r.ingredients]);
+                  setFormInstructions(r.instructions || '');
+                  setFormMenuItemId(r.menu_item_id);
+                  setIsModalOpen(true);
+                }}>
+                  <Edit size={16} />
+                </Button>
+                <Button variant="ghost" size="sm" className="text-red-600">
+                  <Trash2 size={16} />
+                </Button>
+              </div>
+            )
+          }
+        ]}
+      />
+
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title={editingRecipe ? 'Edit Recipe' : 'Create New Recipe'}
+        size="lg"
+      >
+        <div className="space-y-4">
+          {!editingRecipe && (
+            <div className="w-full">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Select Menu Item</label>
+              <select
+                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                value={formMenuItemId}
+                onChange={(e) => setFormMenuItemId(e.target.value)}
+              >
+                {MOCK_MENU_ITEMS.map(m => (
+                  <option key={m.id} value={m.id}>{m.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <label className="text-sm font-medium text-gray-700">Ingredients</label>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-orange-600 h-8"
+                onClick={() => setFormIngredients([...formIngredients, { item_name: '', quantity: 0, unit: '' }])}
+              >
+                <Plus size={14} className="mr-1" /> Add Ingredient
+              </Button>
+            </div>
+            <div className="space-y-2">
+              {formIngredients.map((ing, idx) => (
+                <div key={idx} className="flex gap-2 items-end">
+                  <div className="flex-1">
+                    <Input
+                      placeholder="Ingredient Name"
+                      value={ing.item_name}
+                      onChange={(e) => {
+                        const newIngs = [...formIngredients];
+                        newIngs[idx].item_name = e.target.value;
+                        setFormIngredients(newIngs);
+                      }}
+                    />
+                  </div>
+                  <div className="w-24">
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder="Qty"
+                      value={ing.quantity}
+                      onChange={(e) => {
+                        const newIngs = [...formIngredients];
+                        newIngs[idx].quantity = parseFloat(e.target.value) || 0;
+                        setFormIngredients(newIngs);
+                      }}
+                    />
+                  </div>
+                  <div className="w-24">
+                    <Input
+                      placeholder="Unit"
+                      value={ing.unit}
+                      onChange={(e) => {
+                        const newIngs = [...formIngredients];
+                        newIngs[idx].unit = e.target.value;
+                        setFormIngredients(newIngs);
+                      }}
+                    />
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-red-500 mb-1"
+                    onClick={() => setFormIngredients(formIngredients.filter((_, i) => i !== idx))}
+                  >
+                    <Trash2 size={16} />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="w-full">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Preparation Instructions</label>
+            <textarea
+              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 min-h-[100px]"
+              value={formInstructions}
+              onChange={(e) => setFormInstructions(e.target.value)}
+              placeholder="Step by step instructions..."
+            />
+          </div>
+
+          <div className="pt-4 flex justify-end gap-3">
+            <Button variant="outline" onClick={() => setIsModalOpen(false)}>Cancel</Button>
+            <Button onClick={() => {
+              setIsModalOpen(false);
+              if (editingRecipe) {
+                setRecipes(prev => prev.map(r => r.id === editingRecipe.id ? {
+                  ...r,
+                  ingredients: formIngredients,
+                  instructions: formInstructions,
+                  menu_item_id: formMenuItemId
+                } : r));
+                showNotification("Recipe updated successfully");
+              } else {
+                const newRecipe: Recipe = {
+                  id: `r${Date.now()}`,
+                  menu_item_id: formMenuItemId,
+                  ingredients: formIngredients,
+                  instructions: formInstructions
+                };
+                setRecipes(prev => [...prev, newRecipe]);
+                showNotification("Recipe created successfully");
+              }
+            }}>Save Recipe</Button>
+          </div>
+        </div>
+      </Modal>
+    </div>
+  );
+};
+
+export default Recipes;

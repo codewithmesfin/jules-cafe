@@ -137,3 +137,16 @@ export interface InventoryItem {
   min_stock: number;
   last_updated: string;
 }
+
+export interface RecipeIngredient {
+  item_name: string;
+  quantity: number;
+  unit: string;
+}
+
+export interface Recipe {
+  id: string;
+  menu_item_id: string;
+  ingredients: RecipeIngredient[];
+  instructions?: string;
+}

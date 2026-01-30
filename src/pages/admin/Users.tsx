@@ -20,6 +20,12 @@ const Users: React.FC = () => {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
 
+  // Form state
+  const [formFullName, setFormFullName] = useState('');
+  const [formEmail, setFormEmail] = useState('');
+  const [formRole, setFormRole] = useState<any>('customer');
+  const [formStatus, setFormStatus] = useState<any>('active');
+
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user.email.toLowerCase().includes(searchTerm.toLowerCase());
@@ -66,6 +72,10 @@ const Users: React.FC = () => {
         </div>
         <Button className="gap-2" onClick={() => {
           setEditingUser(null);
+          setFormFullName('');
+          setFormEmail('');
+          setFormRole('customer');
+          setFormStatus('active');
           setIsModalOpen(true);
         }}>
           <Plus size={20} /> Add User
@@ -101,6 +111,10 @@ const Users: React.FC = () => {
                   size="sm"
                   onClick={() => {
                     setEditingUser(user);
+                    setFormFullName(user.full_name);
+                    setFormEmail(user.email);
+                    setFormRole(user.role);
+                    setFormStatus(user.status);
                     setIsModalOpen(true);
                   }}
                 >
@@ -136,9 +150,25 @@ const Users: React.FC = () => {
             <Button onClick={() => {
               setIsModalOpen(false);
               if (editingUser) {
-                setUsers(prev => prev.map(u => u.id === editingUser.id ? { ...u, full_name: editingUser.full_name } : u));
+                setUsers(prev => prev.map(u => u.id === editingUser.id ? {
+                  ...u,
+                  full_name: formFullName,
+                  email: formEmail,
+                  role: formRole,
+                  status: formStatus
+                } : u));
                 showNotification("User updated successfully");
               } else {
+                const newUser: User = {
+                  id: `u${Date.now()}`,
+                  full_name: formFullName,
+                  email: formEmail,
+                  phone: '',
+                  role: formRole,
+                  status: formStatus,
+                  created_at: new Date().toISOString()
+                };
+                setUsers(prev => [...prev, newUser]);
                 showNotification("User created successfully");
               }
               setEditingUser(null);
@@ -149,13 +179,25 @@ const Users: React.FC = () => {
         }
       >
         <div className="space-y-4">
-          <Input label="Full Name" placeholder="e.g. John Doe" defaultValue={editingUser?.full_name} />
-          <Input label="Email Address" type="email" placeholder="john@example.com" defaultValue={editingUser?.email} />
+          <Input
+            label="Full Name"
+            placeholder="e.g. John Doe"
+            value={formFullName}
+            onChange={(e) => setFormFullName(e.target.value)}
+          />
+          <Input
+            label="Email Address"
+            type="email"
+            placeholder="john@example.com"
+            value={formEmail}
+            onChange={(e) => setFormEmail(e.target.value)}
+          />
           <div className="w-full">
             <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
             <select
               className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-              defaultValue={editingUser?.role || "customer"}
+              value={formRole}
+              onChange={(e) => setFormRole(e.target.value)}
             >
               <option value="customer">Customer</option>
               <option value="staff">Staff</option>
@@ -169,7 +211,8 @@ const Users: React.FC = () => {
               <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
               <select
                 className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-                defaultValue={editingUser.status}
+                value={formStatus}
+                onChange={(e) => setFormStatus(e.target.value)}
               >
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>

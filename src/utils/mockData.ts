@@ -10,7 +10,8 @@ import type {
   OrderItem,
   Reservation,
   Review,
-  InventoryItem
+  InventoryItem,
+  Recipe
 } from '../types';
 
 export const MOCK_BRANCHES: Branch[] = [
@@ -98,4 +99,25 @@ export const MOCK_INVENTORY: InventoryItem[] = [
   { id: 'i2', branch_id: 'b1', item_name: 'Milk', category: 'Dairy', quantity: 12, unit: 'liters', min_stock: 5, last_updated: new Date().toISOString() },
   { id: 'i3', branch_id: 'b1', item_name: 'Eggs', category: 'Dairy', quantity: 120, unit: 'units', min_stock: 30, last_updated: new Date().toISOString() },
   { id: 'i4', branch_id: 'b1', item_name: 'Coffee Beans', category: 'Beverages', quantity: 8, unit: 'kg', min_stock: 2, last_updated: new Date().toISOString() },
+];
+
+export const MOCK_RECIPES: Recipe[] = [
+  {
+    id: 'r1',
+    menu_item_id: 'm1', // Garlic Bread
+    ingredients: [
+      { item_name: 'Flour', quantity: 0.2, unit: 'kg' },
+      { item_name: 'Milk', quantity: 0.05, unit: 'liters' },
+    ],
+    instructions: 'Mix flour and milk to make dough. Bake with garlic butter.'
+  },
+  {
+    id: 'r2',
+    menu_item_id: 'm4', // Beef Burger
+    ingredients: [
+      { item_name: 'Flour', quantity: 0.1, unit: 'kg' },
+      { item_name: 'Eggs', quantity: 1, unit: 'units' },
+    ],
+    instructions: 'Grill beef patty. Serve in bun with fresh toppings.'
+  }
 ];

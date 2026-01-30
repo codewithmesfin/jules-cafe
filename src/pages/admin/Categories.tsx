@@ -19,6 +19,11 @@ const Categories: React.FC = () => {
   const [editingCategory, setEditingCategory] = useState<MenuCategory | null>(null);
   const [categoryToDelete, setCategoryToDelete] = useState<MenuCategory | null>(null);
 
+  // Form state
+  const [formName, setFormName] = useState('');
+  const [formDescription, setFormDescription] = useState('');
+  const [formIsActive, setFormIsActive] = useState(true);
+
   const filteredCategories = categories.filter(cat => {
     const matchesSearch = cat.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' ||
@@ -52,6 +57,9 @@ const Categories: React.FC = () => {
         </div>
         <Button className="gap-2" onClick={() => {
           setEditingCategory(null);
+          setFormName('');
+          setFormDescription('');
+          setFormIsActive(true);
           setIsModalOpen(true);
         }}>
           <Plus size={20} /> Add Category
@@ -81,6 +89,9 @@ const Categories: React.FC = () => {
                   size="sm"
                   onClick={() => {
                     setEditingCategory(cat);
+                    setFormName(cat.name);
+                    setFormDescription(cat.description);
+                    setFormIsActive(cat.is_active);
                     setIsModalOpen(true);
                   }}
                 >
@@ -116,9 +127,22 @@ const Categories: React.FC = () => {
             <Button onClick={() => {
               setIsModalOpen(false);
               if (editingCategory) {
-                setCategories(prev => prev.map(c => c.id === editingCategory.id ? { ...c, name: editingCategory.name } : c));
+                setCategories(prev => prev.map(c => c.id === editingCategory.id ? {
+                  ...c,
+                  name: formName,
+                  description: formDescription,
+                  is_active: formIsActive
+                } : c));
                 showNotification("Category updated successfully");
               } else {
+                const newCategory: MenuCategory = {
+                  id: `c${Date.now()}`,
+                  name: formName,
+                  description: formDescription,
+                  is_active: formIsActive,
+                  created_at: new Date().toISOString()
+                };
+                setCategories(prev => [...prev, newCategory]);
                 showNotification("Category created successfully");
               }
               setEditingCategory(null);
@@ -127,12 +151,18 @@ const Categories: React.FC = () => {
         }
       >
         <div className="space-y-4">
-          <Input label="Category Name" placeholder="e.g. Desserts" defaultValue={editingCategory?.name} />
+          <Input
+            label="Category Name"
+            placeholder="e.g. Desserts"
+            value={formName}
+            onChange={(e) => setFormName(e.target.value)}
+          />
           <div className="w-full">
             <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
             <textarea
               className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 min-h-[80px]"
-              defaultValue={editingCategory?.description}
+              value={formDescription}
+              onChange={(e) => setFormDescription(e.target.value)}
             />
           </div>
           <div className="flex items-center gap-2">
@@ -140,7 +170,8 @@ const Categories: React.FC = () => {
               type="checkbox"
               id="is_active"
               className="rounded text-orange-600 focus:ring-orange-500"
-              defaultChecked={editingCategory ? editingCategory.is_active : true}
+              checked={formIsActive}
+              onChange={(e) => setFormIsActive(e.target.checked)}
             />
             <label htmlFor="is_active" className="text-sm font-medium text-gray-700">Active</label>
           </div>
