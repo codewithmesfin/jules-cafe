@@ -1,5 +1,6 @@
+"use client";
 /* eslint-disable react-refresh/only-export-components */
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { User } from '../types';
 import { MOCK_USERS } from '../utils/mockData';
 
@@ -13,10 +14,15 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(() => {
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
     const saved = localStorage.getItem('user');
-    return saved ? JSON.parse(saved) : null;
-  });
+    if (saved) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setUser(JSON.parse(saved));
+    }
+  }, []);
 
   const login = async (email: string, password?: string) => {
     console.log('Login attempt with:', email, password ? '******' : 'no password');
