@@ -95,4 +95,7 @@ export const api = {
   stats: {
     getDashboard: () => fetcher('/api/stats'),
   },
+  auth: {
+    signup: (data: any) => fetcher('/api/auth/signup', { method: 'POST', body: JSON.stringify(data) }),
+  }
 };

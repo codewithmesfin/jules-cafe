@@ -15,6 +15,7 @@ const toJSON = {
 const UserSchema = new Schema({
   full_name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
   phone: { type: String, required: true },
   role: { type: String, enum: ['admin', 'manager', 'cashier', 'customer', 'staff'], required: true },
   status: { type: String, enum: ['active', 'inactive'], default: 'active' },
