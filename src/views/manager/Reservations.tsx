@@ -1,29 +1,133 @@
-import React, { useState } from 'react';
+"use client";
+import React, { useState, useEffect } from 'react';
 import { Search, Plus, CheckCircle, XCircle, Calendar, User, Users, Trash2 } from 'lucide-react';
-import { MOCK_RESERVATIONS, MOCK_USERS } from '../../utils/mockData';
+import { api } from '../../utils/api';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Table } from '../../components/ui/Table';
 import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
 import { useAuth } from '../../context/AuthContext';
-import type { Reservation } from '../../types';
+import { useNotification } from '../../context/NotificationContext';
+import type { Reservation, User as UserType } from '../../types';
 
 const Reservations: React.FC = () => {
   const { user } = useAuth();
+  const { showNotification } = useNotification();
   const [searchTerm, setSearchTerm] = useState('');
+  const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [allUsers, setAllUsers] = useState<UserType[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedRes, setSelectedRes] = useState<Reservation | null>(null);
 
-  const filteredReservations = MOCK_RESERVATIONS.filter(res =>
-    res.branch_id === user?.branch_id &&
-    (MOCK_USERS.find(u => u.id === res.customer_id)?.full_name.toLowerCase().includes(searchTerm.toLowerCase()) || false)
-  );
+  // Form state
+  const [formCustomerId, setFormCustomerId] = useState('');
+  const [formDate, setFormDate] = useState('');
+  const [formTime, setFormTime] = useState('');
+  const [formGuests, setFormGuests] = useState(2);
+  const [formWaiterId, setFormWaiterId] = useState('');
+  const [formStatus, setFormStatus] = useState<any>('requested');
+  const [formNote, setFormNote] = useState('');
+
+  useEffect(() => {
+    fetchData();
+  }, [user?.branch_id]);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [resData, userData] = await Promise.all([
+        api.reservations.getAll(),
+        api.users.getAll(),
+      ]);
+      setReservations(resData.filter((r: Reservation) => r.branch_id === user?.branch_id));
+      setAllUsers(userData);
+    } catch (error) {
+      console.error('Failed to fetch manager reservations:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleOpenModal = (res: Reservation | null = null) => {
     setSelectedRes(res);
+    if (res) {
+      setFormCustomerId(res.customer_id);
+      setFormDate(res.reservation_date);
+      setFormTime(res.reservation_time);
+      setFormGuests(res.guests_count);
+      setFormWaiterId(res.waiter_id || '');
+      setFormStatus(res.status);
+      setFormNote(res.note || '');
+    } else {
+      setFormCustomerId(allUsers.find(u => u.role === 'customer')?.id || '');
+      setFormDate(new Date().toISOString().split('T')[0]);
+      setFormTime('19:00');
+      setFormGuests(2);
+      setFormWaiterId('');
+      setFormStatus('requested');
+      setFormNote('');
+    }
     setIsModalOpen(true);
   };
+
+  const handleSave = async () => {
+    try {
+      const resData = {
+        customer_id: formCustomerId,
+        branch_id: user?.branch_id,
+        reservation_date: formDate,
+        reservation_time: formTime,
+        guests_count: formGuests,
+        waiter_id: formWaiterId || undefined,
+        status: formStatus,
+        note: formNote
+      };
+
+      if (selectedRes) {
+        await api.reservations.update(selectedRes.id, resData);
+        showNotification('Reservation updated successfully');
+      } else {
+        await api.reservations.create({
+          ...resData,
+          created_at: new Date().toISOString()
+        });
+        showNotification('Reservation created successfully');
+      }
+      setIsModalOpen(false);
+      fetchData();
+    } catch (error) {
+      showNotification('Failed to save reservation', 'error');
+    }
+  };
+
+  const handleUpdateStatus = async (id: string, status: string) => {
+    try {
+      await api.reservations.update(id, { status });
+      showNotification(`Reservation ${status}`);
+      fetchData();
+    } catch (error) {
+      showNotification('Failed to update status', 'error');
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (confirm('Are you sure you want to delete this reservation?')) {
+      try {
+        await api.reservations.delete(id);
+        showNotification('Reservation deleted', 'warning');
+        fetchData();
+      } catch (error) {
+        showNotification('Failed to delete reservation', 'error');
+      }
+    }
+  };
+
+  const filteredReservations = reservations.filter(res => {
+    const customer = allUsers.find(u => u.id === res.customer_id);
+    return customer?.full_name.toLowerCase().includes(searchTerm.toLowerCase());
+  });
 
   return (
     <div className="space-y-6">
@@ -42,78 +146,82 @@ const Reservations: React.FC = () => {
         </Button>
       </div>
 
-      <Table
-        data={filteredReservations}
-        columns={[
-          {
-            header: 'Customer',
-            accessor: (res) => (
-              <div className="flex items-center gap-2">
-                <User size={16} className="text-gray-400" />
-                <span className="font-bold text-gray-900">
-                  {MOCK_USERS.find(u => u.id === res.customer_id)?.full_name || 'Guest'}
+      {loading ? (
+        <div className="text-center py-10">Loading reservations...</div>
+      ) : (
+        <Table
+          data={filteredReservations}
+          columns={[
+            {
+              header: 'Customer',
+              accessor: (res) => (
+                <div className="flex items-center gap-2">
+                  <User size={16} className="text-gray-400" />
+                  <span className="font-bold text-gray-900">
+                    {allUsers.find(u => u.id === res.customer_id)?.full_name || 'Guest'}
+                  </span>
+                </div>
+              )
+            },
+            {
+              header: 'Waiter',
+              accessor: (res) => (
+                <span className="text-sm text-gray-600">
+                  {allUsers.find(u => u.id === res.waiter_id)?.full_name || '-'}
                 </span>
-              </div>
-            )
-          },
-          {
-            header: 'Waiter',
-            accessor: (res) => (
-              <span className="text-sm text-gray-600">
-                {MOCK_USERS.find(u => u.id === res.waiter_id)?.full_name || '-'}
-              </span>
-            )
-          },
-          {
-            header: 'Date & Time',
-            accessor: (res) => (
-              <div className="text-sm">
-                <p className="font-medium">{res.reservation_date}</p>
-                <p className="text-gray-500">{res.reservation_time}</p>
-              </div>
-            )
-          },
-          {
-            header: 'Guests',
-            accessor: (res) => (
-              <div className="flex items-center gap-1">
-                <Users size={14} className="text-gray-400" />
-                {res.guests_count}
-              </div>
-            )
-          },
-          {
-            header: 'Status',
-            accessor: (res) => (
-              <Badge
-                variant={
-                  res.status === 'confirmed' ? 'success' :
-                  res.status === 'cancelled' ? 'error' :
-                  res.status === 'requested' ? 'warning' : 'neutral'
-                }
-                className="capitalize"
-              >
-                {res.status.replace('_', ' ')}
-              </Badge>
-            )
-          },
-          {
-            header: 'Actions',
-            accessor: (res) => (
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" size="sm" onClick={() => handleOpenModal(res)} title="View/Edit"><Calendar size={16} /></Button>
-                <Button variant="ghost" size="sm" className="text-red-600" title="Delete"><Trash2 size={16} /></Button>
-                {res.status === 'requested' && (
-                  <>
-                    <Button variant="ghost" size="sm" className="text-green-600" title="Approve"><CheckCircle size={16} /></Button>
-                    <Button variant="ghost" size="sm" className="text-red-600" title="Reject"><XCircle size={16} /></Button>
-                  </>
-                )}
-              </div>
-            )
-          }
-        ]}
-      />
+              )
+            },
+            {
+              header: 'Date & Time',
+              accessor: (res) => (
+                <div className="text-sm">
+                  <p className="font-medium">{res.reservation_date}</p>
+                  <p className="text-gray-500">{res.reservation_time}</p>
+                </div>
+              )
+            },
+            {
+              header: 'Guests',
+              accessor: (res) => (
+                <div className="flex items-center gap-1">
+                  <Users size={14} className="text-gray-400" />
+                  {res.guests_count}
+                </div>
+              )
+            },
+            {
+              header: 'Status',
+              accessor: (res) => (
+                <Badge
+                  variant={
+                    res.status === 'confirmed' ? 'success' :
+                    res.status === 'cancelled' ? 'error' :
+                    res.status === 'requested' ? 'warning' : 'neutral'
+                  }
+                  className="capitalize"
+                >
+                  {res.status.replace('_', ' ')}
+                </Badge>
+              )
+            },
+            {
+              header: 'Actions',
+              accessor: (res) => (
+                <div className="flex items-center gap-2">
+                  <Button variant="ghost" size="sm" onClick={() => handleOpenModal(res)} title="View/Edit"><Calendar size={16} /></Button>
+                  <Button variant="ghost" size="sm" className="text-red-600" onClick={() => handleDelete(res.id)} title="Delete"><Trash2 size={16} /></Button>
+                  {res.status === 'requested' && (
+                    <>
+                      <Button variant="ghost" size="sm" className="text-green-600" onClick={() => handleUpdateStatus(res.id, 'confirmed')} title="Approve"><CheckCircle size={16} /></Button>
+                      <Button variant="ghost" size="sm" className="text-red-600" onClick={() => handleUpdateStatus(res.id, 'cancelled')} title="Reject"><XCircle size={16} /></Button>
+                    </>
+                  )}
+                </div>
+              )
+            }
+          ]}
+        />
+      )}
 
       <Modal
         isOpen={isModalOpen}
@@ -122,7 +230,7 @@ const Reservations: React.FC = () => {
         footer={
           <>
             <Button variant="outline" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-            <Button onClick={() => setIsModalOpen(false)}>
+            <Button onClick={handleSave}>
               {selectedRes ? 'Update Reservation' : 'Create Reservation'}
             </Button>
           </>
@@ -131,23 +239,46 @@ const Reservations: React.FC = () => {
         <div className="space-y-4">
           <div className="w-full">
             <label className="block text-sm font-medium text-gray-700 mb-1">Customer</label>
-            <select className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500" defaultValue={selectedRes?.customer_id}>
-              {MOCK_USERS.filter(u => u.role === 'customer').map(u => (
+            <select
+              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+              value={formCustomerId}
+              onChange={(e) => setFormCustomerId(e.target.value)}
+            >
+              {allUsers.filter(u => u.role === 'customer').map(u => (
                 <option key={u.id} value={u.id}>{u.full_name}</option>
               ))}
             </select>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Date" type="date" defaultValue={selectedRes?.reservation_date} />
-            <Input label="Time" type="time" defaultValue={selectedRes?.reservation_time} />
+            <Input
+              label="Date"
+              type="date"
+              value={formDate}
+              onChange={(e) => setFormDate(e.target.value)}
+            />
+            <Input
+              label="Time"
+              type="time"
+              value={formTime}
+              onChange={(e) => setFormTime(e.target.value)}
+            />
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Number of Guests" type="number" defaultValue={selectedRes?.guests_count} />
+            <Input
+              label="Number of Guests"
+              type="number"
+              value={formGuests}
+              onChange={(e) => setFormGuests(parseInt(e.target.value) || 0)}
+            />
             <div className="w-full">
               <label className="block text-sm font-medium text-gray-700 mb-1">Assigned Waiter</label>
-              <select className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500" defaultValue={selectedRes?.waiter_id}>
+              <select
+                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                value={formWaiterId}
+                onChange={(e) => setFormWaiterId(e.target.value)}
+              >
                 <option value="">Unassigned</option>
-                {MOCK_USERS.filter(u => u.role === 'staff' && u.branch_id === user?.branch_id).map(u => (
+                {allUsers.filter(u => u.role === 'staff' && u.branch_id === user?.branch_id).map(u => (
                   <option key={u.id} value={u.id}>{u.full_name}</option>
                 ))}
               </select>
@@ -155,7 +286,11 @@ const Reservations: React.FC = () => {
           </div>
           <div className="w-full">
             <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-            <select className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500" defaultValue={selectedRes?.status || 'confirmed'}>
+            <select
+              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+              value={formStatus}
+              onChange={(e) => setFormStatus(e.target.value as any)}
+            >
               <option value="requested">Requested</option>
               <option value="confirmed">Confirmed</option>
               <option value="seated">Seated</option>
@@ -167,7 +302,8 @@ const Reservations: React.FC = () => {
             <label className="block text-sm font-medium text-gray-700 mb-1">Note</label>
             <textarea
               className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 min-h-[80px]"
-              defaultValue={selectedRes?.note}
+              value={formNote}
+              onChange={(e) => setFormNote(e.target.value)}
               placeholder="Any special requests..."
             />
           </div>

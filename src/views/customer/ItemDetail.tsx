@@ -1,18 +1,37 @@
-import React from 'react';
+"use client";
+import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Plus, Minus, Star, Clock } from 'lucide-react';
-import { MOCK_MENU_ITEMS } from '../../utils/mockData';
+import { api } from '../../utils/api';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { useCart } from '../../context/CartContext';
+import type { MenuItem } from '../../types';
 
 const ItemDetail: React.FC = () => {
   const { id } = useParams() as { id: string };
   const router = useRouter();
   const { addToCart } = useCart();
-  const [quantity, setQuantity] = React.useState(1);
+  const [item, setItem] = useState<MenuItem | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [quantity, setQuantity] = useState(1);
 
-  const item = MOCK_MENU_ITEMS.find(i => i.id === id);
+  useEffect(() => {
+    const fetchItem = async () => {
+      try {
+        setLoading(true);
+        const data = await api.menuItems.getOne(id);
+        setItem(data);
+      } catch (error) {
+        console.error('Failed to fetch item:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (id) fetchItem();
+  }, [id]);
+
+  if (loading) return <div className="text-center py-20">Loading item...</div>;
 
   if (!item) {
     return (
@@ -40,7 +59,7 @@ const ItemDetail: React.FC = () => {
 
         <div className="flex flex-col justify-center">
           <div className="flex items-center gap-2 mb-4">
-            <Badge variant="info">Category Name</Badge>
+            <Badge variant="info">{(item.category_id as any)?.name || 'Category'}</Badge>
             {!item.is_active && <Badge variant="error">Out of Stock</Badge>}
           </div>
           <h1 className="text-4xl font-bold text-gray-900 mb-4">{item.name}</h1>

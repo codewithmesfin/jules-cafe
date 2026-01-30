@@ -92,6 +92,13 @@ export const api = {
     update: (id: string, data: any) => fetcher(`/api/recipes/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id: string) => fetcher(`/api/recipes/${id}`, { method: 'DELETE' }),
   },
+  branchMenuItems: {
+    getAll: () => fetcher('/api/branch-menu-items'),
+    getOne: (id: string) => fetcher(`/api/branch-menu-items/${id}`),
+    create: (data: any) => fetcher('/api/branch-menu-items', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: string, data: any) => fetcher(`/api/branch-menu-items/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id: string) => fetcher(`/api/branch-menu-items/${id}`, { method: 'DELETE' }),
+  },
   stats: {
     getDashboard: () => fetcher('/api/stats'),
   },

@@ -1,16 +1,37 @@
-import React from 'react';
+"use client";
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft } from 'lucide-react';
+import { api } from '../../utils/api';
 import { Button } from '../../components/ui/Button';
 import { useCart } from '../../context/CartContext';
 import { Card } from '../../components/ui/Card';
 import { useAuth } from '../../context/AuthContext';
+import { useNotification } from '../../context/NotificationContext';
+import type { Branch } from '../../types';
 
 const Cart: React.FC = () => {
-  const { cartItems, removeFromCart, updateQuantity, totalAmount } = useCart();
+  const { cartItems, removeFromCart, updateQuantity, totalAmount, clearCart } = useCart();
   const { user } = useAuth();
+  const { showNotification } = useNotification();
   const router = useRouter();
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [selectedBranchId, setSelectedBranchId] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchBranches = async () => {
+      try {
+        const data = await api.branches.getAll();
+        setBranches(data);
+        if (data.length > 0) setSelectedBranchId(data[0].id);
+      } catch (error) {
+        console.error('Failed to fetch branches:', error);
+      }
+    };
+    fetchBranches();
+  }, []);
 
   const discountRate = user?.discount_rate || 0;
   const discountAmount = (totalAmount * discountRate) / 100;
@@ -18,6 +39,41 @@ const Cart: React.FC = () => {
   const serviceFee = subtotalAfterDiscount * 0.05;
   const tax = subtotalAfterDiscount * 0.08;
   const finalTotal = subtotalAfterDiscount + serviceFee + tax;
+
+  const handlePlaceOrder = async () => {
+    if (!user) {
+      showNotification('Please login to place an order', 'error');
+      router.push('/login');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const orderData = {
+        customer_id: user.id,
+        branch_id: selectedBranchId,
+        status: 'pending',
+        type: 'self-service',
+        total_amount: finalTotal,
+        discount_amount: discountAmount,
+        items: cartItems.map(item => ({
+          menu_item_id: item.id,
+          menu_item_name: item.name,
+          quantity: item.quantity,
+          unit_price: item.base_price
+        }))
+      };
+
+      await api.orders.create(orderData);
+      showNotification('Order placed successfully!');
+      clearCart();
+      router.push('/orders');
+    } catch (error) {
+      showNotification('Failed to place order', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (cartItems.length === 0) {
     return (
@@ -91,7 +147,22 @@ const Cart: React.FC = () => {
           ))}
         </div>
 
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 space-y-6">
+          <Card title="Order Settings">
+            <div className="w-full">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Select Branch</label>
+              <select
+                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                value={selectedBranchId}
+                onChange={(e) => setSelectedBranchId(e.target.value)}
+              >
+                {branches.map(b => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
+                ))}
+              </select>
+            </div>
+          </Card>
+
           <Card className="sticky top-24" title="Order Summary">
             <div className="space-y-4">
               <div className="flex justify-between text-gray-600">
@@ -120,9 +191,10 @@ const Cart: React.FC = () => {
               <Button
                 className="w-full"
                 size="lg"
-                onClick={() => router.push('/orders')} // Just simulate order placement
+                disabled={loading}
+                onClick={handlePlaceOrder}
               >
-                Place Order
+                {loading ? 'Processing...' : 'Place Order'}
               </Button>
               <p className="text-center text-xs text-gray-400">
                 By placing this order, you agree to our Terms and Conditions.

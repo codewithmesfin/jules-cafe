@@ -1,20 +1,58 @@
-import React, { useState } from 'react';
+"use client";
+import React, { useState, useEffect } from 'react';
 import { Clock, MoreVertical, Edit2 } from 'lucide-react';
-import { MOCK_ORDERS, MOCK_USERS } from '../../utils/mockData';
+import { api } from '../../utils/api';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { Card } from '../../components/ui/Card';
 import { useAuth } from '../../context/AuthContext';
+import { useNotification } from '../../context/NotificationContext';
+import type { Order, User } from '../../types';
 
 const OrderQueue: React.FC = () => {
   const { user } = useAuth();
+  const { showNotification } = useNotification();
   const [filter, setFilter] = useState('active'); // active, completed, cancelled
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filteredOrders = MOCK_ORDERS.filter(order => {
-    if (order.branch_id !== user?.branch_id) return false;
+  useEffect(() => {
+    fetchData();
+  }, [user?.branch_id]);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [ordData, userData] = await Promise.all([
+        api.orders.getAll(),
+        api.users.getAll(),
+      ]);
+      setOrders(ordData.filter((o: Order) => o.branch_id === user?.branch_id));
+      setUsers(userData);
+    } catch (error) {
+      console.error('Failed to fetch order queue:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateStatus = async (id: string, status: string) => {
+    try {
+      await api.orders.update(id, { status });
+      showNotification(`Order marked as ${status}`);
+      fetchData();
+    } catch (error) {
+      showNotification('Failed to update status', 'error');
+    }
+  };
+
+  const filteredOrders = orders.filter(order => {
     if (filter === 'active') return !['completed', 'cancelled'].includes(order.status);
     return order.status === filter;
   });
+
+  if (loading) return <div className="text-center py-20">Loading queue...</div>;
 
   return (
     <div className="space-y-6">
@@ -52,7 +90,7 @@ const OrderQueue: React.FC = () => {
                     </Badge>
                   </div>
                   <p className="text-xs text-gray-500">
-                    {MOCK_USERS.find(u => u.id === order.customer_id)?.full_name || 'Walk-in Guest'}
+                    {users.find(u => u.id === order.customer_id)?.full_name || 'Walk-in Guest'}
                   </p>
                 </div>
                 <div className="text-right">
@@ -85,16 +123,16 @@ const OrderQueue: React.FC = () => {
                   <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Quick Actions</div>
                   <div className="flex gap-2">
                     {order.status === 'pending' && (
-                      <Button size="sm" className="w-full bg-orange-600 hover:bg-orange-700">Accept</Button>
+                      <Button size="sm" className="w-full bg-orange-600 hover:bg-orange-700" onClick={() => handleUpdateStatus(order.id, 'preparing')}>Accept</Button>
                     )}
                     {order.status === 'preparing' && (
-                      <Button size="sm" className="w-full bg-green-600 hover:bg-green-700">Ready</Button>
+                      <Button size="sm" className="w-full bg-green-600 hover:bg-green-700" onClick={() => handleUpdateStatus(order.id, 'ready')}>Ready</Button>
                     )}
                     {order.status === 'ready' && (
-                      <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-700">Complete</Button>
+                      <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-700" onClick={() => handleUpdateStatus(order.id, 'completed')}>Complete</Button>
                     )}
                     {['pending', 'preparing'].includes(order.status) && (
-                      <Button size="sm" variant="outline" className="text-red-600 border-red-200 hover:bg-red-50">Cancel</Button>
+                      <Button size="sm" variant="outline" className="text-red-600 border-red-200 hover:bg-red-50" onClick={() => handleUpdateStatus(order.id, 'cancelled')}>Cancel</Button>
                     )}
                   </div>
                 </div>

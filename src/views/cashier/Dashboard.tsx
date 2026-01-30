@@ -1,18 +1,39 @@
-import React from 'react';
+"use client";
+import React, { useState, useEffect } from 'react';
 import { Card } from '../../components/ui/Card';
 import { ShoppingBag, Clock, CheckCircle, UserPlus, List } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
-import { MOCK_ORDERS } from '../../utils/mockData';
+import { api } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import { useRouter } from 'next/navigation';
+import type { Order } from '../../types';
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
   const router = useRouter();
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const branchOrders = MOCK_ORDERS.filter(o => o.branch_id === user?.branch_id);
-  const activeOrders = branchOrders.filter(o => !['completed', 'cancelled'].includes(o.status));
-  const completedToday = branchOrders.filter(o => o.status === 'completed').length;
+  useEffect(() => {
+    fetchOrders();
+  }, [user?.branch_id]);
+
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+      const data = await api.orders.getAll();
+      setOrders(data.filter((o: Order) => o.branch_id === user?.branch_id));
+    } catch (error) {
+      console.error('Failed to fetch cashier orders:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const activeOrders = orders.filter(o => !['completed', 'cancelled'].includes(o.status));
+  const completedToday = orders.filter(o => o.status === 'completed').length;
+
+  if (loading) return <div className="text-center py-20">Loading Cashier Dashboard...</div>;
 
   return (
     <div className="space-y-8">
@@ -52,8 +73,8 @@ const Dashboard: React.FC = () => {
             <Clock size={24} />
           </div>
           <div>
-            <p className="text-sm text-gray-500 font-medium">Avg Prep Time</p>
-            <h3 className="text-2xl font-bold">18 min</h3>
+            <p className="text-sm text-gray-500 font-medium">Total Orders</p>
+            <h3 className="text-2xl font-bold">{orders.length}</h3>
           </div>
         </Card>
       </div>
@@ -62,8 +83,8 @@ const Dashboard: React.FC = () => {
         <Card title="Order Type Distribution">
           <div className="space-y-4 py-4">
             {[
-              { type: 'Walk-in', count: branchOrders.filter(o => o.type === 'walk-in').length, color: 'bg-blue-500' },
-              { type: 'Self-service', count: branchOrders.filter(o => o.type === 'self-service').length, color: 'bg-orange-500' },
+              { type: 'Walk-in', count: orders.filter(o => o.type === 'walk-in').length, color: 'bg-blue-500' },
+              { type: 'Self-service', count: orders.filter(o => o.type === 'self-service').length, color: 'bg-orange-500' },
             ].map((stat) => (
               <div key={stat.type} className="space-y-2">
                 <div className="flex justify-between text-sm">
@@ -73,7 +94,7 @@ const Dashboard: React.FC = () => {
                 <div className="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden">
                   <div
                     className={`${stat.color} h-full rounded-full`}
-                    style={{ width: `${(stat.count / branchOrders.length) * 100}%` }}
+                    style={{ width: `${(stat.count / (orders.length || 1)) * 100}%` }}
                   />
                 </div>
               </div>
@@ -81,23 +102,31 @@ const Dashboard: React.FC = () => {
           </div>
         </Card>
 
-        <Card title="Quick Stats">
+        <Card title="Revenue Distribution">
           <div className="grid grid-cols-2 gap-4 py-2">
             <div className="p-4 bg-gray-50 rounded-xl text-center">
-              <p className="text-2xl font-bold text-gray-900">$42.50</p>
+              <p className="text-2xl font-bold text-gray-900">
+                ${orders.length > 0 ? (orders.reduce((acc, o) => acc + o.total_amount, 0) / orders.length).toFixed(2) : '0.00'}
+              </p>
               <p className="text-xs text-gray-500">Avg Ticket Size</p>
             </div>
             <div className="p-4 bg-gray-50 rounded-xl text-center">
-              <p className="text-2xl font-bold text-gray-900">12%</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {orders.length > 0 ? ((orders.filter(o => o.status === 'cancelled').length / orders.length) * 100).toFixed(0) : '0'}%
+              </p>
               <p className="text-xs text-gray-500">Cancellation Rate</p>
             </div>
             <div className="p-4 bg-gray-50 rounded-xl text-center">
-              <p className="text-2xl font-bold text-green-600">+15%</p>
-              <p className="text-xs text-gray-500">vs Yesterday</p>
+              <p className="text-2xl font-bold text-green-600">
+                ${orders.reduce((acc, o) => acc + o.total_amount, 0).toLocaleString()}
+              </p>
+              <p className="text-xs text-gray-500">Total Revenue</p>
             </div>
             <div className="p-4 bg-gray-50 rounded-xl text-center">
-              <p className="text-2xl font-bold text-blue-600">85%</p>
-              <p className="text-xs text-gray-500">On-time Delivery</p>
+              <p className="text-2xl font-bold text-blue-600">
+                {orders.filter(o => o.status === 'completed').length}
+              </p>
+              <p className="text-xs text-gray-500">Successful Sales</p>
             </div>
           </div>
         </Card>
