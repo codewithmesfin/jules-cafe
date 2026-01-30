@@ -9,23 +9,39 @@ import { Modal } from '../../components/ui/Modal';
 
 const Categories: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const filteredCategories = MOCK_CATEGORIES.filter(cat =>
-    cat.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredCategories = MOCK_CATEGORIES.filter(cat => {
+    const matchesSearch = cat.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'all' ||
+                         (statusFilter === 'active' && cat.is_active) ||
+                         (statusFilter === 'inactive' && !cat.is_active);
+    return matchesSearch && matchesStatus;
+  });
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="relative w-full sm:w-96">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-          <Input
-            placeholder="Search categories..."
-            className="pl-10"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+        <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Input
+              placeholder="Search categories..."
+              className="pl-10"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <select
+            className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            <option value="all">All Status</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
         </div>
         <Button className="gap-2" onClick={() => setIsModalOpen(true)}>
           <Plus size={20} /> Add Category
