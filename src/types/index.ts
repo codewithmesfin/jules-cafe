@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'manager' | 'cashier' | 'customer';
+export type UserRole = 'admin' | 'manager' | 'cashier' | 'customer' | 'staff';
 export type UserStatus = 'active' | 'inactive';
 
 export interface User {
@@ -74,6 +74,7 @@ export interface Order {
   customer_id: string;
   branch_id: string;
   table_id?: string;
+  waiter_id?: string;
   status: OrderStatus;
   type: OrderType;
   total_amount: number;
@@ -99,6 +100,7 @@ export interface Reservation {
   customer_id: string;
   branch_id: string;
   table_id?: string;
+  waiter_id?: string;
   reservation_date: string;
   reservation_time: string;
   guests_count: number;

@@ -1,5 +1,5 @@
 import React from 'react';
-import { User, Calendar, Shield } from 'lucide-react';
+import { User, Calendar, Shield, ShoppingBag, Star, Heart } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
@@ -24,6 +24,21 @@ const Profile: React.FC = () => {
             <p className="text-gray-500 capitalize mb-6">{user.role}</p>
             <div className="flex justify-center gap-2">
               <Button size="sm" variant="outline">Change Photo</Button>
+            </div>
+          </Card>
+
+          <Card title="Activity Stats">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-3 bg-gray-50 rounded-lg text-center">
+                <ShoppingBag size={20} className="mx-auto mb-2 text-orange-500" />
+                <p className="text-xl font-bold">12</p>
+                <p className="text-[10px] text-gray-500 uppercase">Orders</p>
+              </div>
+              <div className="p-3 bg-gray-50 rounded-lg text-center">
+                <Star size={20} className="mx-auto mb-2 text-yellow-500" />
+                <p className="text-xl font-bold">5</p>
+                <p className="text-[10px] text-gray-500 uppercase">Reviews</p>
+              </div>
             </div>
           </Card>
 
@@ -71,7 +86,19 @@ const Profile: React.FC = () => {
             </form>
           </Card>
 
-          <div className="mt-8">
+          <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+            <Card title="Favorite Dish">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-lg bg-gray-100 flex items-center justify-center">
+                  <Heart size={24} className="text-red-500 fill-red-500" />
+                </div>
+                <div>
+                  <p className="font-bold">Beef Burger</p>
+                  <p className="text-xs text-gray-500">Ordered 4 times</p>
+                </div>
+              </div>
+            </Card>
+
             <Card title="Security">
               <div className="flex items-center justify-between">
                 <div>
