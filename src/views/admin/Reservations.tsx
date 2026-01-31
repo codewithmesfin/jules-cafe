@@ -14,6 +14,14 @@ const Reservations: React.FC = () => {
   const [users, setUsers] = useState<UserType[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // New Reservation Form State
+  const [selectedCustomer, setSelectedCustomer] = useState('');
+  const [resDate, setResDate] = useState('');
+  const [resTime, setResTime] = useState('');
+  const [guestsCount, setGuestsCount] = useState(2);
+  const [resNote, setResNote] = useState('');
 
   useEffect(() => {
     fetchData();
@@ -47,6 +55,40 @@ const Reservations: React.FC = () => {
     } catch (error) {
       alert('Failed to update status');
     }
+  };
+
+  const handleCreateReservation = async () => {
+    try {
+      setSaving(true);
+      const customer = users.find(u => u.id === selectedCustomer);
+      const resData = {
+        customer_id: selectedCustomer,
+        branch_id: customer?.branch_id || '654321098765432109876543', // Fallback
+        reservation_date: resDate,
+        reservation_time: resTime,
+        guests_count: guestsCount,
+        note: resNote,
+        status: 'requested'
+      };
+
+      await api.reservations.create(resData);
+      setIsCreateModalOpen(false);
+      resetForm();
+      fetchData();
+    } catch (error) {
+      console.error('Failed to create reservation:', error);
+      alert('Failed to create reservation');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const resetForm = () => {
+    setSelectedCustomer('');
+    setResDate('');
+    setResTime('');
+    setGuestsCount(2);
+    setResNote('');
   };
 
   return (
@@ -137,33 +179,67 @@ const Reservations: React.FC = () => {
       )}
       <Modal
         isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
+        onClose={() => {
+          setIsCreateModalOpen(false);
+          resetForm();
+        }}
         title="Create New Reservation"
         size="lg"
         footer={
           <>
-            <Button variant="outline" onClick={() => setIsCreateModalOpen(false)}>Cancel</Button>
-            <Button onClick={() => setIsCreateModalOpen(false)}>Create Reservation</Button>
+            <Button variant="outline" onClick={() => {
+              setIsCreateModalOpen(false);
+              resetForm();
+            }}>Cancel</Button>
+            <Button onClick={handleCreateReservation} disabled={saving}>
+              {saving ? 'Creating...' : 'Create Reservation'}
+            </Button>
           </>
         }
       >
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Customer</label>
-            <select className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+            <select
+              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+              value={selectedCustomer}
+              onChange={(e) => setSelectedCustomer(e.target.value)}
+            >
+              <option value="">Select Customer</option>
               {users.filter(u => u.role === 'customer').map(user => (
                 <option key={user.id} value={user.id}>{user.full_name}</option>
               ))}
             </select>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Date" type="date" />
-            <Input label="Time" type="time" />
+            <Input
+              label="Date"
+              type="date"
+              value={resDate}
+              onChange={(e) => setResDate(e.target.value)}
+            />
+            <Input
+              label="Time"
+              type="time"
+              value={resTime}
+              onChange={(e) => setResTime(e.target.value)}
+            />
           </div>
-          <Input label="Guests Count" type="number" min="1" defaultValue="2" />
+          <Input
+            label="Guests Count"
+            type="number"
+            min="1"
+            value={guestsCount}
+            onChange={(e) => setGuestsCount(parseInt(e.target.value) || 0)}
+          />
           <div className="w-full">
             <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-            <textarea className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 min-h-[80px]" />
+            <textarea
+              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 min-h-[80px]"
+              value={resNote}
+              onChange={(e) => setResNote(e.target.value)}
+              placeholder="Any special requests..."
+            />
           </div>
         </div>
       </Modal>

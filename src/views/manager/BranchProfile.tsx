@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { MapPin, Clock, Users, Save } from 'lucide-react';
+import { Save } from 'lucide-react';
 import { api } from '../../utils/api';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -83,7 +83,6 @@ const BranchProfile: React.FC = () => {
                 label="Branch Name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                icon={<MapPin size={18} />}
               />
             </div>
             <div className="md:col-span-2">
@@ -98,7 +97,6 @@ const BranchProfile: React.FC = () => {
               type="number"
               value={capacity}
               onChange={(e) => setCapacity(parseInt(e.target.value) || 0)}
-              icon={<Users size={18} />}
             />
           </div>
         </Card>
@@ -110,14 +108,12 @@ const BranchProfile: React.FC = () => {
               type="time"
               value={openTime}
               onChange={(e) => setOpenTime(e.target.value)}
-              icon={<Clock size={18} />}
             />
             <Input
               label="Closing Time"
               type="time"
               value={closeTime}
               onChange={(e) => setCloseTime(e.target.value)}
-              icon={<Clock size={18} />}
             />
           </div>
         </Card>

@@ -14,6 +14,15 @@ const Branches: React.FC = () => {
   const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  // Form state
+  const [name, setName] = useState('');
+  const [location, setLocation] = useState('');
+  const [openTime, setOpenTime] = useState('09:00');
+  const [closeTime, setCloseTime] = useState('22:00');
+  const [capacity, setCapacity] = useState(50);
+  const [isActive, setIsActive] = useState(true);
 
   useEffect(() => {
     fetchBranches();
@@ -38,7 +47,51 @@ const Branches: React.FC = () => {
 
   const handleOpenModal = (branch: Branch | null = null) => {
     setSelectedBranch(branch);
+    if (branch) {
+      setName(branch.name);
+      setLocation(branch.location);
+      setOpenTime(branch.operating_hours.open);
+      setCloseTime(branch.operating_hours.close);
+      setCapacity(branch.capacity);
+      setIsActive(branch.is_active);
+    } else {
+      setName('');
+      setLocation('');
+      setOpenTime('09:00');
+      setCloseTime('22:00');
+      setCapacity(50);
+      setIsActive(true);
+    }
     setIsModalOpen(true);
+  };
+
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      const branchData = {
+        name,
+        location,
+        operating_hours: {
+          open: openTime,
+          close: closeTime
+        },
+        capacity,
+        is_active: isActive
+      };
+
+      if (selectedBranch) {
+        await api.branches.update(selectedBranch.id, branchData);
+      } else {
+        await api.branches.create(branchData);
+      }
+      setIsModalOpen(false);
+      fetchBranches();
+    } catch (error) {
+      console.error('Failed to save branch:', error);
+      alert('Failed to save branch');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -136,25 +189,56 @@ const Branches: React.FC = () => {
         footer={
           <>
             <Button variant="outline" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-            <Button onClick={() => setIsModalOpen(false)}>
-              {selectedBranch ? 'Save Changes' : 'Create Branch'}
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? 'Saving...' : selectedBranch ? 'Save Changes' : 'Create Branch'}
             </Button>
           </>
         }
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="md:col-span-2">
-            <Input label="Branch Name" placeholder="e.g. Downtown Branch" defaultValue={selectedBranch?.name} />
+            <Input
+              label="Branch Name"
+              placeholder="e.g. Downtown Branch"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
           </div>
           <div className="md:col-span-2">
-            <Input label="Location Address" placeholder="123 Main St, City" defaultValue={selectedBranch?.location} />
+            <Input
+              label="Location Address"
+              placeholder="123 Main St, City"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+            />
           </div>
-          <Input label="Opening Time" type="time" defaultValue={selectedBranch?.operating_hours.open} />
-          <Input label="Closing Time" type="time" defaultValue={selectedBranch?.operating_hours.close} />
-          <Input label="Total Capacity" type="number" placeholder="50" defaultValue={selectedBranch?.capacity} />
+          <Input
+            label="Opening Time"
+            type="time"
+            value={openTime}
+            onChange={(e) => setOpenTime(e.target.value)}
+          />
+          <Input
+            label="Closing Time"
+            type="time"
+            value={closeTime}
+            onChange={(e) => setCloseTime(e.target.value)}
+          />
+          <Input
+            label="Total Capacity"
+            type="number"
+            placeholder="50"
+            value={capacity}
+            onChange={(e) => setCapacity(parseInt(e.target.value) || 0)}
+          />
           <div className="flex items-center mt-8">
             <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" className="w-4 h-4 text-orange-600 rounded border-gray-300 focus:ring-orange-500" defaultChecked={selectedBranch ? selectedBranch.is_active : true} />
+              <input
+                type="checkbox"
+                className="w-4 h-4 text-orange-600 rounded border-gray-300 focus:ring-orange-500"
+                checked={isActive}
+                onChange={(e) => setIsActive(e.target.checked)}
+              />
               <span className="text-sm font-medium text-gray-700">Active Branch</span>
             </label>
           </div>
