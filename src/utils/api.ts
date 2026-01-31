@@ -1,10 +1,16 @@
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+
 const fetcher = async (url: string, options?: RequestInit) => {
   const jwt = typeof window !== 'undefined' ? localStorage.getItem('jwt') : null;
 
-  const response = await fetch(url, {
+  const fullUrl = url.startsWith('http') ? url : `${API_URL}${url}`;
+
+  const isFormData = options?.body instanceof FormData;
+
+  const response = await fetch(fullUrl, {
     ...options,
     headers: {
-      'Content-Type': 'application/json',
+      ...(!isFormData && { 'Content-Type': 'application/json' }),
       ...(jwt ? { 'Authorization': `Bearer ${jwt}` } : {}),
       ...options?.headers,
     },
@@ -56,8 +62,14 @@ export const api = {
   menuItems: {
     getAll: () => fetcher('/api/menu-items'),
     getOne: (id: string) => fetcher(`/api/menu-items/${id}`),
-    create: (data: any) => fetcher('/api/menu-items', { method: 'POST', body: JSON.stringify(data) }),
-    update: (id: string, data: any) => fetcher(`/api/menu-items/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    create: (data: any) => fetcher('/api/menu-items', {
+      method: 'POST',
+      body: data instanceof FormData ? data : JSON.stringify(data)
+    }),
+    update: (id: string, data: any) => fetcher(`/api/menu-items/${id}`, {
+      method: 'PUT',
+      body: data instanceof FormData ? data : JSON.stringify(data)
+    }),
     delete: (id: string) => fetcher(`/api/menu-items/${id}`, { method: 'DELETE' }),
   },
   orders: {
@@ -107,5 +119,7 @@ export const api = {
   },
   auth: {
     signup: (data: any) => fetcher('/api/auth/signup', { method: 'POST', body: JSON.stringify(data) }),
+    forgotPassword: (email: string) => fetcher('/api/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) }),
+    resetPassword: (token: string, data: any) => fetcher(`/api/auth/reset-password/${token}`, { method: 'POST', body: JSON.stringify(data) }),
   }
 };

@@ -17,7 +17,18 @@ const Login: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const user = await login(email, password);
+      const { user, jwt } = await login(email, password);
+
+      if (user.passwordResetRequired) {
+        // We need to send them to reset password, but they need a token.
+        // Actually, if it's required, we can just redirect to a special 'change password' page
+        // or we can use the forgot password flow.
+        // The user request says "they will reset it using their email verification".
+        // So I'll redirect them to a page that says "Please reset your password. We've sent a link to your email."
+        // Or I can just trigger forgotPassword for them.
+        router.push('/forgot-password');
+        return;
+      }
 
       if (user.role === 'admin') router.push('/admin');
       else if (user.role === 'manager') router.push('/manager');
@@ -52,7 +63,7 @@ const Login: React.FC = () => {
             <div>
               <div className="flex justify-between mb-1">
                 <label className="block text-sm font-medium text-gray-700">Password</label>
-                <button type="button" className="text-sm text-orange-600 hover:underline">Forgot password?</button>
+                <Link href="/forgot-password" className="text-sm text-orange-600 hover:underline">Forgot password?</Link>
               </div>
               <Input
                 type="password"

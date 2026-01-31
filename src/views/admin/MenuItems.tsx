@@ -32,6 +32,7 @@ const MenuItems: React.FC = () => {
   const [formCategoryId, setFormCategoryId] = useState('');
   const [formBasePrice, setFormBasePrice] = useState(0);
   const [formImageUrl, setFormImageUrl] = useState('');
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [formDescription, setFormDescription] = useState('');
   const [formIsActive, setFormIsActive] = useState(true);
 
@@ -70,24 +71,29 @@ const MenuItems: React.FC = () => {
 
   const handleSave = async () => {
     try {
-      const itemData = {
-        name: formName,
-        category_id: formCategoryId,
-        base_price: formBasePrice,
-        image_url: formImageUrl,
-        description: formDescription,
-        is_active: formIsActive
-      };
+      const formData = new FormData();
+      formData.append('name', formName);
+      formData.append('category_id', formCategoryId);
+      formData.append('base_price', formBasePrice.toString());
+      formData.append('description', formDescription);
+      formData.append('is_active', formIsActive.toString());
+
+      if (imageFile) {
+        formData.append('image', imageFile);
+      } else {
+        formData.append('image_url', formImageUrl);
+      }
 
       if (editingItem) {
-        await api.menuItems.update(editingItem.id, itemData);
+        await api.menuItems.update(editingItem.id, formData);
         showNotification("Item updated successfully");
       } else {
-        await api.menuItems.create(itemData);
+        await api.menuItems.create(formData);
         showNotification("Item created successfully");
       }
       setIsModalOpen(false);
       setEditingItem(null);
+      setImageFile(null);
       fetchAllData();
     } catch (error) {
       showNotification("Failed to save item", "error");
@@ -269,12 +275,31 @@ const MenuItems: React.FC = () => {
             value={formBasePrice}
             onChange={(e) => setFormBasePrice(parseFloat(e.target.value) || 0)}
           />
-          <Input
-            label="Image URL"
-            placeholder="https://..."
-            value={formImageUrl}
-            onChange={(e) => setFormImageUrl(e.target.value)}
-          />
+          <div className="space-y-4">
+            <Input
+              label="Image URL (fallback)"
+              placeholder="https://..."
+              value={formImageUrl}
+              onChange={(e) => {
+                setFormImageUrl(e.target.value);
+                if (e.target.value) setImageFile(null);
+              }}
+            />
+            <div className="w-full">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Upload Image</label>
+              <input
+                type="file"
+                accept="image/*"
+                className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100"
+                onChange={(e) => {
+                  if (e.target.files?.[0]) {
+                    setImageFile(e.target.files[0]);
+                    setFormImageUrl('');
+                  }
+                }}
+              />
+            </div>
+          </div>
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
             <textarea

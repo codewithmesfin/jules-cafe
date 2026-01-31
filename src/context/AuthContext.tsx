@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { User } from '../types';
 import { MOCK_USERS } from '../utils/mockData';
+import { API_URL } from '../utils/api';
 
 interface AuthContextType {
   user: User | null;
@@ -36,10 +37,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password?: string) => {
     console.log('Login attempt with:', email, password ? '******' : 'no password');
 
-    const response = await fetch('/api/auth/login', {
+    const response = await fetch(`${API_URL}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ identifier: email, password }),
     });
 
     if (response.ok) {
