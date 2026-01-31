@@ -25,8 +25,14 @@ export async function PUT(
     const { id } = await params;
     await connectToDatabase();
     const body = await request.json();
-    const user = await UserModel.findByIdAndUpdate(id, body, { new: true });
+
+    const user = await UserModel.findById(id);
     if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
+
+    // Update fields
+    Object.assign(user, body);
+    await user.save();
+
     return NextResponse.json(user);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
