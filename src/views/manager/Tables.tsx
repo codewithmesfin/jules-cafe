@@ -60,12 +60,17 @@ const Tables: React.FC = () => {
   };
 
   const handleSave = async () => {
+    if (!formTableNumber || !user?.branch_id) {
+      showNotification('Please fill in all fields (Branch ID missing)', 'error');
+      return;
+    }
+
     try {
       const tableData = {
         table_number: formTableNumber,
         capacity: formCapacity,
         status: formStatus,
-        branch_id: user?.branch_id
+        branch_id: user.branch_id
       };
 
       if (selectedTable) {

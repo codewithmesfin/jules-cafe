@@ -58,6 +58,11 @@ const Reservations: React.FC = () => {
   };
 
   const handleCreateReservation = async () => {
+    if (!selectedCustomer || !resDate || !resTime) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
     try {
       setSaving(true);
       const customer = users.find(u => u.id === selectedCustomer);
