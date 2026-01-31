@@ -7,13 +7,13 @@ export async function POST(request: Request) {
 
     // Map frontend body to Strapi's register payload
     const strapiPayload = {
-      username: body.email.split('@')[0] + Math.floor(Math.random() * 1000), // Generate a username if not provided
+      username:body.email,
       email: body.email,
       password: body.password,
       // Additional fields can be passed if Strapi user-permissions is configured to accept them
-      full_name: body.full_name,
-      phone: body.phone,
-      role_type: 'customer'
+      // full_name: body.full_name,
+      // phone: body.phone,
+      // role: 'customer'
     };
 
     const data = await strapiFetch('/api/auth/local/register', {

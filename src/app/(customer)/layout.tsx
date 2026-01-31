@@ -46,7 +46,7 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
                 <Link href="/profile">
                   <Button variant="ghost" size="sm" className="gap-2">
                     <User className="w-5 h-5" />
-                    <span>{user.full_name.split(' ')[0]}</span>
+                    <span>{user.full_name?.split(' ')[0]}</span>
                   </Button>
                 </Link>
                 {user.role !== 'customer' && (
