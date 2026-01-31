@@ -157,7 +157,7 @@ const Cart: React.FC = () => {
                 onChange={(e) => setSelectedBranchId(e.target.value)}
               >
                 {branches.map(b => (
-                  <option key={b.id} value={b.id}>{b.name}</option>
+                  <option key={b.id} value={b.id}>{b.branch_name}</option>
                 ))}
               </select>
             </div>

@@ -109,7 +109,7 @@ const Reviews: React.FC = () => {
                   onChange={(e) => setSelectedBranchId(e.target.value)}
                 >
                   {branches.map(b => (
-                    <option key={b.id} value={b.id}>{b.name}</option>
+                    <option key={b.id} value={b.id}>{b.branch_name}</option>
                   ))}
                 </select>
               </div>
@@ -162,10 +162,10 @@ const Reviews: React.FC = () => {
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center font-bold text-gray-500">
-                        {customer?.full_name?.charAt(0) || 'A'}
+                        {(customer?.full_name || customer?.username || 'A').charAt(0)}
                       </div>
                       <div>
-                        <h4 className="font-bold text-gray-900">{customer?.full_name || 'Anonymous'}</h4>
+                        <h4 className="font-bold text-gray-900">{customer?.full_name || customer?.username || 'Anonymous'}</h4>
                         <p className="text-xs text-gray-400">
                           {new Date(review.created_at).toLocaleDateString()}
                         </p>

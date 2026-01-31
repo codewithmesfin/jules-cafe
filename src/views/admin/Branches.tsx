@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Plus, Edit, Trash2, MapPin, Clock, Users } from 'lucide-react';
 import { api } from '../../utils/api';
+import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Table } from '../../components/ui/Table';
@@ -9,10 +10,11 @@ import { Modal } from '../../components/ui/Modal';
 import type { Branch } from '../../types';
 
 const Branches: React.FC = () => {
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
-  const [branches, setBranches] = useState<Branch[]>([]);
+  const [selectedBranch, setSelectedBranch] = useState<any | null>(null);
+  const [branches, setBranches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -41,19 +43,19 @@ const Branches: React.FC = () => {
   };
 
   const filteredBranches = branches.filter(branch =>
-    branch.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    branch.location.toLowerCase().includes(searchTerm.toLowerCase())
+    (branch.branch_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (branch.location_address || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleOpenModal = (branch: Branch | null = null) => {
+  const handleOpenModal = (branch: any | null = null) => {
     setSelectedBranch(branch);
     if (branch) {
-      setName(branch.name);
-      setLocation(branch.location);
-      setOpenTime(branch.operating_hours.open);
-      setCloseTime(branch.operating_hours.close);
-      setCapacity(branch.capacity);
-      setIsActive(branch.is_active);
+      setName(branch.branch_name || '');
+      setLocation(branch.location_address || '');
+      setOpenTime(branch.opening_time?.split('.')[0] || '09:00');
+      setCloseTime(branch.closing_time?.split('.')[0] || '22:00');
+      setCapacity(branch.capacity || 0);
+      setIsActive(branch.is_active ?? true);
     } else {
       setName('');
       setLocation('');
@@ -69,14 +71,13 @@ const Branches: React.FC = () => {
     try {
       setSaving(true);
       const branchData = {
-        name,
-        location,
-        operating_hours: {
-          open: openTime,
-          close: closeTime
-        },
+        branch_name: name,
+        location_address: location,
+        opening_time: openTime.length === 5 ? openTime + ':00.000' : openTime,
+        closing_time: closeTime.length === 5 ? closeTime + ':00.000' : closeTime,
         capacity,
-        is_active: isActive
+        is_active: isActive,
+        company: user?.company?.id
       };
 
       if (selectedBranch) {
@@ -135,11 +136,11 @@ const Branches: React.FC = () => {
                   accessor: (b) => (
                     <div className="flex items-center gap-2 font-bold text-gray-900">
                       <MapPin size={16} className="text-orange-600" />
-                      {b.name}
+                      {b.branch_name}
                     </div>
                   )
                 },
-                { header: 'Location', accessor: 'location' },
+                { header: 'Location', accessor: 'location_address' },
                 {
                   header: 'Capacity',
                   accessor: (b) => (
@@ -154,7 +155,7 @@ const Branches: React.FC = () => {
                   accessor: (b) => (
                     <div className="flex items-center gap-1 text-sm">
                       <Clock size={14} className="text-gray-400" />
-                      {b.operating_hours.open} - {b.operating_hours.close}
+                      {b.opening_time?.split('.')[0]} - {b.closing_time?.split('.')[0]}
                     </div>
                   )
                 },

@@ -9,6 +9,10 @@ export interface User {
   phone?: string;
   role: UserRole;
   status: UserStatus;
+  company?: {
+    id: string;
+    name: string;
+  };
   branch_id?: string; // Optional for admin, required for others
   customer_type?: 'regular' | 'vip' | 'member';
   discount_rate?: number; // percentage, e.g. 10 for 10%
@@ -17,14 +21,16 @@ export interface User {
 
 export interface Branch {
   id: string;
-  name: string;
-  location: string;
+  branch_name: string;
+  location_address: string;
   is_active: boolean;
-  operating_hours: {
-    open: string;
-    close: string;
-  };
+  opening_time: string;
+  closing_time: string;
   capacity: number;
+  company?: {
+    id: string;
+    name: string;
+  };
 }
 
 export interface Table {

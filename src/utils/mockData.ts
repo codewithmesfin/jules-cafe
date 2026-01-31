@@ -17,18 +17,20 @@ import type {
 export const MOCK_BRANCHES: Branch[] = [
   {
     id: 'b1',
-    name: 'Downtown Branch',
-    location: '123 Main St, Downtown',
+    branch_name: 'Downtown Branch',
+    location_address: '123 Main St, Downtown',
     is_active: true,
-    operating_hours: { open: '08:00', close: '22:00' },
+    opening_time: '08:00:00.000',
+    closing_time: '22:00:00.000',
     capacity: 50
   },
   {
     id: 'b2',
-    name: 'Westside Branch',
-    location: '456 West Ave, Westside',
+    branch_name: 'Westside Branch',
+    location_address: '456 West Ave, Westside',
     is_active: true,
-    operating_hours: { open: '10:00', close: '23:00' },
+    opening_time: '10:00:00.000',
+    closing_time: '23:00:00.000',
     capacity: 30
   },
 ];

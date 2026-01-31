@@ -34,11 +34,11 @@ const BranchProfile: React.FC = () => {
       setLoading(true);
       const data = await api.branches.getOne(user?.branch_id!);
       setBranch(data);
-      setName(data.name);
-      setLocation(data.location);
-      setCapacity(data.capacity);
-      setOpenTime(data.operating_hours.open);
-      setCloseTime(data.operating_hours.close);
+      setName(data.branch_name || '');
+      setLocation(data.location_address || '');
+      setCapacity(data.capacity || 0);
+      setOpenTime(data.opening_time?.split('.')[0] || '');
+      setCloseTime(data.closing_time?.split('.')[0] || '');
     } catch (error) {
       console.error('Failed to fetch branch:', error);
     } finally {
@@ -53,13 +53,11 @@ const BranchProfile: React.FC = () => {
     try {
       setSaving(true);
       await api.branches.update(branch.id, {
-        name,
-        location,
+        branch_name: name,
+        location_address: location,
         capacity,
-        operating_hours: {
-          open: openTime,
-          close: closeTime
-        }
+        opening_time: openTime.length === 5 ? openTime + ':00.000' : openTime,
+        closing_time: closeTime.length === 5 ? closeTime + ':00.000' : closeTime,
       });
       showNotification('Branch profile updated successfully');
     } catch (error) {

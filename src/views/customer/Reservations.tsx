@@ -90,7 +90,7 @@ const Reservations: React.FC = () => {
                   onChange={(e) => setFormData({ ...formData, branch_id: e.target.value })}
                 >
                   {branches.map(b => (
-                    <option key={b.id} value={b.id}>{b.name} - {b.location}</option>
+                    <option key={b.id} value={b.id}>{b.branch_name} - {b.location_address}</option>
                   ))}
                 </select>
               </div>
@@ -159,7 +159,7 @@ const Reservations: React.FC = () => {
                     <div className="text-xs text-gray-500 mb-1">
                       {(() => {
                         const branchId = typeof res.branch_id === 'string' ? res.branch_id : (res.branch_id as any)?.id;
-                        return branches.find(b => b.id === branchId)?.name;
+                        return branches.find(b => b.id === branchId)?.branch_name;
                       })()}
                     </div>
                     <div className="flex flex-wrap gap-4 text-sm text-gray-500">

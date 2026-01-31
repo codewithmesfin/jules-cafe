@@ -122,7 +122,7 @@ const Recipes: React.FC = () => {
             onChange={(e) => setSelectedBranchId(e.target.value)}
           >
             {branches.map(b => (
-              <option key={b.id} value={b.id}>Inventory: {b.name}</option>
+              <option key={b.id} value={b.id}>Inventory: {b.branch_name}</option>
             ))}
           </select>
         </div>

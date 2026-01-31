@@ -19,7 +19,7 @@ export async function POST(request: Request) {
       }),
     });
 
-    const userData = await strapiFetch('/api/users/me?populate=role', {
+    const userData = await strapiFetch('/api/users/me?populate=role&populate=company', {
       headers: {
         'Authorization': `Bearer ${authData.jwt}`
       }
@@ -28,7 +28,11 @@ export async function POST(request: Request) {
     const normalizedUser = {
       ...userData,
       id: userData.id.toString(),
-      role: mapRole(userData.role)
+      role: mapRole(userData.role),
+      company: userData.company ? {
+        id: userData.company.id.toString(),
+        name: userData.company.name
+      } : undefined
     };
 
     return NextResponse.json({
