@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { UtensilsCrossed, User, Mail, Phone, Lock } from 'lucide-react';
+import { UtensilsCrossed, User, Mail, Phone, Lock, Building } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Card } from '../../components/ui/Card';
@@ -14,6 +14,7 @@ const Signup: React.FC = () => {
     email: '',
     phone: '',
     password: '',
+    company: '',
   });
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -66,6 +67,12 @@ const Signup: React.FC = () => {
               required
               value={formData.phone}
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+            />
+            <Input
+              label="Company"
+              placeholder="Company Name"
+              value={formData.company}
+              onChange={(e) => setFormData({ ...formData, company: e.target.value })}
             />
             <Input
               label="Password"
