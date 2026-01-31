@@ -44,14 +44,14 @@ const Branches: React.FC = () => {
 
   const filteredBranches = branches.filter(branch =>
     branch.branch_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    branch.location_address_address.toLowerCase().includes(searchTerm.toLowerCase())
+    branch.location_address.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleOpenModal = (branch: Branch | null = null) => {
     setSelectedBranch(branch);
     if (branch) {
       setName(branch.branch_name);
-      setLocation(branch.location_address_address);
+      setLocation(branch.location_address);
       setOpenTime(branch.opening_time);
       setCloseTime(branch.closing_time);
       setCapacity(branch.capacity);

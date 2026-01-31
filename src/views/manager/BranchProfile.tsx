@@ -57,7 +57,8 @@ const BranchProfile: React.FC = () => {
         location_address: location,
         capacity,
         opening_time: openTime,
-        closing_time: closeTime
+        closing_time: closeTime,
+        company: branch.company
       });
       showNotification('Branch profile updated successfully');
     } catch (error) {

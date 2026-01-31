@@ -71,7 +71,8 @@ export const getStats = async (req: Request, res: Response) => {
       {
         $project: {
           branch_name: '$branch.branch_name',
-          count: 1
+          count: 1,
+          sales: 1
         }
       }
     ]);
