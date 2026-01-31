@@ -23,6 +23,7 @@ const Branches: React.FC = () => {
   const [closeTime, setCloseTime] = useState('22:00');
   const [capacity, setCapacity] = useState(50);
   const [isActive, setIsActive] = useState(true);
+  const [company, setCompany] = useState('');
 
   useEffect(() => {
     fetchBranches();
@@ -41,19 +42,20 @@ const Branches: React.FC = () => {
   };
 
   const filteredBranches = branches.filter(branch =>
-    branch.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    branch.location.toLowerCase().includes(searchTerm.toLowerCase())
+    (branch.branch_name?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
+    (branch.location_address?.toLowerCase().includes(searchTerm.toLowerCase()) || false)
   );
 
   const handleOpenModal = (branch: Branch | null = null) => {
     setSelectedBranch(branch);
     if (branch) {
-      setName(branch.name);
-      setLocation(branch.location);
-      setOpenTime(branch.operating_hours.open);
-      setCloseTime(branch.operating_hours.close);
-      setCapacity(branch.capacity);
+      setName(branch.branch_name || '');
+      setLocation(branch.location_address || '');
+      setOpenTime(branch.opening_time || '09:00');
+      setCloseTime(branch.closing_time || '22:00');
+      setCapacity(branch.capacity || 50);
       setIsActive(branch.is_active);
+      setCompany(branch.company || '');
     } else {
       setName('');
       setLocation('');
@@ -61,6 +63,7 @@ const Branches: React.FC = () => {
       setCloseTime('22:00');
       setCapacity(50);
       setIsActive(true);
+      setCompany('');
     }
     setIsModalOpen(true);
   };
@@ -69,14 +72,13 @@ const Branches: React.FC = () => {
     try {
       setSaving(true);
       const branchData = {
-        name,
-        location,
-        operating_hours: {
-          open: openTime,
-          close: closeTime
-        },
+        branch_name: name,
+        location_address: location,
+        opening_time: openTime,
+        closing_time: closeTime,
         capacity,
-        is_active: isActive
+        is_active: isActive,
+        company
       };
 
       if (selectedBranch) {
@@ -135,11 +137,11 @@ const Branches: React.FC = () => {
                   accessor: (b) => (
                     <div className="flex items-center gap-2 font-bold text-gray-900">
                       <MapPin size={16} className="text-orange-600" />
-                      {b.name}
+                      {b.branch_name}
                     </div>
                   )
                 },
-                { header: 'Location', accessor: 'location' },
+                { header: 'Location', accessor: 'location_address' },
                 {
                   header: 'Capacity',
                   accessor: (b) => (
@@ -154,7 +156,7 @@ const Branches: React.FC = () => {
                   accessor: (b) => (
                     <div className="flex items-center gap-1 text-sm">
                       <Clock size={14} className="text-gray-400" />
-                      {b.operating_hours.open} - {b.operating_hours.close}
+                      {b.opening_time} - {b.closing_time}
                     </div>
                   )
                 },
@@ -196,6 +198,14 @@ const Branches: React.FC = () => {
         }
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="md:col-span-2">
+            <Input
+              label="Company"
+              placeholder="e.g. Restaurant Chain Inc."
+              value={company}
+              onChange={(e) => setCompany(e.target.value)}
+            />
+          </div>
           <div className="md:col-span-2">
             <Input
               label="Branch Name"

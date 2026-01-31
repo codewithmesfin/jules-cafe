@@ -3,7 +3,7 @@ export type UserStatus = 'active' | 'inactive';
 
 export interface User {
   id: string;
-  username: string;
+  username?: string;
   full_name?: string;
   email: string;
   phone?: string;
@@ -17,14 +17,13 @@ export interface User {
 
 export interface Branch {
   id: string;
-  name: string;
-  location: string;
+  branch_name: string;
+  location_address: string;
   is_active: boolean;
-  operating_hours: {
-    open: string;
-    close: string;
-  };
+  opening_time: string;
+  closing_time: string;
   capacity: number;
+  company: string;
 }
 
 export interface Table {

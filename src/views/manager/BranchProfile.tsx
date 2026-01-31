@@ -22,6 +22,7 @@ const BranchProfile: React.FC = () => {
   const [capacity, setCapacity] = useState(0);
   const [openTime, setOpenTime] = useState('');
   const [closeTime, setCloseTime] = useState('');
+  const [company, setCompany] = useState('');
 
   useEffect(() => {
     if (user?.branch_id) {
@@ -30,15 +31,18 @@ const BranchProfile: React.FC = () => {
   }, [user?.branch_id]);
 
   const fetchBranch = async () => {
+    const branchId = user?.branch_id;
+    if (!branchId) return;
     try {
       setLoading(true);
-      const data = await api.branches.getOne(user?.branch_id!);
+      const data = await api.branches.getOne(branchId);
       setBranch(data);
-      setName(data.name);
-      setLocation(data.location);
-      setCapacity(data.capacity);
-      setOpenTime(data.operating_hours.open);
-      setCloseTime(data.operating_hours.close);
+      setName(data.branch_name || '');
+      setLocation(data.location_address || '');
+      setCapacity(data.capacity || 0);
+      setOpenTime(data.opening_time || '');
+      setCloseTime(data.closing_time || '');
+      setCompany(data.company || '');
     } catch (error) {
       console.error('Failed to fetch branch:', error);
     } finally {
@@ -53,13 +57,12 @@ const BranchProfile: React.FC = () => {
     try {
       setSaving(true);
       await api.branches.update(branch.id, {
-        name,
-        location,
+        branch_name: name,
+        location_address: location,
         capacity,
-        operating_hours: {
-          open: openTime,
-          close: closeTime
-        }
+        opening_time: openTime,
+        closing_time: closeTime,
+        company
       });
       showNotification('Branch profile updated successfully');
     } catch (error) {
@@ -92,6 +95,13 @@ const BranchProfile: React.FC = () => {
       <form onSubmit={handleSave} className="space-y-6">
         <Card title="General Information">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4">
+            <div className="md:col-span-2">
+              <Input
+                label="Company"
+                value={company}
+                onChange={(e) => setCompany(e.target.value)}
+              />
+            </div>
             <div className="md:col-span-2">
               <Input
                 label="Branch Name"

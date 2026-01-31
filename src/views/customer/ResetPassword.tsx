@@ -60,7 +60,7 @@ const ResetPassword = () => {
             onChange={(e) => setConfirmPassword(e.target.value)}
           />
 
-          <Button type="submit" className="w-full" loading={loading}>
+          <Button type="submit" className="w-full" isLoading={loading}>
             Reset Password
           </Button>
         </form>
