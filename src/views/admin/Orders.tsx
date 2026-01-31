@@ -56,6 +56,11 @@ const Orders: React.FC = () => {
   };
 
   const handleCreateOrder = async () => {
+    if (!selectedCustomer) {
+      alert('Please select a customer');
+      return;
+    }
+
     try {
       setSaving(true);
       const items = Object.entries(orderItems)

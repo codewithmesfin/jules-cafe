@@ -7,9 +7,17 @@ const toJSON = {
   virtuals: true,
   versionKey: false,
   transform: function (doc: any, ret: any) {
-    ret.id = ret._id.toString();
+    if (ret._id) {
+      ret.id = ret._id.toString();
+    }
     delete ret._id;
   }
+};
+
+const schemaOptions = {
+  timestamps: true,
+  toJSON,
+  toObject: toJSON
 };
 
 // User Schema
@@ -23,7 +31,7 @@ const UserSchema = new Schema({
   branch_id: { type: Schema.Types.ObjectId, ref: 'Branch' },
   customer_type: { type: String, enum: ['regular', 'vip', 'member'] },
   discount_rate: { type: Number, default: 0 },
-}, { timestamps: true, toJSON });
+}, schemaOptions);
 
 UserSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
@@ -48,7 +56,7 @@ const BranchSchema = new Schema({
     close: { type: String, required: true },
   },
   capacity: { type: Number, required: true },
-}, { timestamps: true, toJSON });
+}, schemaOptions);
 
 export const BranchModel = models.Branch || model('Branch', BranchSchema);
 
@@ -58,7 +66,7 @@ const TableSchema = new Schema({
   table_number: { type: String, required: true },
   capacity: { type: Number, required: true },
   status: { type: String, enum: ['available', 'occupied', 'reserved'], default: 'available' },
-}, { timestamps: true, toJSON });
+}, schemaOptions);
 
 export const TableModel = models.Table || model('Table', TableSchema);
 
@@ -67,7 +75,7 @@ const CategorySchema = new Schema({
   name: { type: String, required: true },
   description: { type: String },
   is_active: { type: Boolean, default: true },
-}, { timestamps: true, toJSON });
+}, schemaOptions);
 
 export const CategoryModel = models.Category || model('Category', CategorySchema);
 
@@ -79,7 +87,7 @@ const MenuItemSchema = new Schema({
   base_price: { type: Number, required: true },
   image_url: { type: String },
   is_active: { type: Boolean, default: true },
-}, { timestamps: true, toJSON });
+}, schemaOptions);
 
 export const MenuItemModel = models.MenuItem || model('MenuItem', MenuItemSchema);
 
@@ -88,7 +96,7 @@ const MenuVariantSchema = new Schema({
   menu_item_id: { type: Schema.Types.ObjectId, ref: 'MenuItem', required: true },
   name: { type: String, required: true },
   price_override: { type: Number },
-}, { timestamps: true, toJSON });
+}, schemaOptions);
 
 export const MenuVariantModel = models.MenuVariant || model('MenuVariant', MenuVariantSchema);
 
@@ -97,7 +105,7 @@ const BranchMenuItemSchema = new Schema({
   branch_id: { type: Schema.Types.ObjectId, ref: 'Branch', required: true },
   menu_item_id: { type: Schema.Types.ObjectId, ref: 'MenuItem', required: true },
   is_available: { type: Boolean, default: true },
-}, { timestamps: true, toJSON });
+}, schemaOptions);
 
 export const BranchMenuItemModel = models.BranchMenuItem || model('BranchMenuItem', BranchMenuItemSchema);
 
@@ -113,7 +121,7 @@ const OrderSchema = new Schema({
   total_amount: { type: Number, required: true },
   discount_amount: { type: Number, default: 0 },
   cancel_reason: { type: String },
-}, { timestamps: true, toJSON });
+}, schemaOptions);
 
 export const OrderModel = models.Order || model('Order', OrderSchema);
 
@@ -126,7 +134,7 @@ const OrderItemSchema = new Schema({
   variant_name: { type: String },
   quantity: { type: Number, required: true },
   unit_price: { type: Number, required: true },
-}, { timestamps: true, toJSON });
+}, schemaOptions);
 
 export const OrderItemModel = models.OrderItem || model('OrderItem', OrderItemSchema);
 
@@ -141,7 +149,7 @@ const ReservationSchema = new Schema({
   guests_count: { type: Number, required: true },
   status: { type: String, enum: ['requested', 'confirmed', 'seated', 'cancelled', 'no_show'], default: 'requested' },
   note: { type: String },
-}, { timestamps: true, toJSON });
+}, schemaOptions);
 
 export const ReservationModel = models.Reservation || model('Reservation', ReservationSchema);
 
@@ -154,7 +162,7 @@ const ReviewSchema = new Schema({
   rating: { type: Number, min: 1, max: 5, required: true },
   comment: { type: String },
   is_approved: { type: Boolean, default: false },
-}, { timestamps: true, toJSON });
+}, schemaOptions);
 
 export const ReviewModel = models.Review || model('Review', ReviewSchema);
 
@@ -166,7 +174,7 @@ const InventoryItemSchema = new Schema({
   quantity: { type: Number, required: true },
   unit: { type: String, required: true },
   min_stock: { type: Number, required: true },
-}, { timestamps: true, toJSON });
+}, schemaOptions);
 
 export const InventoryItemModel = models.InventoryItem || model('InventoryItem', InventoryItemSchema);
 
@@ -179,6 +187,6 @@ const RecipeSchema = new Schema({
     unit: { type: String, required: true },
   }],
   instructions: { type: String },
-}, { timestamps: true, toJSON });
+}, schemaOptions);
 
 export const RecipeModel = models.Recipe || model('Recipe', RecipeSchema);

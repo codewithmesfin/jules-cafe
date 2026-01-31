@@ -24,6 +24,8 @@ const Users: React.FC = () => {
   // Form state
   const [formFullName, setFormFullName] = useState('');
   const [formEmail, setFormEmail] = useState('');
+  const [formPhone, setFormPhone] = useState('');
+  const [formPassword, setFormPassword] = useState('');
   const [formRole, setFormRole] = useState<UserRole>('customer');
   const [formStatus, setFormStatus] = useState<UserStatus>('active');
   const [formCustomerType, setFormCustomerType] = useState<'regular' | 'vip' | 'member'>('regular');
@@ -55,26 +57,33 @@ const Users: React.FC = () => {
   });
 
   const handleSave = async () => {
+    if (!formFullName || !formEmail || (!editingUser && !formPassword)) {
+      showNotification("Please fill in required fields", "error");
+      return;
+    }
+
     try {
+      const userData: any = {
+        full_name: formFullName,
+        email: formEmail,
+        phone: formPhone || 'N/A',
+        role: formRole,
+        status: formStatus,
+        customer_type: formRole === 'customer' ? formCustomerType : undefined,
+        discount_rate: formRole === 'customer' ? formDiscountRate : undefined
+      };
+
+      if (formPassword) {
+        userData.password = formPassword;
+      }
+
       if (editingUser) {
-        await api.users.update(editingUser.id, {
-          full_name: formFullName,
-          email: formEmail,
-          role: formRole,
-          status: formStatus,
-          customer_type: formRole === 'customer' ? formCustomerType : undefined,
-          discount_rate: formRole === 'customer' ? formDiscountRate : undefined
-        });
+        await api.users.update(editingUser.id, userData);
         showNotification("User updated successfully");
       } else {
+        if (!userData.password) userData.password = 'password123';
         await api.users.create({
-          full_name: formFullName,
-          email: formEmail,
-          phone: '', // Defaulting for now
-          role: formRole,
-          status: formStatus,
-          customer_type: formRole === 'customer' ? formCustomerType : undefined,
-          discount_rate: formRole === 'customer' ? formDiscountRate : undefined,
+          ...userData,
           created_at: new Date().toISOString()
         });
         showNotification("User created successfully");
@@ -140,6 +149,8 @@ const Users: React.FC = () => {
           setEditingUser(null);
           setFormFullName('');
           setFormEmail('');
+          setFormPhone('');
+          setFormPassword('');
           setFormRole('customer');
           setFormStatus('active');
           setIsModalOpen(true);
@@ -189,6 +200,8 @@ const Users: React.FC = () => {
                       setEditingUser(user);
                       setFormFullName(user.full_name);
                       setFormEmail(user.email);
+                      setFormPhone(user.phone || '');
+                      setFormPassword('');
                       setFormRole(user.role);
                       setFormStatus(user.status);
                       setFormCustomerType(user.customer_type || 'regular');
@@ -234,17 +247,32 @@ const Users: React.FC = () => {
       >
         <div className="space-y-4">
           <Input
-            label="Full Name"
+            label="Full Name *"
             placeholder="e.g. John Doe"
             value={formFullName}
             onChange={(e) => setFormFullName(e.target.value)}
           />
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Email Address *"
+              type="email"
+              placeholder="john@example.com"
+              value={formEmail}
+              onChange={(e) => setFormEmail(e.target.value)}
+            />
+            <Input
+              label="Phone Number"
+              placeholder="555-0123"
+              value={formPhone}
+              onChange={(e) => setFormPhone(e.target.value)}
+            />
+          </div>
           <Input
-            label="Email Address"
-            type="email"
-            placeholder="john@example.com"
-            value={formEmail}
-            onChange={(e) => setFormEmail(e.target.value)}
+            label={editingUser ? "New Password (leave blank to keep current)" : "Password *"}
+            type="password"
+            placeholder="••••••••"
+            value={formPassword}
+            onChange={(e) => setFormPassword(e.target.value)}
           />
           <div className="w-full">
             <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
