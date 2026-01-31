@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
 import { Model, Document } from 'mongoose';
+import { AuthRequest } from '../middleware/auth';
 
-export const getAll = (model: Model<any>) => async (req: Request, res: Response) => {
+export const getAll = (model: Model<any>) => async (req: AuthRequest, res: Response) => {
   try {
     const features = model.find();
     // Add simple filtering if needed
@@ -20,7 +21,7 @@ export const getAll = (model: Model<any>) => async (req: Request, res: Response)
   }
 };
 
-export const getOne = (model: Model<any>) => async (req: Request, res: Response) => {
+export const getOne = (model: Model<any>) => async (req: AuthRequest, res: Response) => {
   try {
     const doc = await model.findById(req.params.id).populate(req.query.populate as string || '');
     if (!doc) return res.status(404).json({ error: 'Document not found' });
@@ -32,9 +33,14 @@ export const getOne = (model: Model<any>) => async (req: Request, res: Response)
   }
 };
 
-export const createOne = (model: Model<any>) => async (req: Request, res: Response) => {
+export const createOne = (model: Model<any>) => async (req: AuthRequest, res: Response) => {
   try {
-    const doc = await model.create(req.body);
+    // Automatically set created_by to the authenticated user's ID
+    const requestBody = {
+      ...req.body,
+      created_by: req.user?._id || req.user?.id,
+    };
+    const doc = await model.create(requestBody);
     // Transform _id to id for frontend compatibility
     const transformedDoc = { ...doc.toObject(), id: doc._id.toString() };
     res.status(201).json(transformedDoc);
@@ -43,7 +49,7 @@ export const createOne = (model: Model<any>) => async (req: Request, res: Respon
   }
 };
 
-export const updateOne = (model: Model<any>) => async (req: Request, res: Response) => {
+export const updateOne = (model: Model<any>) => async (req: AuthRequest, res: Response) => {
   try {
     const doc = await model.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
@@ -58,7 +64,7 @@ export const updateOne = (model: Model<any>) => async (req: Request, res: Respon
   }
 };
 
-export const deleteOne = (model: Model<any>) => async (req: Request, res: Response) => {
+export const deleteOne = (model: Model<any>) => async (req: AuthRequest, res: Response) => {
   try {
     const doc = await model.findByIdAndDelete(req.params.id);
     if (!doc) return res.status(404).json({ error: 'Document not found' });

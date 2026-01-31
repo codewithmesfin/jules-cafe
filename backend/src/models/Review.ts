@@ -8,6 +8,9 @@ export interface IReview extends Document {
   rating: number;
   comment: string;
   is_approved: boolean;
+  created_by?: mongoose.Types.ObjectId;
+  created_at: Date;
+  updated_at: Date;
 }
 
 const ReviewSchema: Schema = new Schema({
@@ -18,6 +21,7 @@ const ReviewSchema: Schema = new Schema({
   rating: { type: Number, required: true, min: 1, max: 5 },
   comment: { type: String, required: true },
   is_approved: { type: Boolean, default: false },
-}, { timestamps: true });
+  created_by: { type: Schema.Types.ObjectId, ref: 'User' },
+}, { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } });
 
 export default mongoose.model<IReview>('Review', ReviewSchema);

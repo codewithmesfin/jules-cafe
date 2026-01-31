@@ -3,15 +3,21 @@ import Order from '../models/Order';
 import User from '../models/User';
 import * as factory from '../utils/controllerFactory';
 import { sendEmail } from '../utils/mailer';
+import { AuthRequest } from '../middleware/auth';
 
 export const getAllOrders = factory.getAll(Order);
 export const getOrder = factory.getOne(Order);
 export const updateOrder = factory.updateOne(Order);
 export const deleteOrder = factory.deleteOne(Order);
 
-export const createOrder = async (req: Request, res: Response) => {
+export const createOrder = async (req: AuthRequest, res: Response) => {
   try {
-    const order = await Order.create(req.body);
+    const data = { ...req.body };
+    
+    // Automatically set created_by to the authenticated user's ID
+    data.created_by = req.user?._id || req.user?.id;
+    
+    const order = await Order.create(data);
 
     // Attempt to send email to customer if email is provided
     try {

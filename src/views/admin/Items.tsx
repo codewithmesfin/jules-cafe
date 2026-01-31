@@ -145,8 +145,10 @@ const Items = () => {
           >
             <option value="all">All Types</option>
             <option value="menu_item">Menu Items</option>
-            <option value="inventory">Inventory</option>
+            <option value="inventory">Inventory Items</option>
             <option value="ingredient">Ingredients</option>
+            <option value="product">Products</option>
+            <option value="packaging">Packaging</option>
           </select>
         </div>
         <Button
@@ -258,6 +260,8 @@ const Items = () => {
               <option value="menu_item">Menu Item</option>
               <option value="inventory">Inventory Item</option>
               <option value="ingredient">Ingredient</option>
+              <option value="product">Product</option>
+              <option value="packaging">Packaging</option>
             </select>
           </div>
           <Input label="Category" placeholder="e.g. Canned Goods, Dairy, Spices" value={formCategory} onChange={(e) => setFormCategory(e.target.value)} />

@@ -9,11 +9,12 @@ import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
 import { ConfirmationDialog } from '../../components/ui/ConfirmationDialog';
 import { useNotification } from '../../context/NotificationContext';
-import type { MenuItem, MenuCategory, Recipe, InventoryItem, Branch } from '../../types';
+import type { MenuItem, MenuCategory, Recipe, InventoryItem, Branch, Item } from '../../types';
 
 const MenuItems: React.FC = () => {
   const { showNotification } = useNotification();
-  const [items, setItems] = useState<MenuItem[]>([]);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [items, setItems] = useState<Item[]>([]); // Items from master Items table
   const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
@@ -28,6 +29,7 @@ const MenuItems: React.FC = () => {
   const [selectedBranchId, setSelectedBranchId] = useState('');
 
   // Form state
+  const [formItemId, setFormItemId] = useState(''); // Selected from Items table
   const [formName, setFormName] = useState('');
   const [formCategoryId, setFormCategoryId] = useState('');
   const [formBasePrice, setFormBasePrice] = useState(0);
@@ -43,19 +45,21 @@ const MenuItems: React.FC = () => {
   const fetchAllData = async () => {
     try {
       setLoading(true);
-      const [itemsData, catsData, recipesData, invData, branchesData] = await Promise.all([
+      const [menuItemsData, itemsData, catsData, recipesData, invData, branchesData] = await Promise.all([
         api.menuItems.getAll(),
+        api.items.getAll(), // Fetch from Items table
         api.categories.getAll(),
         api.recipes.getAll(),
         api.inventory.getAll(),
         api.branches.getAll(),
       ]);
+      setMenuItems(menuItemsData);
       setItems(itemsData);
       setCategories(catsData);
       setRecipes(recipesData);
       setInventory(invData);
       setBranches(branchesData);
-      if (branchesData.length > 0) setSelectedBranchId(branchesData[0].id);
+      if (branchesData.length > 0) setSelectedBranchId(branchesData[0].id || branchesData[0]._id || '');
     } catch (error) {
       console.error('Failed to fetch data:', error);
     } finally {
@@ -63,17 +67,36 @@ const MenuItems: React.FC = () => {
     }
   };
 
-  const filteredItems = items.filter(item => {
+  // Filter items from Items table that are menu_item type
+  const menuItemOptions = items.filter(item => item.item_type === 'menu_item' && item.is_active);
+
+  const filteredMenuItems = menuItems.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || item.category_id === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
+  // Handle Item selection from Items table
+  const handleItemSelect = (itemId: string) => {
+    setFormItemId(itemId);
+    const selectedItem = items.find(i => i.id === itemId || i._id === itemId);
+    if (selectedItem) {
+      setFormName(selectedItem.item_name);
+      setFormBasePrice(selectedItem.default_price || 0);
+      if (selectedItem.image_url) {
+        setFormImageUrl(selectedItem.image_url);
+      }
+      if (selectedItem.description) {
+        setFormDescription(selectedItem.description);
+      }
+    }
+  };
+
   const handleSave = async () => {
     try {
       // Validate required fields
-      if (!formName.trim()) {
-        showNotification("Please enter an item name", "error");
+      if (!formItemId) {
+        showNotification("Please select an item from the Items catalog", "error");
         return;
       }
       if (!formCategoryId) {
@@ -86,6 +109,7 @@ const MenuItems: React.FC = () => {
       }
       
       const formData = new FormData();
+      formData.append('item_id', formItemId);
       formData.append('name', formName);
       formData.append('category_id', formCategoryId);
       formData.append('base_price', formBasePrice.toString());
@@ -93,17 +117,14 @@ const MenuItems: React.FC = () => {
       formData.append('is_active', formIsActive.toString());
 
       if (editingItem) {
-        // For updates: only send image if a new file is selected
         if (imageFile) {
           formData.append('image', imageFile);
         } else if (formImageUrl) {
-          // Keep existing image_url or use provided URL
           formData.append('image_url', formImageUrl);
         }
         await api.menuItems.update(editingItem.id, formData);
         showNotification("Item updated successfully");
       } else {
-        // For create: require either image file or image_url
         if (imageFile) {
           formData.append('image', imageFile);
         } else if (formImageUrl) {
@@ -135,6 +156,32 @@ const MenuItems: React.FC = () => {
     }
   };
 
+  const openCreateModal = () => {
+    setEditingItem(null);
+    setFormItemId('');
+    setFormName('');
+    setFormCategoryId(categories[0]?.id || categories[0]?._id || '');
+    setFormBasePrice(0);
+    setFormImageUrl('');
+    setImageFile(null);
+    setFormDescription('');
+    setFormIsActive(true);
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (item: MenuItem) => {
+    setEditingItem(item);
+    setFormItemId(item.item_id || '');
+    setFormName(item.name);
+    const catId = typeof item.category_id === 'string' ? item.category_id : (item.category_id as any)?.id;
+    setFormCategoryId(catId || '');
+    setFormBasePrice(item.base_price);
+    setFormImageUrl(item.image_url);
+    setFormDescription(item.description);
+    setFormIsActive(item.is_active);
+    setIsModalOpen(true);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -159,18 +206,8 @@ const MenuItems: React.FC = () => {
             ))}
           </select>
         </div>
-        <Button className="gap-2" onClick={() => {
-          setEditingItem(null);
-          setFormName('');
-          setFormCategoryId(categories[0]?.id || '');
-          setFormBasePrice(0);
-          setFormImageUrl('');
-          setImageFile(null);
-          setFormDescription('');
-          setFormIsActive(true);
-          setIsModalOpen(true);
-        }}>
-          <Plus size={20} /> Add Item
+        <Button className="gap-2" onClick={openCreateModal}>
+          <Plus size={20} /> Add Menu Item
         </Button>
       </div>
 
@@ -178,7 +215,7 @@ const MenuItems: React.FC = () => {
         <div className="text-center py-10">Loading menu items...</div>
       ) : (
         <Table
-          data={filteredItems}
+          data={filteredMenuItems}
           columns={[
             {
               header: 'Item',
@@ -221,17 +258,7 @@ const MenuItems: React.FC = () => {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => {
-                      setEditingItem(item);
-                      setFormName(item.name);
-                      const catId = typeof item.category_id === 'string' ? item.category_id : (item.category_id as any)?.id;
-                      setFormCategoryId(catId || '');
-                      setFormBasePrice(item.base_price);
-                      setFormImageUrl(item.image_url);
-                      setFormDescription(item.description);
-                      setFormIsActive(item.is_active);
-                      setIsModalOpen(true);
-                    }}
+                    onClick={() => openEditModal(item)}
                   >
                     <Edit size={16} />
                   </Button>
@@ -273,6 +300,28 @@ const MenuItems: React.FC = () => {
         }
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Item Selection from Items Table */}
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Select Item from Catalog *
+            </label>
+            <select
+              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+              value={formItemId}
+              onChange={(e) => handleItemSelect(e.target.value)}
+            >
+              <option value="">-- Select an Item --</option>
+              {menuItemOptions.map(item => (
+                <option key={item.id || item._id} value={item.id || item._id}>
+                  {item.item_name} ({item.category || 'Uncategorized'})
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-gray-500 mt-1">
+              Items are selected from the master Items catalog. Only items with type "menu_item" are shown.
+            </p>
+          </div>
+
           <Input
             label="Item Name"
             placeholder="e.g. Pasta Carbonara"
@@ -280,12 +329,13 @@ const MenuItems: React.FC = () => {
             onChange={(e) => setFormName(e.target.value)}
           />
           <div className="w-full">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
             <select
               className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
               value={formCategoryId}
               onChange={(e) => setFormCategoryId(e.target.value)}
             >
+              <option value="">Select Category</option>
               {categories.map(cat => (
                 <option key={cat.id || cat._id} value={cat.id || cat._id}>{cat.name}</option>
               ))}

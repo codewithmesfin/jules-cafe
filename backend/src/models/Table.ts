@@ -5,6 +5,9 @@ export interface ITable extends Document {
   table_number: string;
   capacity: number;
   status: 'available' | 'occupied' | 'reserved';
+  created_by?: mongoose.Types.ObjectId;
+  created_at: Date;
+  updated_at: Date;
 }
 
 const TableSchema: Schema = new Schema({
@@ -16,6 +19,7 @@ const TableSchema: Schema = new Schema({
     enum: ['available', 'occupied', 'reserved'],
     default: 'available'
   },
-}, { timestamps: true });
+  created_by: { type: Schema.Types.ObjectId, ref: 'User' },
+}, { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } });
 
 export default mongoose.model<ITable>('Table', TableSchema);

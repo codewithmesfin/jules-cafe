@@ -12,6 +12,13 @@ import { calculateAvailablePortions } from '../../utils/recipeUtils';
 import { useNotification } from '../../context/NotificationContext';
 import type { Recipe, MenuItem, Branch, InventoryItem, Item } from '../../types';
 
+interface RecipeIngredientForm {
+  item_id: string;
+  item_name: string;
+  quantity: number;
+  unit: string;
+}
+
 const Recipes: React.FC = () => {
   const { showNotification } = useNotification();
   const [recipes, setRecipes] = useState<Recipe[]>([]);
@@ -28,7 +35,7 @@ const Recipes: React.FC = () => {
   const [recipeToDelete, setRecipeToDelete] = useState<Recipe | null>(null);
   const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null);
 
-  const [formIngredients, setFormIngredients] = useState<{item_name: string, quantity: number, unit: string}[]>([]);
+  const [formIngredients, setFormIngredients] = useState<RecipeIngredientForm[]>([{ item_id: '', item_name: '', quantity: 0, unit: '' }]);
   const [formInstructions, setFormInstructions] = useState('');
   const [formMenuItemId, setFormMenuItemId] = useState('');
 
@@ -44,14 +51,14 @@ const Recipes: React.FC = () => {
         api.menuItems.getAll(),
         api.branches.getAll(),
         api.inventory.getAll(),
-        api.items.getByType('ingredient'),
+        api.items.getAll(),
       ]);
       setRecipes(recData);
       setMenuItems(itemData);
       setBranches(brData);
       setInventory(invData);
       setItems(itemsData);
-      if (brData.length > 0) setSelectedBranchId(brData[0].id);
+      if (brData.length > 0) setSelectedBranchId(brData[0].id || brData[0]._id || '');
     } catch (error) {
       console.error('Failed to fetch recipes data:', error);
     } finally {
@@ -67,15 +74,33 @@ const Recipes: React.FC = () => {
 
   const branchInventory = inventory.filter(i => i.branch_id === selectedBranchId);
 
-  // Get all ingredients from the master Items table
+  // Get ingredients from Items table (item_type = 'ingredient')
   const ingredientItems = items.filter(item => item.item_type === 'ingredient' && item.is_active);
-  const allIngredients = ingredientItems.map(item => item.item_name);
+
+  // Helper to get item name by id
+  const getItemName = (itemId: string) => {
+    const item = items.find(i => i.id === itemId || i._id === itemId);
+    return item?.item_name || 'Unknown';
+  };
+
+  // Helper to get item unit by id
+  const getItemUnit = (itemId: string) => {
+    const item = items.find(i => i.id === itemId || i._id === itemId);
+    return item?.unit || '';
+  };
 
   const handleSave = async () => {
     try {
+      // Convert form ingredients to recipe format with item_id references
+      const ingredients = formIngredients.map(ing => ({
+        item_name: getItemName(ing.item_id),
+        quantity: ing.quantity,
+        unit: ing.unit
+      }));
+
       const recipeData = {
         menu_item_id: formMenuItemId,
-        ingredients: formIngredients,
+        ingredients,
         instructions: formInstructions
       };
 
@@ -108,6 +133,29 @@ const Recipes: React.FC = () => {
     }
   };
 
+  const addIngredient = () => {
+    setFormIngredients([...formIngredients, { item_id: '', item_name: '', quantity: 0, unit: '' }]);
+  };
+
+  const updateIngredient = (index: number, field: keyof RecipeIngredientForm, value: string | number) => {
+    const newIngs = [...formIngredients];
+    (newIngs[index] as any)[field] = value;
+    
+    // Auto-fill unit and item_name when item_id is selected
+    if (field === 'item_id') {
+      const item = items.find(i => i.id === value || i._id === value);
+      if (item) {
+        newIngs[index].item_name = item.item_name;
+        newIngs[index].unit = item.unit || '';
+      }
+    }
+    setFormIngredients(newIngs);
+  };
+
+  const removeIngredient = (index: number) => {
+    setFormIngredients(formIngredients.filter((_, i) => i !== index));
+  };
+
   if (loading) return <div className="text-center py-20">Loading Recipes...</div>;
 
   return (
@@ -129,13 +177,13 @@ const Recipes: React.FC = () => {
             onChange={(e) => setSelectedBranchId(e.target.value)}
           >
             {branches.map(b => (
-              <option key={b.id} value={b.id}>Inventory: {b.name}</option>
+              <option key={b.id || b._id} value={b.id || b._id}>{b.name || b.branch_name}</option>
             ))}
           </select>
         </div>
         <Button className="gap-2" onClick={() => {
           setEditingRecipe(null);
-          setFormIngredients([{ item_name: '', quantity: 0, unit: '' }]);
+          setFormIngredients([{ item_id: '', item_name: '', quantity: 0, unit: '' }]);
           setFormInstructions('');
           setFormMenuItemId(menuItems[0]?.id || '');
           setIsModalOpen(true);
@@ -179,7 +227,7 @@ const Recipes: React.FC = () => {
                 />
                 <div>
                   <h4 className="font-bold text-gray-900">{menuItem?.name}</h4>
-                  <p className="text-xs text-gray-500">{recipe.ingredients.length} ingredients</p>
+                  <p className="text-xs text-gray-500">{recipe.ingredients?.length || 0} ingredients</p>
                 </div>
               </div>
 
@@ -193,7 +241,18 @@ const Recipes: React.FC = () => {
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" className="flex-1" onClick={() => {
                   setEditingRecipe(recipe);
-                  setFormIngredients([...recipe.ingredients]);
+                  // Convert existing ingredients to form format with item_id
+                  const formIngs: RecipeIngredientForm[] = (recipe.ingredients || []).map(ing => {
+                    // Try to find the item by name
+                    const item = items.find(i => i.item_name === ing.item_name);
+                    return {
+                      item_id: item?.id || '',
+                      item_name: ing.item_name,
+                      quantity: ing.quantity,
+                      unit: ing.unit
+                    };
+                  });
+                  setFormIngredients(formIngs);
                   setFormInstructions(recipe.instructions || '');
                   setFormMenuItemId(menuItemId);
                   setIsModalOpen(true);
@@ -220,7 +279,7 @@ const Recipes: React.FC = () => {
             header: 'Ingredients',
             accessor: (r) => (
               <div className="flex flex-wrap gap-1">
-                {r.ingredients.map((ing, idx) => (
+                {(r.ingredients || []).map((ing, idx) => (
                   <Badge key={idx} variant="neutral" className="text-[10px]">
                     {ing.item_name}: {ing.quantity}{ing.unit}
                   </Badge>
@@ -246,7 +305,16 @@ const Recipes: React.FC = () => {
                 <Button variant="ghost" size="sm" onClick={() => {
                   const menuItemId = typeof r.menu_item_id === 'string' ? r.menu_item_id : (r.menu_item_id as any).id;
                   setEditingRecipe(r);
-                  setFormIngredients([...r.ingredients]);
+                  const formIngs: RecipeIngredientForm[] = (r.ingredients || []).map(ing => {
+                    const item = items.find(i => i.item_name === ing.item_name);
+                    return {
+                      item_id: item?.id || '',
+                      item_name: ing.item_name,
+                      quantity: ing.quantity,
+                      unit: ing.unit
+                    };
+                  });
+                  setFormIngredients(formIngs);
                   setFormInstructions(r.instructions || '');
                   setFormMenuItemId(menuItemId);
                   setIsModalOpen(true);
@@ -285,6 +353,7 @@ const Recipes: React.FC = () => {
                 value={formMenuItemId}
                 onChange={(e) => setFormMenuItemId(e.target.value)}
               >
+                <option value="">Select Menu Item</option>
                 {menuItems.map(m => (
                   <option key={m.id} value={m.id}>{m.name}</option>
                 ))}
@@ -299,7 +368,7 @@ const Recipes: React.FC = () => {
                 variant="ghost"
                 size="sm"
                 className="text-orange-600 h-8"
-                onClick={() => setFormIngredients([...formIngredients, { item_name: '', quantity: 0, unit: '' }])}
+                onClick={addIngredient}
               >
                 <Plus size={14} className="mr-1" /> Add Ingredient
               </Button>
@@ -311,21 +380,14 @@ const Recipes: React.FC = () => {
                     <label className="block text-xs font-medium text-gray-500 mb-1">Ingredient</label>
                     <select
                       className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-                      value={ing.item_name}
-                      onChange={(e) => {
-                        const newIngs = [...formIngredients];
-                        newIngs[idx].item_name = e.target.value;
-                        // Auto-fill unit from selected ingredient item
-                        const ingItem = ingredientItems.find(i => i.item_name === e.target.value);
-                        if (ingItem) {
-                          newIngs[idx].unit = ingItem.unit || '';
-                        }
-                        setFormIngredients(newIngs);
-                      }}
+                      value={ing.item_id}
+                      onChange={(e) => updateIngredient(idx, 'item_id', e.target.value)}
                     >
-                      <option value="">Select Ingredient</option>
-                      {allIngredients.map(name => (
-                        <option key={name} value={name}>{name}</option>
+                      <option value="">Select from Items Table</option>
+                      {ingredientItems.map(item => (
+                        <option key={item.id || item._id} value={item.id || item._id}>
+                          {item.item_name} ({item.unit})
+                        </option>
                       ))}
                     </select>
                   </div>
@@ -336,11 +398,7 @@ const Recipes: React.FC = () => {
                       placeholder="Qty"
                       label="Qty"
                       value={ing.quantity}
-                      onChange={(e) => {
-                        const newIngs = [...formIngredients];
-                        newIngs[idx].quantity = parseFloat(e.target.value) || 0;
-                        setFormIngredients(newIngs);
-                      }}
+                      onChange={(e) => updateIngredient(idx, 'quantity', parseFloat(e.target.value) || 0)}
                     />
                   </div>
                   <div className="w-24">
@@ -348,23 +406,22 @@ const Recipes: React.FC = () => {
                       placeholder="Unit"
                       label="Unit"
                       value={ing.unit}
-                      onChange={(e) => {
-                        const newIngs = [...formIngredients];
-                        newIngs[idx].unit = e.target.value;
-                        setFormIngredients(newIngs);
-                      }}
+                      onChange={(e) => updateIngredient(idx, 'unit', e.target.value)}
                     />
                   </div>
                   <Button
                     variant="ghost"
                     size="sm"
                     className="text-red-500 mb-1"
-                    onClick={() => setFormIngredients(formIngredients.filter((_, i) => i !== idx))}
+                    onClick={() => removeIngredient(idx)}
                   >
                     <Trash2 size={16} />
                   </Button>
                 </div>
               ))}
+              {formIngredients.length === 0 && (
+                <p className="text-sm text-gray-500 text-center py-4">No ingredients added yet. Click "Add Ingredient" to select from the Items table.</p>
+              )}
             </div>
           </div>
 

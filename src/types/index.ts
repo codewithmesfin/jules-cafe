@@ -51,6 +51,7 @@ export interface MenuCategory {
 export interface MenuItem {
   id: string;
   _id?: string;
+  item_id?: string; // Reference to Items table
   category_id: string;
   name: string;
   description: string;
@@ -146,6 +147,7 @@ export interface Report {
 export interface InventoryItem {
   id: string;
   _id?: string;
+  item_id?: string; // Reference to Items table
   branch_id: string;
   item_name: string;
   category: string;
@@ -169,7 +171,7 @@ export interface Recipe {
   instructions?: string;
 }
 
-export type ItemType = 'menu_item' | 'inventory' | 'ingredient';
+export type ItemType = 'menu_item' | 'inventory' | 'ingredient' | 'product' | 'packaging';
 
 export interface Item {
   id: string;

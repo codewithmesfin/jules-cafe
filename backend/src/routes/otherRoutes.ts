@@ -8,6 +8,13 @@ import Recipe from '../models/Recipe';
 import * as factory from '../utils/controllerFactory';
 import { protect, authorize } from '../middleware/auth';
 import { getStats } from '../controllers/orderController';
+import { 
+  getAllInventory, 
+  getOneInventory, 
+  createInventory, 
+  updateInventory, 
+  deleteInventory 
+} from '../controllers/inventoryController';
 
 const router = express.Router();
 
@@ -49,14 +56,14 @@ router.route('/reviews/:id')
   .put(protect, authorize('admin', 'manager'), factory.updateOne(Review))
   .delete(protect, authorize('admin', 'manager'), factory.deleteOne(Review));
 
-// InventoryItem
+// InventoryItem (using custom controller for item_id reference)
 router.route('/inventory')
-  .get(protect, authorize('admin', 'manager', 'staff'), factory.getAll(InventoryItem))
-  .post(protect, authorize('admin', 'manager'), factory.createOne(InventoryItem));
+  .get(protect, authorize('admin', 'manager', 'staff'), getAllInventory)
+  .post(protect, authorize('admin', 'manager'), createInventory);
 router.route('/inventory/:id')
-  .get(protect, authorize('admin', 'manager', 'staff'), factory.getOne(InventoryItem))
-  .put(protect, authorize('admin', 'manager', 'staff'), factory.updateOne(InventoryItem))
-  .delete(protect, authorize('admin', 'manager'), factory.deleteOne(InventoryItem));
+  .get(protect, authorize('admin', 'manager', 'staff'), getOneInventory)
+  .put(protect, authorize('admin', 'manager', 'staff'), updateInventory)
+  .delete(protect, authorize('admin', 'manager'), deleteInventory);
 
 // Recipe
 router.route('/recipes')

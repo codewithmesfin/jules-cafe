@@ -9,20 +9,30 @@ import { Modal } from '../../components/ui/Modal';
 import { Card } from '../../components/ui/Card';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
-import type { InventoryItem, Recipe, Item } from '../../types';
+import type { InventoryItem as InventoryItemType, Recipe, Item } from '../../types';
+
+interface InventoryFormData {
+  item_id: string;
+  item_name: string;
+  category: string;
+  unit: string;
+  quantity: number;
+  min_stock: number;
+}
 
 const Inventory: React.FC = () => {
   const { user } = useAuth();
   const { showNotification } = useNotification();
   const [searchTerm, setSearchTerm] = useState('');
-  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [inventory, setInventory] = useState<InventoryItemType[]>([]);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [items, setItems] = useState<Item[]>([]);
+  const [allItems, setAllItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
+  const [selectedItem, setSelectedItem] = useState<InventoryItemType | null>(null);
 
   // Form state
+  const [formItemId, setFormItemId] = useState('');
   const [formItemName, setFormItemName] = useState('');
   const [formCategory, setFormCategory] = useState('');
   const [formUnit, setFormUnit] = useState('');
@@ -39,15 +49,24 @@ const Inventory: React.FC = () => {
       const [invData, recData, itemsData] = await Promise.all([
         api.inventory.getAll(),
         api.recipes.getAll(),
-        api.items.getByType('inventory'),
+        api.items.getAll(),
       ]);
-      setInventory(invData.filter((i: InventoryItem) => {
+      console.log('Raw inventory data:', invData);
+      console.log('User branch_id:', user?.branch_id);
+      const filtered = invData.filter((i: InventoryItemType) => {
         const bId = typeof i.branch_id === 'string' ? i.branch_id : (i.branch_id as any)?.id;
-        const userBId = typeof user?.branch_id === "string" ? user?.branch_id : (user?.branch_id as any)?.id;
+        const userBId = typeof user?.branch_id === 'string' ? user?.branch_id : (user?.branch_id as any)?.id;
+        console.log('Inventory item branch_id:', bId, 'User branch_id:', userBId, 'Match:', bId === userBId);
+        // If user has no branch_id, show all inventory (for debugging)
+        if (!userBId) {
+          return true;
+        }
         return bId === userBId;
-      }));
+      });
+      console.log('Filtered inventory:', filtered);
+      setInventory(filtered);
       setRecipes(recData);
-      setItems(itemsData);
+      setAllItems(itemsData);
     } catch (error) {
       console.error('Failed to fetch inventory:', error);
     } finally {
@@ -55,20 +74,23 @@ const Inventory: React.FC = () => {
     }
   };
 
-  // Get inventory items from the master Items table
-  const inventoryItems = items.filter(item => item.item_type === 'inventory' && item.is_active);
-  const allInventoryItems = inventoryItems.map(item => item.item_name);
+  // Get inventory items from the master Items table (item_type = 'inventory')
+  const inventoryItems = allItems.filter(item => item.item_type === 'inventory' && item.is_active);
 
-  const handleOpenModal = (item: InventoryItem | null = null) => {
+  const handleOpenModal = (item: InventoryItemType | null = null) => {
     setSelectedItem(item);
     if (item) {
+      // Editing existing inventory item
+      setFormItemId((item as any).item_id || '');
       setFormItemName(item.item_name);
       setFormCategory(item.category);
       setFormUnit(item.unit);
       setFormQuantity(0);
-      setFormMinStock(item.min_stock);
+      setFormMinStock(item.min_stock || 0);
     } else {
-      setFormItemName(allInventoryItems[0] || '');
+      // Creating new inventory item
+      setFormItemId('');
+      setFormItemName('');
       setFormCategory('');
       setFormUnit('');
       setFormQuantity(0);
@@ -77,8 +99,24 @@ const Inventory: React.FC = () => {
     setIsModalOpen(true);
   };
 
+  const handleItemSelect = (itemId: string) => {
+    setFormItemId(itemId);
+    const selectedItemData = allItems.find(i => i.id === itemId || i._id === itemId);
+    if (selectedItemData) {
+      setFormItemName(selectedItemData.item_name);
+      setFormCategory(selectedItemData.category || '');
+      setFormUnit(selectedItemData.unit || '');
+      setFormMinStock(0);
+    }
+  };
+
   const handleSave = async () => {
     try {
+      if (!formItemId && !selectedItem) {
+        showNotification('Please select an item from the Items catalog', 'error');
+        return;
+      }
+
       if (selectedItem) {
         // Update: quantity in form is DELTA
         const newQuantity = selectedItem.quantity + formQuantity;
@@ -88,8 +126,10 @@ const Inventory: React.FC = () => {
         });
         showNotification('Inventory updated');
       } else {
+        // Create new inventory item
         await api.inventory.create({
           branch_id: user?.branch_id,
+          item_id: formItemId,
           item_name: formItemName,
           category: formCategory,
           quantity: formQuantity,
@@ -232,46 +272,45 @@ const Inventory: React.FC = () => {
           {!selectedItem ? (
             <>
               <div className="w-full">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Item Name</label>
-                  <select
-                    className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-                    value={formItemName}
-                    onChange={(e) => {
-                      setFormItemName(e.target.value);
-                      // Auto-fill category and unit if item exists in inventory items
-                      const existingItem = inventoryItems.find(i => i.item_name === e.target.value);
-                      if (existingItem) {
-                        setFormCategory(existingItem.category || '');
-                        setFormUnit(existingItem.unit || '');
-                        setFormMinStock(0);
-                      }
-                    }}
-                  >
-                    <option value="">Select an Item</option>
-                    {allInventoryItems.map(name => (
-                      <option key={name} value={name}>{name}</option>
-                    ))}
-                    <option value="other">Other (New Ingredient)</option>
-                  </select>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Select Item from Catalog *
+                </label>
+                <select
+                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  value={formItemId}
+                  onChange={(e) => handleItemSelect(e.target.value)}
+                >
+                  <option value="">-- Select an Item --</option>
+                  {inventoryItems.map(item => (
+                    <option key={item.id || item._id} value={item.id || item._id}>
+                      {item.item_name} ({item.category || 'Uncategorized'})
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Items are selected from the master Items catalog. Only items with type "inventory" are shown.
+                </p>
               </div>
-              {formItemName === 'other' && (
-                <Input
-                  label="Custom Item Name"
-                  placeholder="e.g. Tomato Sauce"
-                  onChange={(e) => setFormItemName(e.target.value)}
-                />
-              )}
+              <Input
+                label="Item Name"
+                placeholder="Auto-filled from selection"
+                value={formItemName}
+                disabled
+                className="bg-gray-50"
+              />
               <Input
                 label="Category"
-                placeholder="e.g. Canned Goods"
+                placeholder="Auto-filled from selection"
                 value={formCategory}
-                onChange={(e) => setFormCategory(e.target.value)}
+                disabled
+                className="bg-gray-50"
               />
               <Input
                 label="Unit"
-                placeholder="e.g. kg, liters, units"
+                placeholder="Auto-filled from selection"
                 value={formUnit}
-                onChange={(e) => setFormUnit(e.target.value)}
+                disabled
+                className="bg-gray-50"
               />
             </>
           ) : null}

@@ -4,12 +4,16 @@ export interface ICategory extends Document {
   name: string;
   description: string;
   is_active: boolean;
+  created_by?: mongoose.Types.ObjectId;
+  created_at: Date;
+  updated_at: Date;
 }
 
 const CategorySchema: Schema = new Schema({
   name: { type: String, required: true },
   description: { type: String },
   is_active: { type: Boolean, default: true },
-}, { timestamps: true });
+  created_by: { type: Schema.Types.ObjectId, ref: 'User' },
+}, { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } });
 
 export default mongoose.model<ICategory>('Category', CategorySchema);

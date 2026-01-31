@@ -2,20 +2,25 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import User from '../models/User';
 import * as factory from '../utils/controllerFactory';
+import { AuthRequest } from '../middleware/auth';
 
 export const getAllUsers = factory.getAll(User);
 export const getUser = factory.getOne(User);
 export const deleteUser = factory.deleteOne(User);
 
-export const createUser = async (req: Request, res: Response) => {
+export const createUser = async (req: AuthRequest, res: Response) => {
   try {
     const { password, ...rest } = req.body;
+    const data = { ...rest };
+    
+    // Automatically set created_by to the authenticated user's ID
+    data.created_by = req.user?._id || req.user?.id;
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password || 'password123', salt);
 
     const user = await User.create({
-      ...rest,
+      ...data,
       password: hashedPassword,
       passwordResetRequired: true // Admin created users must reset password
     });
