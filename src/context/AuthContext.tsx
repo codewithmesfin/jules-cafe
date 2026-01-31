@@ -9,18 +9,23 @@ interface AuthContextType {
   login: (email: string, password?: string) => Promise<User>;
   logout: () => void;
   isAuthenticated: boolean;
+  loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const saved = localStorage.getItem('user');
-    if (saved) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setUser(JSON.parse(saved));
+    try {
+      const saved = localStorage.getItem('user');
+      if (saved) {
+        setUser(JSON.parse(saved));
+      }
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -50,7 +55,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAuthenticated: !!user }}>
+    <AuthContext.Provider value={{ user, login, logout, isAuthenticated: !!user, loading }}>
       {children}
     </AuthContext.Provider>
   );

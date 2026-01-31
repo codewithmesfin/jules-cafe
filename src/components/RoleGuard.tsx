@@ -11,19 +11,20 @@ interface RoleGuardProps {
 }
 
 export const RoleGuard: React.FC<RoleGuardProps> = ({ children, allowedRoles }) => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
+    if (loading) return; // Do nothing while loading
     if (!isAuthenticated) {
       router.replace(`/login?from=${pathname}`);
     } else if (user && !allowedRoles.includes(user.role)) {
       router.replace('/');
     }
-  }, [isAuthenticated, user, allowedRoles, router, pathname]);
+  }, [isAuthenticated, user, allowedRoles, router, pathname, loading]);
 
-  if (!isAuthenticated || (user && !allowedRoles.includes(user.role))) {
+  if (loading || !isAuthenticated || (user && !allowedRoles.includes(user.role))) {
     return null; // Or a loading spinner
   }
 
