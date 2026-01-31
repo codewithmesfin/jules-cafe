@@ -41,7 +41,10 @@ const Reservations: React.FC = () => {
         api.reservations.getAll(),
         api.users.getAll(),
       ]);
-      setReservations(resData.filter((r: Reservation) => r.branch_id === user?.branch_id));
+    setReservations(resData.filter((r: Reservation) => {
+      const branchId = typeof r.branch_id === 'string' ? r.branch_id : (r.branch_id as any)?.id;
+      return branchId === user?.branch_id;
+    }));
       setAllUsers(userData);
     } catch (error) {
       console.error('Failed to fetch manager reservations:', error);
@@ -53,7 +56,8 @@ const Reservations: React.FC = () => {
   const handleOpenModal = (res: Reservation | null = null) => {
     setSelectedRes(res);
     if (res) {
-      setFormCustomerId(res.customer_id);
+      const customerId = typeof res.customer_id === 'string' ? res.customer_id : (res.customer_id as any)?.id;
+      setFormCustomerId(customerId || '');
       setFormDate(res.reservation_date);
       setFormTime(res.reservation_time);
       setFormGuests(res.guests_count);
@@ -89,10 +93,7 @@ const Reservations: React.FC = () => {
         await api.reservations.update(selectedRes.id, resData);
         showNotification('Reservation updated successfully');
       } else {
-        await api.reservations.create({
-          ...resData,
-          created_at: new Date().toISOString()
-        });
+        await api.reservations.create(resData);
         showNotification('Reservation created successfully');
       }
       setIsModalOpen(false);
@@ -125,7 +126,8 @@ const Reservations: React.FC = () => {
   };
 
   const filteredReservations = reservations.filter(res => {
-    const customer = allUsers.find(u => u.id === res.customer_id);
+    const customerId = typeof res.customer_id === 'string' ? res.customer_id : (res.customer_id as any)?.id;
+    const customer = allUsers.find(u => u.id === customerId);
     return customer?.full_name.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
@@ -154,14 +156,17 @@ const Reservations: React.FC = () => {
           columns={[
             {
               header: 'Customer',
-              accessor: (res) => (
-                <div className="flex items-center gap-2">
-                  <User size={16} className="text-gray-400" />
-                  <span className="font-bold text-gray-900">
-                    {allUsers.find(u => u.id === res.customer_id)?.full_name || 'Guest'}
-                  </span>
-                </div>
-              )
+              accessor: (res) => {
+                const customerId = typeof res.customer_id === 'string' ? res.customer_id : (res.customer_id as any)?.id;
+                return (
+                  <div className="flex items-center gap-2">
+                    <User size={16} className="text-gray-400" />
+                    <span className="font-bold text-gray-900">
+                      {allUsers.find(u => u.id === customerId)?.full_name || 'Guest'}
+                    </span>
+                  </div>
+                );
+              }
             },
             {
               header: 'Waiter',

@@ -36,7 +36,10 @@ const Reservations: React.FC = () => {
         api.reservations.getAll(),
         api.branches.getAll(),
       ]);
-      setReservations(resData.filter((r: Reservation) => r.customer_id === user?.id));
+      setReservations(resData.filter((r: Reservation) => {
+        const customerId = typeof r.customer_id === 'string' ? r.customer_id : (r.customer_id as any)?.id;
+        return customerId === user?.id;
+      }));
       setBranches(brData);
       if (brData.length > 0) setFormData(prev => ({ ...prev, branch_id: brData[0].id }));
     } catch (error) {
@@ -61,8 +64,7 @@ const Reservations: React.FC = () => {
         reservation_time: formData.time,
         guests_count: parseInt(formData.guests),
         note: formData.note,
-        status: 'requested',
-        created_at: new Date().toISOString()
+        status: 'requested'
       });
       showNotification('Reservation requested! We will notify you once it is confirmed.');
       fetchData();
@@ -155,7 +157,10 @@ const Reservations: React.FC = () => {
                       })}
                     </div>
                     <div className="text-xs text-gray-500 mb-1">
-                      {branches.find(b => b.id === res.branch_id)?.name}
+                      {(() => {
+                        const branchId = typeof res.branch_id === 'string' ? res.branch_id : (res.branch_id as any)?.id;
+                        return branches.find(b => b.id === branchId)?.name;
+                      })()}
                     </div>
                     <div className="flex flex-wrap gap-4 text-sm text-gray-500">
                       <div className="flex items-center gap-1">

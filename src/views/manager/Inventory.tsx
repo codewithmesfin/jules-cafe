@@ -87,8 +87,7 @@ const Inventory: React.FC = () => {
           category: formCategory,
           quantity: formQuantity,
           unit: formUnit,
-          min_stock: formMinStock,
-          last_updated: new Date().toISOString()
+          min_stock: formMinStock
         });
         showNotification('Item added to inventory');
       }

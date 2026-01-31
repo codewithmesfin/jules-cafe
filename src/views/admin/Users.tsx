@@ -82,10 +82,7 @@ const Users: React.FC = () => {
         showNotification("User updated successfully");
       } else {
         if (!userData.password) userData.password = 'password123';
-        await api.users.create({
-          ...userData,
-          created_at: new Date().toISOString()
-        });
+        await api.users.create(userData);
         showNotification("User created successfully");
       }
       setIsModalOpen(false);

@@ -25,8 +25,13 @@ export async function PUT(
     const { id } = await params;
     await connectToDatabase();
     const body = await request.json();
-    const item = await InventoryItemModel.findByIdAndUpdate(id, body, { new: true });
+
+    const item = await InventoryItemModel.findById(id);
     if (!item) return NextResponse.json({ error: 'Inventory item not found' }, { status: 404 });
+
+    Object.assign(item, body);
+    await item.save();
+
     return NextResponse.json(item);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

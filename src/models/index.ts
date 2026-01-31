@@ -15,7 +15,7 @@ const toJSON = {
 };
 
 const schemaOptions = {
-  timestamps: true,
+  timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },
   toJSON,
   toObject: toJSON
 };
@@ -174,7 +174,29 @@ const InventoryItemSchema = new Schema({
   quantity: { type: Number, required: true },
   unit: { type: String, required: true },
   min_stock: { type: Number, required: true },
-}, schemaOptions);
+}, {
+  ...schemaOptions,
+  toJSON: {
+    ...toJSON,
+    transform: function (doc: any, ret: any) {
+      if (ret._id) {
+        ret.id = ret._id.toString();
+      }
+      ret.last_updated = ret.updated_at;
+      delete ret._id;
+    }
+  },
+  toObject: {
+    ...toJSON,
+    transform: function (doc: any, ret: any) {
+      if (ret._id) {
+        ret.id = ret._id.toString();
+      }
+      ret.last_updated = ret.updated_at;
+      delete ret._id;
+    }
+  }
+});
 
 export const InventoryItemModel = models.InventoryItem || model('InventoryItem', InventoryItemSchema);
 

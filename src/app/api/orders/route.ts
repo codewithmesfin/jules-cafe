@@ -24,13 +24,14 @@ export async function POST(request: Request) {
     }
 
     const order = await OrderModel.create(orderData);
+    let orderItems = [];
 
     if (items && Array.isArray(items) && items.length > 0) {
       const itemsWithOrderId = items.map((item: any) => ({ ...item, order_id: order._id }));
-      await OrderItemModel.insertMany(itemsWithOrderId);
+      orderItems = await OrderItemModel.insertMany(itemsWithOrderId);
     }
 
-    return NextResponse.json(order, { status: 201 });
+    return NextResponse.json({ ...order.toObject(), items: orderItems }, { status: 201 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

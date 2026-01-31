@@ -61,8 +61,7 @@ const Reviews: React.FC = () => {
         branch_id: selectedBranchId,
         rating,
         comment,
-        is_approved: false, // Needs moderation
-        created_at: new Date().toISOString()
+        is_approved: false // Needs moderation
       });
       showNotification('Thank you! Your review has been submitted for approval.');
       setRating(0);
@@ -156,7 +155,8 @@ const Reviews: React.FC = () => {
             <div className="text-center py-10">Loading reviews...</div>
           ) : reviews.length > 0 ? (
             reviews.map((review) => {
-              const customer = users.find(u => u.id === review.customer_id);
+              const customerId = typeof review.customer_id === 'string' ? review.customer_id : (review.customer_id as any)?.id;
+              const customer = users.find(u => u.id === customerId);
               return (
                 <Card key={review.id}>
                   <div className="flex items-start justify-between mb-4">

@@ -25,8 +25,13 @@ export async function PUT(
     const { id } = await params;
     await connectToDatabase();
     const body = await request.json();
-    const category = await CategoryModel.findByIdAndUpdate(id, body, { new: true });
+
+    const category = await CategoryModel.findById(id);
     if (!category) return NextResponse.json({ error: 'Category not found' }, { status: 404 });
+
+    Object.assign(category, body);
+    await category.save();
+
     return NextResponse.json(category);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

@@ -95,7 +95,12 @@ const MenuAvailability: React.FC = () => {
                   <img src={item.image_url} alt={item.name} className="w-10 h-10 rounded-lg object-cover" />
                   <div>
                     <p className="font-bold text-gray-900">{item.name}</p>
-                    <p className="text-xs text-gray-500">{categories.find(c => c.id === item.category_id)?.name}</p>
+                    <p className="text-xs text-gray-500">
+                      {(() => {
+                        const catId = typeof item.category_id === 'string' ? item.category_id : (item.category_id as any)?.id;
+                        return categories.find(c => c.id === catId)?.name || 'N/A';
+                      })()}
+                    </p>
                   </div>
                 </div>
               )

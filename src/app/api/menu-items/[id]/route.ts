@@ -25,8 +25,15 @@ export async function PUT(
     const { id } = await params;
     await connectToDatabase();
     const body = await request.json();
-    const menuItem = await MenuItemModel.findByIdAndUpdate(id, body, { new: true });
+
+    const menuItem = await MenuItemModel.findById(id);
     if (!menuItem) return NextResponse.json({ error: 'Menu item not found' }, { status: 404 });
+
+    Object.assign(menuItem, body);
+    await menuItem.save();
+
+    await menuItem.populate('category_id');
+
     return NextResponse.json(menuItem);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

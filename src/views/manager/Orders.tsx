@@ -29,7 +29,10 @@ const Orders: React.FC = () => {
         api.orders.getAll(),
         api.users.getAll(),
       ]);
-      setOrders(ordData.filter((o: Order) => o.branch_id === user?.branch_id));
+    setOrders(ordData.filter((o: Order) => {
+      const branchId = typeof o.branch_id === 'string' ? o.branch_id : (o.branch_id as any)?.id;
+      return branchId === user?.branch_id;
+    }));
       setUsers(userData);
     } catch (error) {
       console.error('Failed to fetch manager orders:', error);
@@ -84,7 +87,10 @@ const Orders: React.FC = () => {
             { header: 'Order ID', accessor: 'order_number', className: 'font-bold' },
             {
               header: 'Customer',
-              accessor: (order) => users.find(u => u.id === order.customer_id)?.full_name || 'Walk-in'
+              accessor: (order) => {
+                const customerId = typeof order.customer_id === 'string' ? order.customer_id : (order.customer_id as any)?.id;
+                return users.find(u => u.id === customerId)?.full_name || 'Walk-in';
+              }
             },
             { header: 'Amount', accessor: (order) => `$${order.total_amount.toFixed(2)}` },
             {

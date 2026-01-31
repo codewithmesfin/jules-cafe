@@ -25,8 +25,15 @@ export async function PUT(
     const { id } = await params;
     await connectToDatabase();
     const body = await request.json();
-    const review = await ReviewModel.findByIdAndUpdate(id, body, { new: true });
+
+    const review = await ReviewModel.findById(id);
     if (!review) return NextResponse.json({ error: 'Review not found' }, { status: 404 });
+
+    Object.assign(review, body);
+    await review.save();
+
+    await review.populate('customer_id branch_id');
+
     return NextResponse.json(review);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

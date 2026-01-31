@@ -25,8 +25,13 @@ export async function PUT(
     const { id } = await params;
     await connectToDatabase();
     const body = await request.json();
-    const branch = await BranchModel.findByIdAndUpdate(id, body, { new: true });
+
+    const branch = await BranchModel.findById(id);
     if (!branch) return NextResponse.json({ error: 'Branch not found' }, { status: 404 });
+
+    Object.assign(branch, body);
+    await branch.save();
+
     return NextResponse.json(branch);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

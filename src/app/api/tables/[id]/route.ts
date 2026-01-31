@@ -25,8 +25,13 @@ export async function PUT(
     const { id } = await params;
     await connectToDatabase();
     const body = await request.json();
-    const table = await TableModel.findByIdAndUpdate(id, body, { new: true });
+
+    const table = await TableModel.findById(id);
     if (!table) return NextResponse.json({ error: 'Table not found' }, { status: 404 });
+
+    Object.assign(table, body);
+    await table.save();
+
     return NextResponse.json(table);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

@@ -62,8 +62,7 @@ const Categories: React.FC = () => {
         await api.categories.create({
           name: formName,
           description: formDescription,
-          is_active: formIsActive,
-          created_at: new Date().toISOString()
+          is_active: formIsActive
         });
         showNotification("Category created successfully");
       }

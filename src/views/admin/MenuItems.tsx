@@ -83,10 +83,7 @@ const MenuItems: React.FC = () => {
         await api.menuItems.update(editingItem.id, itemData);
         showNotification("Item updated successfully");
       } else {
-        await api.menuItems.create({
-          ...itemData,
-          created_at: new Date().toISOString()
-        });
+        await api.menuItems.create(itemData);
         showNotification("Item created successfully");
       }
       setIsModalOpen(false);
@@ -166,7 +163,10 @@ const MenuItems: React.FC = () => {
             },
             {
               header: 'Category',
-              accessor: (item) => categories.find(c => c.id === item.category_id)?.name || 'N/A'
+              accessor: (item) => {
+                const categoryId = typeof item.category_id === 'string' ? item.category_id : (item.category_id as any)?.id;
+                return categories.find(c => c.id === categoryId)?.name || 'N/A';
+              }
             },
             { header: 'Base Price', accessor: (item) => `$${item.base_price.toFixed(2)}` },
             {
@@ -196,7 +196,8 @@ const MenuItems: React.FC = () => {
                     onClick={() => {
                       setEditingItem(item);
                       setFormName(item.name);
-                      setFormCategoryId(item.category_id);
+                      const catId = typeof item.category_id === 'string' ? item.category_id : (item.category_id as any)?.id;
+                      setFormCategoryId(catId || '');
                       setFormBasePrice(item.base_price);
                       setFormImageUrl(item.image_url);
                       setFormDescription(item.description);

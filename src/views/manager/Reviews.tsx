@@ -23,7 +23,10 @@ const Reviews: React.FC = () => {
         api.reviews.getAll(),
         api.users.getAll(),
       ]);
-      setReviews(revData.filter((r: Review) => r.branch_id === user?.branch_id));
+    setReviews(revData.filter((r: Review) => {
+      const branchId = typeof r.branch_id === 'string' ? r.branch_id : (r.branch_id as any)?.id;
+      return branchId === user?.branch_id;
+    }));
       setUsers(userData);
     } catch (error) {
       console.error('Failed to fetch manager reviews:', error);
@@ -55,7 +58,8 @@ const Reviews: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {reviews.map(review => {
-            const customer = users.find(u => u.id === review.customer_id);
+            const customerId = typeof review.customer_id === 'string' ? review.customer_id : (review.customer_id as any)?.id;
+            const customer = users.find(u => u.id === customerId);
             return (
               <Card key={review.id} className="space-y-4">
                 <div className="flex justify-between items-start">

@@ -25,8 +25,15 @@ export async function PUT(
     const { id } = await params;
     await connectToDatabase();
     const body = await request.json();
-    const reservation = await ReservationModel.findByIdAndUpdate(id, body, { new: true });
+
+    const reservation = await ReservationModel.findById(id);
     if (!reservation) return NextResponse.json({ error: 'Reservation not found' }, { status: 404 });
+
+    Object.assign(reservation, body);
+    await reservation.save();
+
+    await reservation.populate('customer_id branch_id table_id');
+
     return NextResponse.json(reservation);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

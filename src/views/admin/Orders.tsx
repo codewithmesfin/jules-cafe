@@ -161,7 +161,8 @@ const Orders: React.FC = () => {
             {
               header: 'Customer',
               accessor: (order) => {
-                const customer = users.find(u => u.id === order.customer_id);
+                const customerId = typeof order.customer_id === 'string' ? order.customer_id : (order.customer_id as any)?.id;
+                const customer = users.find(u => u.id === customerId);
                 return customer?.full_name || 'Guest';
               }
             },
@@ -330,8 +331,16 @@ const Orders: React.FC = () => {
             <div className="space-y-4">
               <h4 className="font-bold text-gray-900">Customer Details</h4>
               <div className="text-sm space-y-2">
-                <p><span className="text-gray-500">Name:</span> {users.find(u => u.id === selectedOrder.customer_id)?.full_name || 'Guest'}</p>
-                <p><span className="text-gray-500">Email:</span> {users.find(u => u.id === selectedOrder.customer_id)?.email || 'N/A'}</p>
+                {(() => {
+                  const customerId = typeof selectedOrder.customer_id === 'string' ? selectedOrder.customer_id : (selectedOrder.customer_id as any)?.id;
+                  const customer = users.find(u => u.id === customerId);
+                  return (
+                    <>
+                      <p><span className="text-gray-500">Name:</span> {customer?.full_name || 'Guest'}</p>
+                      <p><span className="text-gray-500">Email:</span> {customer?.email || 'N/A'}</p>
+                    </>
+                  );
+                })()}
               </div>
             </div>
 

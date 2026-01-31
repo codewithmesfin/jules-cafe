@@ -28,9 +28,17 @@ export async function PUT(
     const { id } = await params;
     await connectToDatabase();
     const body = await request.json();
-    const order = await OrderModel.findByIdAndUpdate(id, body, { new: true });
+
+    const order = await OrderModel.findById(id);
     if (!order) return NextResponse.json({ error: 'Order not found' }, { status: 404 });
-    return NextResponse.json(order);
+
+    Object.assign(order, body);
+    await order.save();
+
+    await order.populate('customer_id branch_id table_id');
+    const items = await OrderItemModel.find({ order_id: id });
+
+    return NextResponse.json({ ...order.toObject(), items });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

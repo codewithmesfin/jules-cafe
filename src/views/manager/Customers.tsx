@@ -74,8 +74,7 @@ const Customers: React.FC = () => {
       } else {
         await api.users.create({
           ...customerData,
-          password: 'password123', // Default password for new customers added by manager
-          created_at: new Date().toISOString()
+          password: 'password123' // Default password for new customers added by manager
         });
         showNotification("Customer created successfully");
       }

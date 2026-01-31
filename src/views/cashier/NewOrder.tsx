@@ -59,7 +59,8 @@ const NewOrder: React.FC = () => {
 
   const filteredItems = menuItems.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || item.category_id === selectedCategory;
+    const categoryId = typeof item.category_id === 'string' ? item.category_id : (item.category_id as any)?.id;
+    const matchesCategory = selectedCategory === 'all' || categoryId === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
@@ -291,7 +292,7 @@ const NewOrder: React.FC = () => {
                   full_name: newCustomer.name,
                   role: 'customer',
                   status: 'active',
-                  created_at: new Date().toISOString()
+                  password: 'password123' // Default password for new customers
                 });
                 showNotification("Customer added successfully!");
                 setIsCustomerModalOpen(false);
