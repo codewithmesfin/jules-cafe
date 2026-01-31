@@ -10,7 +10,7 @@ import { Modal } from '../../components/ui/Modal';
 import { ConfirmationDialog } from '../../components/ui/ConfirmationDialog';
 import { calculateAvailablePortions } from '../../utils/recipeUtils';
 import { useNotification } from '../../context/NotificationContext';
-import type { Recipe, MenuItem, Branch, InventoryItem } from '../../types';
+import type { Recipe, MenuItem, Branch, InventoryItem, Item } from '../../types';
 
 const Recipes: React.FC = () => {
   const { showNotification } = useNotification();
@@ -18,6 +18,7 @@ const Recipes: React.FC = () => {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -38,16 +39,18 @@ const Recipes: React.FC = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [recData, itemData, brData, invData] = await Promise.all([
+      const [recData, itemData, brData, invData, itemsData] = await Promise.all([
         api.recipes.getAll(),
         api.menuItems.getAll(),
         api.branches.getAll(),
         api.inventory.getAll(),
+        api.items.getByType('ingredient'),
       ]);
       setRecipes(recData);
       setMenuItems(itemData);
       setBranches(brData);
       setInventory(invData);
+      setItems(itemsData);
       if (brData.length > 0) setSelectedBranchId(brData[0].id);
     } catch (error) {
       console.error('Failed to fetch recipes data:', error);
@@ -63,6 +66,10 @@ const Recipes: React.FC = () => {
   });
 
   const branchInventory = inventory.filter(i => i.branch_id === selectedBranchId);
+
+  // Get all ingredients from the master Items table
+  const ingredientItems = items.filter(item => item.item_type === 'ingredient' && item.is_active);
+  const allIngredients = ingredientItems.map(item => item.item_name);
 
   const handleSave = async () => {
     try {
@@ -301,21 +308,33 @@ const Recipes: React.FC = () => {
               {formIngredients.map((ing, idx) => (
                 <div key={idx} className="flex gap-2 items-end">
                   <div className="flex-1">
-                    <Input
-                      placeholder="Ingredient Name"
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Ingredient</label>
+                    <select
+                      className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
                       value={ing.item_name}
                       onChange={(e) => {
                         const newIngs = [...formIngredients];
                         newIngs[idx].item_name = e.target.value;
+                        // Auto-fill unit from selected ingredient item
+                        const ingItem = ingredientItems.find(i => i.item_name === e.target.value);
+                        if (ingItem) {
+                          newIngs[idx].unit = ingItem.unit || '';
+                        }
                         setFormIngredients(newIngs);
                       }}
-                    />
+                    >
+                      <option value="">Select Ingredient</option>
+                      {allIngredients.map(name => (
+                        <option key={name} value={name}>{name}</option>
+                      ))}
+                    </select>
                   </div>
                   <div className="w-24">
                     <Input
                       type="number"
                       step="0.01"
                       placeholder="Qty"
+                      label="Qty"
                       value={ing.quantity}
                       onChange={(e) => {
                         const newIngs = [...formIngredients];
@@ -327,6 +346,7 @@ const Recipes: React.FC = () => {
                   <div className="w-24">
                     <Input
                       placeholder="Unit"
+                      label="Unit"
                       value={ing.unit}
                       onChange={(e) => {
                         const newIngs = [...formIngredients];

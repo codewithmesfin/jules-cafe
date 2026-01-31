@@ -9,7 +9,7 @@ import { Modal } from '../../components/ui/Modal';
 import { Card } from '../../components/ui/Card';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
-import type { InventoryItem, Recipe } from '../../types';
+import type { InventoryItem, Recipe, Item } from '../../types';
 
 const Inventory: React.FC = () => {
   const { user } = useAuth();
@@ -17,6 +17,7 @@ const Inventory: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
@@ -35,9 +36,10 @@ const Inventory: React.FC = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [invData, recData] = await Promise.all([
+      const [invData, recData, itemsData] = await Promise.all([
         api.inventory.getAll(),
         api.recipes.getAll(),
+        api.items.getByType('inventory'),
       ]);
       setInventory(invData.filter((i: InventoryItem) => {
         const bId = typeof i.branch_id === 'string' ? i.branch_id : (i.branch_id as any)?.id;
@@ -45,6 +47,7 @@ const Inventory: React.FC = () => {
         return bId === userBId;
       }));
       setRecipes(recData);
+      setItems(itemsData);
     } catch (error) {
       console.error('Failed to fetch inventory:', error);
     } finally {
@@ -52,9 +55,9 @@ const Inventory: React.FC = () => {
     }
   };
 
-  const suggestedItems = Array.from(new Set(
-    recipes.flatMap(r => r.ingredients.map(i => i.item_name))
-  )).sort();
+  // Get inventory items from the master Items table
+  const inventoryItems = items.filter(item => item.item_type === 'inventory' && item.is_active);
+  const allInventoryItems = inventoryItems.map(item => item.item_name);
 
   const handleOpenModal = (item: InventoryItem | null = null) => {
     setSelectedItem(item);
@@ -65,7 +68,7 @@ const Inventory: React.FC = () => {
       setFormQuantity(0);
       setFormMinStock(item.min_stock);
     } else {
-      setFormItemName(suggestedItems[0] || '');
+      setFormItemName(allInventoryItems[0] || '');
       setFormCategory('');
       setFormUnit('');
       setFormQuantity(0);
@@ -230,17 +233,26 @@ const Inventory: React.FC = () => {
             <>
               <div className="w-full">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Item Name</label>
-                <select
-                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  value={formItemName}
-                  onChange={(e) => setFormItemName(e.target.value)}
-                >
-                  <option value="">Select an Item</option>
-                  {suggestedItems.map(name => (
-                    <option key={name} value={name}>{name}</option>
-                  ))}
-                  <option value="other">Other (New Ingredient)</option>
-                </select>
+                  <select
+                    className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    value={formItemName}
+                    onChange={(e) => {
+                      setFormItemName(e.target.value);
+                      // Auto-fill category and unit if item exists in inventory items
+                      const existingItem = inventoryItems.find(i => i.item_name === e.target.value);
+                      if (existingItem) {
+                        setFormCategory(existingItem.category || '');
+                        setFormUnit(existingItem.unit || '');
+                        setFormMinStock(0);
+                      }
+                    }}
+                  >
+                    <option value="">Select an Item</option>
+                    {allInventoryItems.map(name => (
+                      <option key={name} value={name}>{name}</option>
+                    ))}
+                    <option value="other">Other (New Ingredient)</option>
+                  </select>
               </div>
               {formItemName === 'other' && (
                 <Input

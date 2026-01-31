@@ -22,7 +22,9 @@ const BranchProfile: React.FC = () => {
   const [capacity, setCapacity] = useState(0);
   const [openTime, setOpenTime] = useState('');
   const [closeTime, setCloseTime] = useState('');
-  const [company, setCompany] = useState('');
+
+  // Company is automatically set from the logged-in user's company
+  const userCompany = user?.company || '';
 
   useEffect(() => {
     if (user?.branch_id) {
@@ -42,7 +44,6 @@ const BranchProfile: React.FC = () => {
       setCapacity(data.capacity || 0);
       setOpenTime(data.opening_time || '');
       setCloseTime(data.closing_time || '');
-      setCompany(data.company || '');
     } catch (error) {
       console.error('Failed to fetch branch:', error);
     } finally {
@@ -62,7 +63,7 @@ const BranchProfile: React.FC = () => {
         capacity,
         opening_time: openTime,
         closing_time: closeTime,
-        company
+        company: userCompany
       });
       showNotification('Branch profile updated successfully');
     } catch (error) {
@@ -98,8 +99,9 @@ const BranchProfile: React.FC = () => {
             <div className="md:col-span-2">
               <Input
                 label="Company"
-                value={company}
-                onChange={(e) => setCompany(e.target.value)}
+                value={userCompany}
+                disabled
+                className="bg-gray-50"
               />
             </div>
             <div className="md:col-span-2">

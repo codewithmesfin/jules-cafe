@@ -71,6 +71,20 @@ const MenuItems: React.FC = () => {
 
   const handleSave = async () => {
     try {
+      // Validate required fields
+      if (!formName.trim()) {
+        showNotification("Please enter an item name", "error");
+        return;
+      }
+      if (!formCategoryId) {
+        showNotification("Please select a category", "error");
+        return;
+      }
+      if (formBasePrice <= 0) {
+        showNotification("Please enter a valid price", "error");
+        return;
+      }
+      
       const formData = new FormData();
       formData.append('name', formName);
       formData.append('category_id', formCategoryId);
@@ -78,16 +92,23 @@ const MenuItems: React.FC = () => {
       formData.append('description', formDescription);
       formData.append('is_active', formIsActive.toString());
 
-      if (imageFile) {
-        formData.append('image', imageFile);
-      } else {
-        formData.append('image_url', formImageUrl);
-      }
-
       if (editingItem) {
+        // For updates: only send image if a new file is selected
+        if (imageFile) {
+          formData.append('image', imageFile);
+        } else if (formImageUrl) {
+          // Keep existing image_url or use provided URL
+          formData.append('image_url', formImageUrl);
+        }
         await api.menuItems.update(editingItem.id, formData);
         showNotification("Item updated successfully");
       } else {
+        // For create: require either image file or image_url
+        if (imageFile) {
+          formData.append('image', imageFile);
+        } else if (formImageUrl) {
+          formData.append('image_url', formImageUrl);
+        }
         await api.menuItems.create(formData);
         showNotification("Item created successfully");
       }
@@ -134,7 +155,7 @@ const MenuItems: React.FC = () => {
           >
             <option value="all">All Categories</option>
             {categories.map(cat => (
-              <option key={cat.id} value={cat.id}>{cat.name}</option>
+              <option key={cat.id || cat._id} value={cat.id || cat._id}>{cat.name}</option>
             ))}
           </select>
         </div>
@@ -144,6 +165,7 @@ const MenuItems: React.FC = () => {
           setFormCategoryId(categories[0]?.id || '');
           setFormBasePrice(0);
           setFormImageUrl('');
+          setImageFile(null);
           setFormDescription('');
           setFormIsActive(true);
           setIsModalOpen(true);
@@ -233,6 +255,7 @@ const MenuItems: React.FC = () => {
         onClose={() => {
           setIsModalOpen(false);
           setEditingItem(null);
+          setImageFile(null);
         }}
         title={editingItem ? "Edit Menu Item" : "Add Menu Item"}
         size="lg"
@@ -241,6 +264,7 @@ const MenuItems: React.FC = () => {
             <Button variant="outline" onClick={() => {
               setIsModalOpen(false);
               setEditingItem(null);
+              setImageFile(null);
             }}>Cancel</Button>
             <Button onClick={handleSave}>
               {editingItem ? "Save Changes" : "Create Item"}
@@ -263,7 +287,7 @@ const MenuItems: React.FC = () => {
               onChange={(e) => setFormCategoryId(e.target.value)}
             >
               {categories.map(cat => (
-                <option key={cat.id} value={cat.id}>{cat.name}</option>
+                <option key={cat.id || cat._id} value={cat.id || cat._id}>{cat.name}</option>
               ))}
             </select>
           </div>
@@ -346,15 +370,15 @@ const MenuItems: React.FC = () => {
               </div>
               <div className="w-full sm:w-auto">
                 <label className="block text-[10px] font-bold text-blue-600 uppercase mb-1">Check Branch</label>
-                <select
-                  className="w-full sm:w-48 rounded-md border-blue-200 bg-white px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={selectedBranchId}
-                  onChange={(e) => setSelectedBranchId(e.target.value)}
-                >
-                  {branches.map(b => (
-                    <option key={b.id} value={b.id}>{b.name}</option>
-                  ))}
-                </select>
+                  <select
+                    className="w-full sm:w-48 rounded-md border-blue-200 bg-white px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={selectedBranchId}
+                    onChange={(e) => setSelectedBranchId(e.target.value)}
+                  >
+                    {branches.map(b => (
+                      <option key={b.id || b._id} value={b.id || b._id}>{b.name || b.branch_name}</option>
+                    ))}
+                  </select>
               </div>
             </div>
 

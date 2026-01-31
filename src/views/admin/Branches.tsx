@@ -7,8 +7,10 @@ import { Table } from '../../components/ui/Table';
 import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
 import type { Branch } from '../../types';
+import { useAuth } from '../../context/AuthContext';
 
 const Branches: React.FC = () => {
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
@@ -23,7 +25,6 @@ const Branches: React.FC = () => {
   const [closeTime, setCloseTime] = useState('22:00');
   const [capacity, setCapacity] = useState(50);
   const [isActive, setIsActive] = useState(true);
-  const [company, setCompany] = useState('');
 
   useEffect(() => {
     fetchBranches();
@@ -55,7 +56,6 @@ const Branches: React.FC = () => {
       setCloseTime(branch.closing_time || '22:00');
       setCapacity(branch.capacity || 50);
       setIsActive(branch.is_active);
-      setCompany(branch.company || '');
     } else {
       setName('');
       setLocation('');
@@ -63,7 +63,6 @@ const Branches: React.FC = () => {
       setCloseTime('22:00');
       setCapacity(50);
       setIsActive(true);
-      setCompany('');
     }
     setIsModalOpen(true);
   };
@@ -78,7 +77,7 @@ const Branches: React.FC = () => {
         closing_time: closeTime,
         capacity,
         is_active: isActive,
-        company
+        company: user?.company || ''
       };
 
       if (selectedBranch) {
@@ -137,7 +136,7 @@ const Branches: React.FC = () => {
                   accessor: (b) => (
                     <div className="flex items-center gap-2 font-bold text-gray-900">
                       <MapPin size={16} className="text-orange-600" />
-                      {b.branch_name}
+                      {b.name || b.branch_name}
                     </div>
                   )
                 },
@@ -198,14 +197,6 @@ const Branches: React.FC = () => {
         }
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="md:col-span-2">
-            <Input
-              label="Company"
-              placeholder="e.g. Restaurant Chain Inc."
-              value={company}
-              onChange={(e) => setCompany(e.target.value)}
-            />
-          </div>
           <div className="md:col-span-2">
             <Input
               label="Branch Name"

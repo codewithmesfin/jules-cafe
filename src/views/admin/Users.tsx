@@ -33,6 +33,14 @@ const Users: React.FC = () => {
   const [formCustomerType, setFormCustomerType] = useState<'regular' | 'vip' | 'member'>('regular');
   const [formDiscountRate, setFormDiscountRate] = useState(0);
 
+  // Effect to handle branch field visibility based on role changes
+  useEffect(() => {
+    // Clear branch selection when role doesn't require a branch
+    if (!['manager', 'cashier', 'staff'].includes(formRole)) {
+      setFormBranchId('');
+    }
+  }, [formRole]);
+
   useEffect(() => {
     fetchUsers();
   }, []);
@@ -46,8 +54,12 @@ const Users: React.FC = () => {
       ]);
       setUsers(userData);
       setBranches(branchData);
+      if (branchData.length === 0) {
+        showNotification("No branches found. Please create a branch first.", "warning");
+      }
     } catch (error) {
       console.error('Failed to fetch users:', error);
+      showNotification("Failed to load branches. Please try again.", "error");
     } finally {
       setLoading(false);
     }

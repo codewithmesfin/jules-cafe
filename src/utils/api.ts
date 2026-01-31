@@ -117,6 +117,14 @@ export const api = {
   stats: {
     getDashboard: () => fetcher('/api/stats'),
   },
+  items: {
+    getAll: () => fetcher('/api/items'),
+    getOne: (id: string) => fetcher(`/api/items/${id}`),
+    getByType: (type: string) => fetcher(`/api/items/type/${type}`),
+    create: (data: any) => fetcher('/api/items', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: string, data: any) => fetcher(`/api/items/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id: string) => fetcher(`/api/items/${id}`, { method: 'DELETE' }),
+  },
   auth: {
     signup: (data: any) => fetcher('/api/auth/signup', { method: 'POST', body: JSON.stringify(data) }),
     forgotPassword: (email: string) => fetcher('/api/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) }),

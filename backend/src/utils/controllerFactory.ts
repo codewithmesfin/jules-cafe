@@ -8,7 +8,13 @@ export const getAll = (model: Model<any>) => async (req: Request, res: Response)
     if (req.query.branch_id) features.where('branch_id').equals(req.query.branch_id);
 
     const docs = await features.populate(req.query.populate as string || '');
-    res.status(200).json(docs);
+    // Transform _id to id for frontend compatibility
+    const transformedDocs = docs.map((doc: any) => ({
+      ...doc.toObject(),
+      id: doc._id.toString(),
+      name: doc.branch_name || doc.name, // Transform branch_name to name for frontend compatibility
+    }));
+    res.status(200).json(transformedDocs);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
@@ -18,7 +24,9 @@ export const getOne = (model: Model<any>) => async (req: Request, res: Response)
   try {
     const doc = await model.findById(req.params.id).populate(req.query.populate as string || '');
     if (!doc) return res.status(404).json({ error: 'Document not found' });
-    res.status(200).json(doc);
+    // Transform _id to id for frontend compatibility
+    const transformedDoc = { ...doc.toObject(), id: doc._id.toString() };
+    res.status(200).json(transformedDoc);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
@@ -27,7 +35,9 @@ export const getOne = (model: Model<any>) => async (req: Request, res: Response)
 export const createOne = (model: Model<any>) => async (req: Request, res: Response) => {
   try {
     const doc = await model.create(req.body);
-    res.status(201).json(doc);
+    // Transform _id to id for frontend compatibility
+    const transformedDoc = { ...doc.toObject(), id: doc._id.toString() };
+    res.status(201).json(transformedDoc);
   } catch (error: any) {
     res.status(400).json({ error: error.message });
   }
@@ -40,7 +50,9 @@ export const updateOne = (model: Model<any>) => async (req: Request, res: Respon
       runValidators: true,
     });
     if (!doc) return res.status(404).json({ error: 'Document not found' });
-    res.status(200).json(doc);
+    // Transform _id to id for frontend compatibility
+    const transformedDoc = { ...doc.toObject(), id: doc._id.toString() };
+    res.status(200).json(transformedDoc);
   } catch (error: any) {
     res.status(400).json({ error: error.message });
   }
