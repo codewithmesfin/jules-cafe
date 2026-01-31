@@ -21,7 +21,8 @@ import {
   PlusSquare,
   ListOrdered,
   Grid,
-  Package
+  Package,
+  Database
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { Button } from '../../components/ui/Button';
@@ -48,6 +49,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           { icon: Users, label: 'Users', path: '/admin/users' },
           { icon: MapPin, label: 'Branches', path: '/admin/branches' },
           { icon: Settings, label: 'Categories', path: '/admin/categories' },
+          { icon: Database, label: 'Items', path: '/admin/items' },
           { icon: Utensils, label: 'Menu Items', path: '/admin/menu-items' },
           { icon: ShoppingBag, label: 'Orders', path: '/admin/orders' },
           { icon: Calendar, label: 'Reservations', path: '/admin/reservations' },
