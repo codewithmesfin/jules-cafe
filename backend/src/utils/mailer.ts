@@ -2,10 +2,11 @@ import nodemailer from 'nodemailer';
 
 export const sendEmail = async (options: { email: string; subject: string; message: string }) => {
   // Create a transporter
-  // For production, use real credentials. For dev, use Mailtrap or similar.
   const transporter = nodemailer.createTransport({
-    host: process.env.EMAIL_HOST || 'smtp.mailtrap.io',
-    port: Number(process.env.EMAIL_PORT) || 2525,
+    service: process.env.EMAIL_SERVICE, // e.g., 'gmail'
+    host: process.env.EMAIL_HOST,
+    port: Number(process.env.EMAIL_PORT),
+    secure: process.env.EMAIL_SECURE === 'true', // true for 465, false for other ports
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
