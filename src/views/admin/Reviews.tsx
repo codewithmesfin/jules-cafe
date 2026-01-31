@@ -56,7 +56,8 @@ const Reviews: React.FC = () => {
   const filteredReviews = reviews.filter(rev => {
     const customerId = typeof rev.customer_id === 'string' ? rev.customer_id : (rev.customer_id as any)?.id;
     const customer = users.find(u => u.id === customerId);
-    return customer?.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const name = customer?.full_name || customer?.username || '';
+    return name.toLowerCase().includes(searchTerm.toLowerCase()) ||
            rev.comment.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
@@ -94,7 +95,8 @@ const Reviews: React.FC = () => {
               header: 'Customer',
               accessor: (rev) => {
                 const customerId = typeof rev.customer_id === 'string' ? rev.customer_id : (rev.customer_id as any)?.id;
-                return users.find(u => u.id === customerId)?.full_name || 'Guest';
+                const customer = users.find(u => u.id === customerId);
+                return customer?.full_name || customer?.username || 'Guest';
               }
             },
             {

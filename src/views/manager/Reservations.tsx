@@ -128,7 +128,8 @@ const Reservations: React.FC = () => {
   const filteredReservations = reservations.filter(res => {
     const customerId = typeof res.customer_id === 'string' ? res.customer_id : (res.customer_id as any)?.id;
     const customer = allUsers.find(u => u.id === customerId);
-    return customer?.full_name.toLowerCase().includes(searchTerm.toLowerCase());
+    const name = customer?.full_name || customer?.username || '';
+    return name.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
   if (!user?.branch_id) {
@@ -172,11 +173,12 @@ const Reservations: React.FC = () => {
               header: 'Customer',
               accessor: (res) => {
                 const customerId = typeof res.customer_id === 'string' ? res.customer_id : (res.customer_id as any)?.id;
+                const customer = allUsers.find(u => u.id === customerId);
                 return (
                   <div className="flex items-center gap-2">
                     <User size={16} className="text-gray-400" />
                     <span className="font-bold text-gray-900">
-                      {allUsers.find(u => u.id === customerId)?.full_name || 'Guest'}
+                      {customer?.full_name || customer?.username || 'Guest'}
                     </span>
                   </div>
                 );

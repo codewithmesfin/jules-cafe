@@ -3,9 +3,10 @@ export type UserStatus = 'active' | 'inactive';
 
 export interface User {
   id: string;
-  full_name: string;
+  username: string;
+  full_name?: string;
   email: string;
-  phone: string;
+  phone?: string;
   role: UserRole;
   status: UserStatus;
   branch_id?: string; // Optional for admin, required for others

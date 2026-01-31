@@ -95,7 +95,8 @@ const OrderQueue: React.FC = () => {
                   <p className="text-xs text-gray-500">
                     {(() => {
                       const customerId = typeof order.customer_id === 'string' ? order.customer_id : (order.customer_id as any)?.id;
-                      return users.find(u => u.id === customerId)?.full_name || 'Walk-in Guest';
+                      const customer = users.find(u => u.id === customerId);
+                      return customer?.full_name || customer?.username || 'Walk-in Guest';
                     })()}
                   </p>
                 </div>
