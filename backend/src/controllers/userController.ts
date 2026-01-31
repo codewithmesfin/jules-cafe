@@ -9,16 +9,13 @@ export const deleteUser = factory.deleteOne(User);
 
 export const createUser = async (req: Request, res: Response) => {
   try {
-    const { password, username, email, ...rest } = req.body;
-
-    const finalUsername = username || email.split('@')[0] + Math.floor(Math.random() * 1000);
+    const { password, email, ...rest } = req.body;
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password || 'password123', salt);
 
     const user = await User.create({
       ...rest,
-      username: finalUsername,
       email,
       password: hashedPassword,
       passwordResetRequired: true // Admin created users must reset password

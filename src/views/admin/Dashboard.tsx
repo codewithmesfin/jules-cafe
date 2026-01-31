@@ -98,9 +98,9 @@ const Dashboard: React.FC = () => {
           <Card title="Top Branches by Sales">
             <div className="space-y-4">
               {stats?.topBranches.map((branch: any) => (
-                <div key={branch.name} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                <div key={branch.branch_name} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                   <div>
-                    <p className="font-bold text-sm">{branch.name}</p>
+                    <p className="font-bold text-sm">{branch.branch_name}</p>
                     <p className="text-xs text-gray-500">${branch.sales.toLocaleString()}</p>
                   </div>
                   <Badge variant="success" className="text-[10px]">{branch.count} orders</Badge>

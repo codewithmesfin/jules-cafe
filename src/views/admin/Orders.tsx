@@ -72,7 +72,7 @@ const Orders: React.FC = () => {
           const menuItem = menuItems.find(m => m.id === id);
           return {
             menu_item_id: id,
-            menu_item_name: menuItem?.name || 'Unknown',
+            menu_item_name: menuItem?.branch_name || 'Unknown',
             quantity: qty,
             unit_price: menuItem?.base_price || 0
           };

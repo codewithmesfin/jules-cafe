@@ -59,7 +59,7 @@ const Recipes: React.FC = () => {
   const filteredRecipes = recipes.filter(recipe => {
     const menuItemId = typeof recipe.menu_item_id === 'string' ? recipe.menu_item_id : (recipe.menu_item_id as any).id;
     const menuItem = menuItems.find(m => m.id === menuItemId);
-    return menuItem?.name.toLowerCase().includes(searchTerm.toLowerCase());
+    return menuItem?.branch_name.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
   const branchInventory = inventory.filter(i => i.branch_id === selectedBranchId);
@@ -122,7 +122,7 @@ const Recipes: React.FC = () => {
             onChange={(e) => setSelectedBranchId(e.target.value)}
           >
             {branches.map(b => (
-              <option key={b.id} value={b.id}>Inventory: {b.name}</option>
+              <option key={b.id} value={b.id}>Inventory: {b.branch_name}</option>
             ))}
           </select>
         </div>
@@ -167,11 +167,11 @@ const Recipes: React.FC = () => {
               <div className="flex items-start gap-4 mb-4">
                 <img
                   src={menuItem?.image_url}
-                  alt={menuItem?.name}
+                  alt={menuItem?.branch_name}
                   className="w-12 h-12 rounded-lg object-cover border border-gray-100"
                 />
                 <div>
-                  <h4 className="font-bold text-gray-900">{menuItem?.name}</h4>
+                  <h4 className="font-bold text-gray-900">{menuItem?.branch_name}</h4>
                   <p className="text-xs text-gray-500">{recipe.ingredients.length} ingredients</p>
                 </div>
               </div>
@@ -206,7 +206,7 @@ const Recipes: React.FC = () => {
             header: 'Menu Item',
             accessor: (r) => {
               const menuItemId = typeof r.menu_item_id === 'string' ? r.menu_item_id : (r.menu_item_id as any).id;
-              return menuItems.find(m => m.id === menuItemId)?.name || 'Unknown';
+              return menuItems.find(m => m.id === menuItemId)?.branch_name || 'Unknown';
             }
           },
           {

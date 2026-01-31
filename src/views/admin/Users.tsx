@@ -54,7 +54,7 @@ const Users: React.FC = () => {
   };
 
   const filteredUsers = users.filter(user => {
-    const name = user.full_name || '';
+    const name = user.full_name || user.username || '';
     const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user.email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = selectedRole === 'all' || user.role === selectedRole;
@@ -171,7 +171,7 @@ const Users: React.FC = () => {
         <Table
           data={filteredUsers}
           columns={[
-            { header: 'Full Name', accessor: (u) => u.full_name || u.username || 'N/A' },
+            { header: 'Name', accessor: (u) => u.full_name || u.username || 'N/A' },
             { header: 'Email', accessor: 'email' },
             {
               header: 'Role/Branch',
@@ -181,8 +181,8 @@ const Users: React.FC = () => {
                   {user.branch_id && (
                     <span className="text-[10px] text-orange-600 font-medium uppercase mt-1">
                       {typeof user.branch_id === 'string'
-                        ? branches.find(b => b.id === user.branch_id)?.name
-                        : (user.branch_id as any).name}
+                        ? branches.find(b => b.id === user.branch_id)?.branch_name
+                        : (user.branch_id as any).branch_name}
                     </span>
                   )}
                   {user.role === 'customer' && user.customer_type && (
@@ -314,7 +314,7 @@ const Users: React.FC = () => {
               >
                 <option value="">Select a Branch</option>
                 {branches.map(b => (
-                  <option key={b.id} value={b.id}>{b.name}</option>
+                  <option key={b.id} value={b.id}>{b.branch_name}</option>
                 ))}
               </select>
             </div>

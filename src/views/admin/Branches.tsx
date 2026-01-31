@@ -6,9 +6,11 @@ import { Input } from '../../components/ui/Input';
 import { Table } from '../../components/ui/Table';
 import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
+import { useAuth } from '../../context/AuthContext';
 import type { Branch } from '../../types';
 
 const Branches: React.FC = () => {
+  const { user: currentUser } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
@@ -41,17 +43,17 @@ const Branches: React.FC = () => {
   };
 
   const filteredBranches = branches.filter(branch =>
-    branch.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    branch.location.toLowerCase().includes(searchTerm.toLowerCase())
+    branch.branch_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    branch.location_address_address.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleOpenModal = (branch: Branch | null = null) => {
     setSelectedBranch(branch);
     if (branch) {
-      setName(branch.name);
-      setLocation(branch.location);
-      setOpenTime(branch.operating_hours.open);
-      setCloseTime(branch.operating_hours.close);
+      setName(branch.branch_name);
+      setLocation(branch.location_address_address);
+      setOpenTime(branch.opening_time);
+      setCloseTime(branch.closing_time);
       setCapacity(branch.capacity);
       setIsActive(branch.is_active);
     } else {
@@ -69,14 +71,13 @@ const Branches: React.FC = () => {
     try {
       setSaving(true);
       const branchData = {
-        name,
-        location,
-        operating_hours: {
-          open: openTime,
-          close: closeTime
-        },
+        branch_name: name,
+        location_address: location,
+        opening_time: openTime,
+        closing_time: closeTime,
         capacity,
-        is_active: isActive
+        is_active: isActive,
+        company: currentUser?.company || 'QuickServe SaaS'
       };
 
       if (selectedBranch) {
@@ -135,11 +136,11 @@ const Branches: React.FC = () => {
                   accessor: (b) => (
                     <div className="flex items-center gap-2 font-bold text-gray-900">
                       <MapPin size={16} className="text-orange-600" />
-                      {b.name}
+                      {b.branch_name}
                     </div>
                   )
                 },
-                { header: 'Location', accessor: 'location' },
+                { header: 'Location', accessor: 'location_address' },
                 {
                   header: 'Capacity',
                   accessor: (b) => (
@@ -154,7 +155,7 @@ const Branches: React.FC = () => {
                   accessor: (b) => (
                     <div className="flex items-center gap-1 text-sm">
                       <Clock size={14} className="text-gray-400" />
-                      {b.operating_hours.open} - {b.operating_hours.close}
+                      {b.opening_time} - {b.closing_time}
                     </div>
                   )
                 },

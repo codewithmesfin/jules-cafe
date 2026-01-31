@@ -63,9 +63,9 @@ const Reports: React.FC = () => {
         <Card title="Orders per Branch">
           <div className="space-y-6 py-4">
             {stats?.topBranches.map((branch: any) => (
-              <div key={branch.name} className="space-y-2">
+              <div key={branch.branch_name} className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="font-medium text-gray-700">{branch.name}</span>
+                  <span className="font-medium text-gray-700">{branch.branch_name}</span>
                   <span className="text-gray-500">{branch.count} orders</span>
                 </div>
                 <div className="w-full h-4 bg-gray-100 rounded-full overflow-hidden">

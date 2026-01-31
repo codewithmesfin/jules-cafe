@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { UtensilsCrossed, User, Mail, Phone, Lock } from 'lucide-react';
+import { UtensilsCrossed } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Card } from '../../components/ui/Card';

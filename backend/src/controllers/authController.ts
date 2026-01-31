@@ -13,10 +13,7 @@ const generateToken = (id: string) => {
 
 export const register = async (req: any, res: Response) => {
   try {
-    const { username, email, password, role, branch_id, company, full_name, phone } = req.body;
-
-    // Generate username if not provided
-    const finalUsername = username || email.split('@')[0] + Math.floor(Math.random() * 1000);
+    const { email, password, role, branch_id, company, full_name, phone } = req.body;
 
     const userExists = await User.findOne({ email });
     if (userExists) {
@@ -30,7 +27,6 @@ export const register = async (req: any, res: Response) => {
     const isAdminCreating = req.user && req.user.role === 'admin';
 
     const user = await User.create({
-      username: finalUsername,
       email,
       password: hashedPassword,
       role: role || 'customer',
@@ -56,11 +52,9 @@ export const register = async (req: any, res: Response) => {
 
 export const login = async (req: Request, res: Response) => {
   try {
-    const { identifier, password } = req.body; // Strapi uses 'identifier' for email/username
+    const { identifier, password } = req.body; // identifier is email
 
-    const user = await User.findOne({
-      $or: [{ email: identifier }, { username: identifier }]
-    });
+    const user = await User.findOne({ email: identifier });
 
     if (user && (await bcrypt.compare(password, user.password || ''))) {
       res.json({

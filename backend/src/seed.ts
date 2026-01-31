@@ -25,8 +25,7 @@ const seed = async () => {
     const hashedPassword = await bcrypt.hash('admin123', salt);
 
     // 1. Create Admin
-    const admin = await User.create({
-      username: 'admin',
+    await User.create({
       email: 'admin@example.com',
       password: hashedPassword,
       role: 'admin',
@@ -37,26 +36,23 @@ const seed = async () => {
 
     // 2. Create a Branch
     const branch = await Branch.create({
-      name: 'Main Branch',
-      location: '123 Main St, Food City',
+      branch_name: 'Main Branch',
+      location_address: '123 Main St, Food City',
       is_active: true,
-      operating_hours: {
-        open: '08:00',
-        close: '22:00'
-      },
+      opening_time: '08:00',
+      closing_time: '22:00',
       capacity: 50,
       company: 'QuickServe SaaS',
     });
     console.log('Branch created');
 
     // 3. Create a Manager
-    const manager = await User.create({
-      username: 'manager',
+    await User.create({
       email: 'manager@example.com',
       password: hashedPassword,
       role: 'manager',
       status: 'active',
-      branch_id: branch.id,
+      branch_id: branch._id,
       full_name: 'Branch Manager',
       passwordResetRequired: true
     });

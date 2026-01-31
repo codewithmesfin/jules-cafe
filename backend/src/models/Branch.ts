@@ -1,25 +1,21 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IBranch extends Document {
-  name: string;
-  location: string;
+  branch_name: string;
+  location_address: string;
   is_active: boolean;
-  operating_hours: {
-    open: string;
-    close: string;
-  };
+  opening_time: string;
+  closing_time: string;
   capacity: number;
   company: string;
 }
 
 const BranchSchema: Schema = new Schema({
-  name: { type: String, required: true },
-  location: { type: String, required: true },
+  branch_name: { type: String, required: true },
+  location_address: { type: String, required: true },
   is_active: { type: Boolean, default: true },
-  operating_hours: {
-    open: { type: String, required: true },
-    close: { type: String, required: true },
-  },
+  opening_time: { type: String, required: true },
+  closing_time: { type: String, required: true },
   capacity: { type: Number, required: true },
   company: { type: String, required: true },
 }, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } });

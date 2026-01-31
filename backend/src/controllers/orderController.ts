@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import mongoose from 'mongoose';
 import Order from '../models/Order';
 import User from '../models/User';
 import * as factory from '../utils/controllerFactory';
@@ -36,17 +37,57 @@ export const createOrder = async (req: Request, res: Response) => {
 
 export const getStats = async (req: Request, res: Response) => {
   try {
-    // Basic stats for dashboard
     const totalOrders = await Order.countDocuments();
-    const totalRevenue = await Order.aggregate([
+    const totalCustomers = await User.countDocuments({ role: 'customer' });
+
+    const revenuePerDay = await Order.aggregate([
       { $match: { status: 'completed' } },
-      { $group: { _id: null, total: { $sum: '$total_amount' } } }
+      {
+        $group: {
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$created_at' } },
+          total: { $sum: '$total_amount' }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]);
+
+    const topBranches = await Order.aggregate([
+      {
+        $group: {
+          _id: '$branch_id',
+          count: { $sum: 1 },
+          sales: { $sum: '$total_amount' }
+        }
+      },
+      {
+        $lookup: {
+          from: 'branches',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'branch'
+        }
+      },
+      { $unwind: '$branch' },
+      {
+        $project: {
+          branch_name: '$branch.branch_name',
+          count: 1
+        }
+      }
+    ]);
+
+    // Average rating
+    const Review = mongoose.model('Review');
+    const avgRating = await Review.aggregate([
+      { $group: { _id: null, avg: { $sum: '$rating' }, count: { $sum: 1 } } }
     ]);
 
     res.json({
       totalOrders,
-      totalRevenue: totalRevenue[0]?.total || 0,
-      // Add more as needed
+      totalCustomers,
+      revenuePerDay,
+      topBranches,
+      avgRating: avgRating.length > 0 ? avgRating[0].avg / avgRating[0].count : 0
     });
   } catch (error: any) {
     res.status(500).json({ error: error.message });

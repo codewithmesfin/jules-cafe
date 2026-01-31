@@ -172,7 +172,7 @@ const MenuItems: React.FC = () => {
               header: 'Category',
               accessor: (item) => {
                 const categoryId = typeof item.category_id === 'string' ? item.category_id : (item.category_id as any)?.id;
-                return categories.find(c => c.id === categoryId)?.name || 'N/A';
+                return categories.find(c => c.id === categoryId)?.branch_name || 'N/A';
               }
             },
             { header: 'Base Price', accessor: (item) => `$${item.base_price.toFixed(2)}` },
@@ -325,7 +325,7 @@ const MenuItems: React.FC = () => {
       <Modal
         isOpen={!!viewingRecipe}
         onClose={() => setViewingRecipe(null)}
-        title={`Recipe: ${viewingRecipe?.name}`}
+        title={`Recipe: ${viewingRecipe?.branch_name}`}
         size="lg"
       >
         {viewingRecipe && (
@@ -353,7 +353,7 @@ const MenuItems: React.FC = () => {
                   onChange={(e) => setSelectedBranchId(e.target.value)}
                 >
                   {branches.map(b => (
-                    <option key={b.id} value={b.id}>{b.name}</option>
+                    <option key={b.id} value={b.id}>{b.branch_name}</option>
                   ))}
                 </select>
               </div>
@@ -409,7 +409,7 @@ const MenuItems: React.FC = () => {
         onClose={() => setItemToDelete(null)}
         onConfirm={handleDelete}
         title="Delete Menu Item"
-        description={`Are you sure you want to delete "${itemToDelete?.name}"? This action cannot be undone.`}
+        description={`Are you sure you want to delete "${itemToDelete?.branch_name}"? This action cannot be undone.`}
         confirmLabel="Delete"
       />
     </div>
