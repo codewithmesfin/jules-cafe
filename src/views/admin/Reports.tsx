@@ -44,7 +44,7 @@ const Reports: React.FC = () => {
           <div>
             <p className="text-sm text-gray-500 font-medium">Gross Sales</p>
             <h3 className="text-2xl font-bold text-gray-900">
-              ${stats?.revenuePerDay.reduce((acc: number, curr: any) => acc + curr.total, 0).toLocaleString()}
+              ${stats?.revenuePerDay?.reduce((acc: number, curr: any) => acc + curr.total, 0).toLocaleString()}
             </h3>
           </div>
         </Card>
@@ -90,7 +90,7 @@ const Reports: React.FC = () => {
                 <div className="w-full h-4 bg-gray-100 rounded-full overflow-hidden">
                   <div
                     className="h-full rounded-full transition-all duration-1000 bg-blue-500"
-                    style={{ width: `${Math.min(100, (day.total / (stats.revenuePerDay.reduce((a: any, b: any) => Math.max(a, b.total), 0) || 1)) * 100)}%` }}
+                    style={{ width: `${Math.min(100, (day.total / (stats.revenuePerDay?.reduce((a: any, b: any) => Math.max(a, b.total), 0) || 1)) * 100)}%` }}
                   />
                 </div>
               </div>

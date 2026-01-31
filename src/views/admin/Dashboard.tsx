@@ -32,7 +32,7 @@ const Dashboard: React.FC = () => {
   }, []);
 
   const statCards = [
-    { label: 'Total Revenue', value: stats ? `$${stats.revenuePerDay.reduce((acc: any, curr: any) => acc + curr.total, 0).toLocaleString()}` : '$0', icon: DollarSign, trend: '+15.2%', trendType: 'up' },
+    { label: 'Total Revenue', value: stats ? `$${stats.revenuePerDay?.reduce((acc: any, curr: any) => acc + curr.total, 0).toLocaleString()}` : '$0', icon: DollarSign, trend: '+15.2%', trendType: 'up' },
     { label: 'Total Orders', value: stats?.totalOrders || '0', icon: ShoppingBag, trend: '+12.5%', trendType: 'up' },
     { label: 'Total Customers', value: stats?.totalCustomers || '0', icon: Users, trend: '+5.2%', trendType: 'up' },
     { label: 'Avg Rating', value: stats?.avgRating?.toFixed(1) || '0.0', icon: Activity, trend: '+2.4%', trendType: 'up' },
@@ -71,7 +71,7 @@ const Dashboard: React.FC = () => {
         <div className="lg:col-span-2">
           <Card title="Revenue Overview (Last 7 Days)">
             <div className="h-64 flex items-end justify-between gap-2 px-2 pb-2">
-              {stats?.revenuePerDay.map((day: any, i: number) => {
+              {stats?.revenuePerDay?.map((day: any, i: number) => {
                 const max = Math.max(...stats.revenuePerDay.map((d: any) => d.total)) || 1;
                 const height = (day.total / max) * 100;
                 return (
@@ -97,7 +97,7 @@ const Dashboard: React.FC = () => {
         <div className="lg:col-span-1">
           <Card title="Top Branches by Sales">
             <div className="space-y-4">
-              {stats?.topBranches.map((branch: any) => (
+              {stats?.topBranches?.map((branch: any) => (
                 <div key={branch.name} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                   <div>
                     <p className="font-bold text-sm">{branch.name}</p>
