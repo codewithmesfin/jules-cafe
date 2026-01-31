@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Eye, CheckCircle, XCircle, Clock, Plus } from 'lucide-react';
+import { Search, Filter, Eye, CheckCircle, XCircle, Plus } from 'lucide-react';
 import { api } from '../../utils/api';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -17,6 +17,12 @@ const Orders: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // New Order Form State
+  const [selectedCustomer, setSelectedCustomer] = useState('');
+  const [orderItems, setOrderItems] = useState<{ [key: string]: number }>({});
+  const [orderNotes, setOrderNotes] = useState('');
 
   useEffect(() => {
     fetchData();
@@ -47,6 +53,71 @@ const Orders: React.FC = () => {
     } catch (error) {
       console.error('Failed to fetch order details:', error);
     }
+  };
+
+  const handleCreateOrder = async () => {
+    try {
+      setSaving(true);
+      const items = Object.entries(orderItems)
+        .filter(([_, qty]) => qty > 0)
+        .map(([id, qty]) => {
+          const menuItem = menuItems.find(m => m.id === id);
+          return {
+            menu_item_id: id,
+            menu_item_name: menuItem?.name || 'Unknown',
+            quantity: qty,
+            unit_price: menuItem?.base_price || 0
+          };
+        });
+
+      if (items.length === 0) {
+        alert('Please add at least one item to the order');
+        return;
+      }
+
+      const subtotal = items.reduce((acc, item) => acc + item.unit_price * item.quantity, 0);
+      const customer = users.find(u => u.id === selectedCustomer);
+      const discountRate = customer?.discount_rate || 0;
+      const discountAmount = (subtotal * discountRate) / 100;
+
+      const orderData = {
+        customer_id: selectedCustomer,
+        branch_id: users.find(u => u.id === selectedCustomer)?.branch_id || '654321098765432109876543', // Fallback
+        status: 'pending',
+        type: 'walk-in',
+        total_amount: subtotal - discountAmount,
+        discount_amount: discountAmount,
+        items
+      };
+
+      await api.orders.create(orderData);
+      setIsCreateModalOpen(false);
+      resetForm();
+      fetchData();
+    } catch (error) {
+      console.error('Failed to create order:', error);
+      alert('Failed to create order');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleUpdateStatus = async (id: string, status: string) => {
+    try {
+      await api.orders.update(id, { status });
+      const updatedOrder = await api.orders.getOne(id);
+      setSelectedOrder(updatedOrder);
+      fetchData();
+    } catch (error) {
+      console.error('Failed to update status:', error);
+      alert('Failed to update status');
+    }
+  };
+
+  const resetForm = () => {
+    setSelectedCustomer('');
+    setOrderItems({});
+    setOrderNotes('');
   };
 
   const filteredOrders = orders.filter(order =>
@@ -119,39 +190,64 @@ const Orders: React.FC = () => {
 
       <Modal
         isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
+        onClose={() => {
+          setIsCreateModalOpen(false);
+          resetForm();
+        }}
         title="Create New Order"
         size="lg"
         footer={
           <>
-            <Button variant="outline" onClick={() => setIsCreateModalOpen(false)}>Cancel</Button>
-            <Button onClick={() => setIsCreateModalOpen(false)}>Create Order</Button>
+            <Button variant="outline" onClick={() => {
+              setIsCreateModalOpen(false);
+              resetForm();
+            }}>Cancel</Button>
+            <Button onClick={handleCreateOrder} disabled={saving}>
+              {saving ? 'Creating...' : 'Create Order'}
+            </Button>
           </>
         }
       >
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Customer</label>
-            <select className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+            <select
+              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+              value={selectedCustomer}
+              onChange={(e) => setSelectedCustomer(e.target.value)}
+            >
+              <option value="">Select Customer</option>
               {users.filter(u => u.role === 'customer').map(user => (
                 <option key={user.id} value={user.id}>{user.full_name}</option>
               ))}
-              <option value="guest">Walk-in Guest</option>
             </select>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
             <label className="block text-sm font-medium text-gray-700">Order Items</label>
-            {menuItems.slice(0, 5).map(item => (
-              <div key={item.id} className="flex items-center justify-between p-2 border rounded-lg">
-                <span>{item.name}</span>
+            {menuItems.map(item => (
+              <div key={item.id} className="flex items-center justify-between p-2 border rounded-lg mb-2">
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium">{item.name}</span>
+                  <span className="text-xs text-gray-500">${item.base_price.toFixed(2)}</span>
+                </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-500">${item.base_price.toFixed(2)}</span>
-                  <input type="number" min="0" defaultValue="0" className="w-16 px-2 py-1 border rounded" />
+                  <input
+                    type="number"
+                    min="0"
+                    value={orderItems[item.id] || 0}
+                    onChange={(e) => setOrderItems({ ...orderItems, [item.id]: parseInt(e.target.value) || 0 })}
+                    className="w-16 px-2 py-1 border rounded text-sm"
+                  />
                 </div>
               </div>
             ))}
           </div>
-          <Input label="Notes" placeholder="Any special instructions..." />
+          <Input
+            label="Notes"
+            placeholder="Any special instructions..."
+            value={orderNotes}
+            onChange={(e) => setOrderNotes(e.target.value)}
+          />
         </div>
       </Modal>
 
@@ -168,8 +264,24 @@ const Orders: React.FC = () => {
                 <p className="text-sm font-medium capitalize">{selectedOrder.status}</p>
               </div>
               <div className="flex gap-2">
-                <Button size="sm" variant="outline" className="text-red-600 hover:bg-red-50"><XCircle size={14} /></Button>
-                <Button size="sm" variant="outline" className="text-green-600 hover:bg-green-50"><CheckCircle size={14} /></Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-red-600 hover:bg-red-50"
+                  onClick={() => handleUpdateStatus(selectedOrder.id, 'cancelled')}
+                  disabled={selectedOrder.status === 'cancelled'}
+                >
+                  <XCircle size={14} />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-green-600 hover:bg-green-50"
+                  onClick={() => handleUpdateStatus(selectedOrder.id, 'completed')}
+                  disabled={selectedOrder.status === 'completed' || selectedOrder.status === 'cancelled'}
+                >
+                  <CheckCircle size={14} />
+                </Button>
               </div>
             </div>
 
@@ -218,9 +330,20 @@ const Orders: React.FC = () => {
               </div>
             </div>
 
-            <Button className="w-full gap-2">
-              <Clock size={18} /> Update Status
-            </Button>
+            <div className="grid grid-cols-2 gap-2">
+              {['pending', 'accepted', 'preparing', 'ready'].map((status) => (
+                <Button
+                  key={status}
+                  variant="outline"
+                  size="sm"
+                  className="capitalize"
+                  onClick={() => handleUpdateStatus(selectedOrder.id, status)}
+                  disabled={selectedOrder.status === status || selectedOrder.status === 'completed' || selectedOrder.status === 'cancelled'}
+                >
+                  {status}
+                </Button>
+              ))}
+            </div>
           </div>
         )}
       </Drawer>

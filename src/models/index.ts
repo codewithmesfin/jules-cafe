@@ -1,4 +1,5 @@
 import mongoose, { Schema, model } from 'mongoose';
+import bcrypt from 'bcryptjs';
 
 const models = mongoose.models;
 
@@ -23,6 +24,17 @@ const UserSchema = new Schema({
   customer_type: { type: String, enum: ['regular', 'vip', 'member'] },
   discount_rate: { type: Number, default: 0 },
 }, { timestamps: true, toJSON });
+
+UserSchema.pre('save', async function (next) {
+  if (!this.isModified('password')) return next();
+  try {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
+  } catch (error: any) {
+    next(error);
+  }
+});
 
 export const UserModel = models.User || model('User', UserSchema);
 
