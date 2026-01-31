@@ -15,6 +15,9 @@ export const register = async (req: any, res: Response) => {
   try {
     const { username, email, password, role, branch_id, company, full_name, phone } = req.body;
 
+    // Generate username if not provided
+    const finalUsername = username || email.split('@')[0] + Math.floor(Math.random() * 1000);
+
     const userExists = await User.findOne({ email });
     if (userExists) {
       return res.status(400).json({ error: 'User already exists' });
@@ -27,7 +30,7 @@ export const register = async (req: any, res: Response) => {
     const isAdminCreating = req.user && req.user.role === 'admin';
 
     const user = await User.create({
-      username,
+      username: finalUsername,
       email,
       password: hashedPassword,
       role: role || 'customer',
@@ -41,15 +44,9 @@ export const register = async (req: any, res: Response) => {
     res.status(201).json({
       jwt: generateToken(user._id.toString()),
       user: {
-        id: user._id,
-        username: user.username,
-        email: user.email,
-        role: user.role,
-        branch_id: user.branch_id,
-        company: user.company,
-        full_name: user.full_name,
-        phone: user.phone,
-        passwordResetRequired: user.passwordResetRequired
+        ...user.toJSON(),
+        id: user._id.toString(),
+        branch_id: user.branch_id?.toString()
       },
     });
   } catch (error: any) {
@@ -69,15 +66,9 @@ export const login = async (req: Request, res: Response) => {
       res.json({
         jwt: generateToken(user._id.toString()),
         user: {
-          id: user._id,
-          username: user.username,
-          email: user.email,
-          role: user.role,
-          branch_id: user.branch_id,
-          company: user.company,
-          full_name: user.full_name,
-          phone: user.phone,
-          passwordResetRequired: user.passwordResetRequired
+          ...user.toJSON(),
+          id: user._id.toString(),
+          branch_id: user.branch_id?.toString()
         },
       });
     } else {
@@ -122,7 +113,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
     // Send email
     const resetUrl = `${req.get('origin')}/reset-password/${resetToken}`;
 
-    const message = `Forgot your password? Submit a PATCH request with your new password and passwordConfirm to: ${resetUrl}.\nIf you didn't forget your password, please ignore this email!`;
+    const message = `Forgot your password? Click the link below to reset your password:\n\n${resetUrl}\n\nThis link is valid for 10 minutes.\nIf you didn't forget your password, please ignore this email!`;
 
     try {
       await sendEmail({

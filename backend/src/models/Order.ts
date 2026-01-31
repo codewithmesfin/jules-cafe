@@ -53,6 +53,6 @@ const OrderSchema: Schema = new Schema({
   discount_amount: { type: Number, default: 0 },
   cancel_reason: { type: String },
   items: [OrderItemSchema],
-}, { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } });
+}, { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }, toJSON: { virtuals: true }, toObject: { virtuals: true } });
 
 export default mongoose.model<IOrder>('Order', OrderSchema);

@@ -2,7 +2,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { User } from '../types';
-import { MOCK_USERS } from '../utils/mockData';
 import { API_URL } from '../utils/api';
 
 interface AuthContextType {

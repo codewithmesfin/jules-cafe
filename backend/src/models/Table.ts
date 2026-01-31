@@ -16,6 +16,6 @@ const TableSchema: Schema = new Schema({
     enum: ['available', 'occupied', 'reserved'],
     default: 'available'
   },
-}, { timestamps: true });
+}, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } });
 
 export default mongoose.model<ITable>('Table', TableSchema);

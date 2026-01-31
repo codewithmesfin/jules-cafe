@@ -18,6 +18,6 @@ const ReviewSchema: Schema = new Schema({
   rating: { type: Number, required: true, min: 1, max: 5 },
   comment: { type: String, required: true },
   is_approved: { type: Boolean, default: false },
-}, { timestamps: true });
+}, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } });
 
 export default mongoose.model<IReview>('Review', ReviewSchema);

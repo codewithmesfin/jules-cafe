@@ -16,6 +16,6 @@ const InventoryItemSchema: Schema = new Schema({
   quantity: { type: Number, required: true },
   unit: { type: String, required: true },
   min_stock: { type: Number, required: true },
-}, { timestamps: true });
+}, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } });
 
 export default mongoose.model<IInventoryItem>('InventoryItem', InventoryItemSchema);

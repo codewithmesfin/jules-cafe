@@ -16,6 +16,6 @@ const MenuItemSchema: Schema = new Schema({
   base_price: { type: Number, required: true },
   image_url: { type: String },
   is_active: { type: Boolean, default: true },
-}, { timestamps: true });
+}, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } });
 
 export default mongoose.model<IMenuItem>('MenuItem', MenuItemSchema);

@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft } from 'lucide-react';
+import { formatImageUrl } from '../../utils/format';
 import { api } from '../../utils/api';
 import { Button } from '../../components/ui/Button';
 import { useCart } from '../../context/CartContext';
@@ -108,7 +109,7 @@ const Cart: React.FC = () => {
             <Card key={item.id} className="p-0">
               <div className="flex flex-col sm:flex-row p-4 gap-4">
                 <img
-                  src={item.image_url}
+                  src={formatImageUrl(item.image_url)}
                   alt={item.name}
                   className="w-full sm:w-32 h-32 object-cover rounded-lg"
                 />

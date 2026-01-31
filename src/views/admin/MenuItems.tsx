@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Edit, Trash2, UtensilsCrossed } from 'lucide-react';
+import { Search, Plus, Edit, Trash2 } from 'lucide-react';
 import { api } from '../../utils/api';
 import { Button } from '../../components/ui/Button';
 import { calculateAvailablePortions } from '../../utils/recipeUtils';
@@ -9,6 +9,7 @@ import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
 import { ConfirmationDialog } from '../../components/ui/ConfirmationDialog';
 import { useNotification } from '../../context/NotificationContext';
+import { formatImageUrl } from '../../utils/format';
 import type { MenuItem, MenuCategory, Recipe, InventoryItem, Branch } from '../../types';
 
 const MenuItems: React.FC = () => {
@@ -162,7 +163,7 @@ const MenuItems: React.FC = () => {
               header: 'Item',
               accessor: (item) => (
                 <div className="flex items-center gap-3">
-                  <img src={item.image_url} alt={item.name} className="w-10 h-10 rounded-lg object-cover" />
+                  <img src={formatImageUrl(item.image_url)} alt={item.name} className="w-10 h-10 rounded-lg object-cover" />
                   <span className="font-bold text-gray-900">{item.name}</span>
                 </div>
               )

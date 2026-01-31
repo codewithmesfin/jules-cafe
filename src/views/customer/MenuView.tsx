@@ -5,6 +5,7 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Badge } from '../../components/ui/Badge';
 import { useCart } from '../../context/CartContext';
+import { formatImageUrl } from '../../utils/format';
 import type { MenuItem, MenuCategory } from '../../types';
 
 const MenuView: React.FC = () => {
@@ -93,7 +94,7 @@ const MenuView: React.FC = () => {
             <div key={item.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden group hover:shadow-md transition-shadow">
               <div className="relative h-48 overflow-hidden">
                 <img
-                  src={item.image_url}
+                  src={formatImageUrl(item.image_url)}
                   alt={item.name}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />

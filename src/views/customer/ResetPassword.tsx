@@ -1,6 +1,5 @@
 "use client";
 import React, { useState } from 'react';
-import { Lock } from 'lucide-react';
 import { api } from '../../utils/api';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';

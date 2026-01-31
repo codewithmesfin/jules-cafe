@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Plus, Minus, Star, Clock } from 'lucide-react';
+import { formatImageUrl } from '../../utils/format';
 import { api } from '../../utils/api';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
@@ -51,7 +52,7 @@ const ItemDetail: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
         <div className="rounded-2xl overflow-hidden shadow-lg h-[400px] md:h-[600px]">
           <img
-            src={item.image_url}
+            src={formatImageUrl(item.image_url)}
             alt={item.name}
             className="w-full h-full object-cover"
           />

@@ -17,7 +17,7 @@ const Login: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const { user, jwt } = await login(email, password);
+      const { user } = await login(email, password);
 
       if (user.passwordResetRequired) {
         // We need to send them to reset password, but they need a token.

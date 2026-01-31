@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ShoppingCart, Plus, Minus, Search, Grid, User, UserPlus } from 'lucide-react';
+import { formatImageUrl } from '../../utils/format';
 import { api } from '../../utils/api';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -156,7 +157,7 @@ const NewOrder: React.FC = () => {
                 className="p-3 cursor-pointer hover:border-orange-500 transition-colors flex flex-col"
                 onClick={() => addToCart(item)}
               >
-                <img src={item.image_url} alt={item.name} className="w-full h-32 object-cover rounded-lg mb-3" />
+                <img src={formatImageUrl(item.image_url)} alt={item.name} className="w-full h-32 object-cover rounded-lg mb-3" />
                 <div className="flex-1">
                   <h4 className="font-bold text-gray-900 mb-1">{item.name}</h4>
                   <p className="text-xs text-gray-500 line-clamp-1 mb-2">{item.description}</p>

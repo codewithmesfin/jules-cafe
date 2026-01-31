@@ -9,18 +9,25 @@ export const deleteUser = factory.deleteOne(User);
 
 export const createUser = async (req: Request, res: Response) => {
   try {
-    const { password, ...rest } = req.body;
+    const { password, username, email, ...rest } = req.body;
+
+    const finalUsername = username || email.split('@')[0] + Math.floor(Math.random() * 1000);
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password || 'password123', salt);
 
     const user = await User.create({
       ...rest,
+      username: finalUsername,
+      email,
       password: hashedPassword,
       passwordResetRequired: true // Admin created users must reset password
     });
 
-    res.status(201).json(user);
+    res.status(201).json({
+      ...user.toJSON(),
+      id: user._id.toString()
+    });
   } catch (error: any) {
     res.status(400).json({ error: error.message });
   }
@@ -42,7 +49,10 @@ export const updateUser = async (req: Request, res: Response) => {
     });
 
     if (!user) return res.status(404).json({ error: 'User not found' });
-    res.status(200).json(user);
+    res.status(200).json({
+      ...user.toJSON(),
+      id: user._id.toString()
+    });
   } catch (error: any) {
     res.status(400).json({ error: error.message });
   }

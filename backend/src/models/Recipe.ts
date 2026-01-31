@@ -22,6 +22,6 @@ const RecipeSchema: Schema = new Schema({
   menu_item_id: { type: Schema.Types.ObjectId, ref: 'MenuItem', required: true },
   ingredients: [RecipeIngredientSchema],
   instructions: { type: String },
-}, { timestamps: true });
+}, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } });
 
 export default mongoose.model<IRecipe>('Recipe', RecipeSchema);

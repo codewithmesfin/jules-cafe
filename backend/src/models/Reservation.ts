@@ -26,6 +26,6 @@ const ReservationSchema: Schema = new Schema({
     default: 'requested'
   },
   note: { type: String },
-}, { timestamps: true });
+}, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } });
 
 export default mongoose.model<IReservation>('Reservation', ReservationSchema);

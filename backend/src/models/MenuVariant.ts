@@ -10,6 +10,6 @@ const MenuVariantSchema: Schema = new Schema({
   menu_item_id: { type: Schema.Types.ObjectId, ref: 'MenuItem', required: true },
   name: { type: String, required: true },
   price_override: { type: Number },
-}, { timestamps: true });
+}, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } });
 
 export default mongoose.model<IMenuVariant>('MenuVariant', MenuVariantSchema);
