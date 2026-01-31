@@ -35,7 +35,8 @@ const MenuAvailability: React.FC = () => {
       setCategories(cats);
       setBranchMenuItems(bmItems.filter((bm: BranchMenuItem) => {
         const bId = typeof bm.branch_id === 'string' ? bm.branch_id : (bm.branch_id as any)?.id;
-        return bId === user?.branch_id;
+        const userBId = typeof user?.branch_id === "string" ? user?.branch_id : (user?.branch_id as any)?.id;
+        return bId === userBId;
       }));
     } catch (error) {
       console.error('Failed to fetch menu availability:', error);

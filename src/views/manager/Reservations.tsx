@@ -43,7 +43,8 @@ const Reservations: React.FC = () => {
       ]);
     setReservations(resData.filter((r: Reservation) => {
       const branchId = typeof r.branch_id === 'string' ? r.branch_id : (r.branch_id as any)?.id;
-      return branchId === user?.branch_id;
+      const userBId = typeof user?.branch_id === "string" ? user?.branch_id : (user?.branch_id as any)?.id;
+      return branchId === userBId;
     }));
       setAllUsers(userData);
     } catch (error) {
@@ -299,8 +300,12 @@ const Reservations: React.FC = () => {
                 onChange={(e) => setFormWaiterId(e.target.value)}
               >
                 <option value="">Unassigned</option>
-                {allUsers.filter(u => u.role === 'staff' && u.branch_id === user?.branch_id).map(u => (
-                  <option key={u.id} value={u.id}>{u.full_name}</option>
+                {allUsers.filter(u => {
+                  const uBId = typeof u.branch_id === 'string' ? u.branch_id : (u.branch_id as any)?.id;
+                  const userBId = typeof user?.branch_id === 'string' ? user?.branch_id : (user?.branch_id as any)?.id;
+                  return u.role === 'staff' && uBId === userBId;
+                }).map(u => (
+                  <option key={u.id} value={u.id}>{u.full_name || u.username}</option>
                 ))}
               </select>
             </div>

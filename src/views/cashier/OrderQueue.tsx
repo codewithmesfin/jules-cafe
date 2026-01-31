@@ -30,7 +30,8 @@ const OrderQueue: React.FC = () => {
       ]);
       setOrders(ordData.filter((o: Order) => {
         const bId = typeof o.branch_id === 'string' ? o.branch_id : (o.branch_id as any)?.id;
-        return bId === user?.branch_id;
+        const userBId = typeof user?.branch_id === 'string' ? user?.branch_id : (user?.branch_id as any)?.id;
+        return bId === userBId;
       }));
       setUsers(userData);
     } catch (error) {

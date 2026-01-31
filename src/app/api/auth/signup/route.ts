@@ -1,28 +1,45 @@
 import { NextResponse } from 'next/server';
 import { strapiFetch } from '@/utils/strapi';
 
+const mapRole = (strapiRole: any): string => {
+  const name = strapiRole?.name?.toLowerCase() || 'customer';
+  if (name === 'authenticated') return 'customer';
+  return name;
+};
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    // Map frontend body to Strapi's register payload
     const strapiPayload = {
-      username: body.email.split('@')[0] + Math.floor(Math.random() * 1000), // Generate a username if not provided
+      username: body.email.split('@')[0] + Math.floor(Math.random() * 1000),
       email: body.email,
       password: body.password,
-      // Additional fields can be passed if Strapi user-permissions is configured to accept them
       full_name: body.full_name,
       phone: body.phone,
-      role_type: 'customer'
     };
 
-    const data = await strapiFetch('/api/auth/local/register', {
+    const authData = await strapiFetch('/api/auth/local/register', {
       method: 'POST',
       body: JSON.stringify(strapiPayload),
     });
 
-    // Strapi returns { jwt, user }
-    return NextResponse.json(data, { status: 201 });
+    const userData = await strapiFetch('/api/users/me?populate=role', {
+      headers: {
+        'Authorization': `Bearer ${authData.jwt}`
+      }
+    });
+
+    const normalizedUser = {
+      ...userData,
+      id: userData.id.toString(),
+      role: mapRole(userData.role)
+    };
+
+    return NextResponse.json({
+      jwt: authData.jwt,
+      user: normalizedUser
+    }, { status: 201 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }

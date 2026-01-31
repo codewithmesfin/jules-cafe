@@ -25,7 +25,8 @@ const Reviews: React.FC = () => {
       ]);
     setReviews(revData.filter((r: Review) => {
       const branchId = typeof r.branch_id === 'string' ? r.branch_id : (r.branch_id as any)?.id;
-      return branchId === user?.branch_id;
+      const userBId = typeof user?.branch_id === "string" ? user?.branch_id : (user?.branch_id as any)?.id;
+      return branchId === userBId;
     }));
       setUsers(userData);
     } catch (error) {

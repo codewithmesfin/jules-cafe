@@ -24,7 +24,8 @@ const Dashboard: React.FC = () => {
       const data = await api.orders.getAll();
       setOrders(data.filter((o: Order) => {
         const branchId = typeof o.branch_id === 'string' ? o.branch_id : (o.branch_id as any)?.id;
-        return branchId === user?.branch_id;
+        const userBId = typeof user?.branch_id === "string" ? user?.branch_id : (user?.branch_id as any)?.id;
+        return branchId === userBId;
       }));
     } catch (error) {
       console.error('Failed to fetch cashier orders:', error);

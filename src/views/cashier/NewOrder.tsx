@@ -189,7 +189,8 @@ const NewOrder: React.FC = () => {
               <option value="">Select Table (Optional)</option>
               {tables.filter(t => {
                 const bId = typeof t.branch_id === 'string' ? t.branch_id : (t.branch_id as any)?.id;
-                return bId === user?.branch_id;
+                const userBId = typeof user?.branch_id === 'string' ? user?.branch_id : (user?.branch_id as any)?.id;
+                return bId === userBId;
               }).map(t => (
                 <option key={t.id} value={t.id}>Table {t.table_number} ({t.capacity} seats)</option>
               ))}
@@ -206,9 +207,10 @@ const NewOrder: React.FC = () => {
               <option value="">Assign Waiter (Optional)</option>
               {users.filter(u => {
                 const bId = typeof u.branch_id === 'string' ? u.branch_id : (u.branch_id as any)?.id;
-                return u.role === 'staff' && bId === user?.branch_id;
+                const userBId = typeof user?.branch_id === 'string' ? user?.branch_id : (user?.branch_id as any)?.id;
+                return u.role === 'staff' && bId === userBId;
               }).map(u => (
-                <option key={u.id} value={u.id}>{u.full_name}</option>
+                <option key={u.id} value={u.id}>{u.full_name || u.username}</option>
               ))}
             </select>
           </div>

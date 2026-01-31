@@ -24,17 +24,18 @@ const Dashboard: React.FC = () => {
           api.users.getAll(),
         ]);
 
+        const userBranchId = typeof user?.branch_id === 'string' ? user?.branch_id : (user?.branch_id as any)?.id;
         const branchOrders = ordData.filter((o: Order) => {
           const bId = typeof o.branch_id === 'string' ? o.branch_id : (o.branch_id as any)?.id;
-          return bId === user?.branch_id;
+          return bId === userBranchId;
         });
         const branchReservations = resData.filter((r: Reservation) => {
           const bId = typeof r.branch_id === 'string' ? r.branch_id : (r.branch_id as any)?.id;
-          return bId === user?.branch_id;
+          return bId === userBranchId;
         });
         const branchStaff = userData.filter((u: UserType) => {
           const bId = typeof u.branch_id === 'string' ? u.branch_id : (u.branch_id as any)?.id;
-          return u.role === 'staff' && bId === user?.branch_id;
+          return u.role === 'staff' && bId === userBranchId;
         });
 
         setOrders(branchOrders);

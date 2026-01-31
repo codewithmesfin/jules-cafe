@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server';
 import { strapiFetch } from '@/utils/strapi';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    // For stats, we might need a custom Strapi route or handle aggregation here
-    // For now, let's return a mock or simplified stats until we have a custom controller in Strapi
+    // For now, return empty stats as aggregations require custom Strapi controllers
     return NextResponse.json({
       totalOrders: 0,
       totalCustomers: 0,
