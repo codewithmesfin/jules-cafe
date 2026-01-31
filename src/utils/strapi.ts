@@ -1,14 +1,24 @@
 const STRAPI_URL = process.env.STRAPI_URL || 'http://localhost:1337';
 
-export const strapiFetch = async (endpoint: string, options?: RequestInit) => {
+export const strapiFetch = async (endpoint: string, options?: RequestInit, request?: Request) => {
   const url = `${STRAPI_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...((options?.headers as any) || {}),
+  };
+
+  // Forward Authorization header if present in the incoming request
+  if (request) {
+    const authHeader = request.headers.get('Authorization');
+    if (authHeader) {
+      headers['Authorization'] = authHeader;
+    }
+  }
 
   const response = await fetch(url, {
     ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
+    headers,
   });
 
   if (!response.ok) {
@@ -25,18 +35,38 @@ export const strapiFetch = async (endpoint: string, options?: RequestInit) => {
   return response.json();
 };
 
-export const flattenStrapi = (data: any) => {
-  if (!data || !data.data) return data;
+export const flattenStrapi = (data: any): any => {
+  if (!data) return null;
 
-  if (Array.isArray(data.data)) {
-    return data.data.map((item: any) => ({
-      id: item.id,
-      ...item.attributes,
-    }));
+  // Handle Strapi's { data: { id, attributes } } or { data: [{ id, attributes }] }
+  if (data.data !== undefined) {
+    return flattenStrapi(data.data);
   }
 
-  return {
-    id: data.data.id,
-    ...data.data.attributes,
-  };
+  // Handle arrays
+  if (Array.isArray(data)) {
+    return data.map((item) => flattenStrapi(item));
+  }
+
+  // Handle single object with id and attributes
+  if (data.id !== undefined || data.attributes !== undefined) {
+    const flattened: any = {
+      id: data.id?.toString(),
+      ...data.attributes,
+    };
+
+    // Recursively flatten attributes (for relations)
+    if (data.attributes) {
+      for (const key in data.attributes) {
+        if (typeof data.attributes[key] === 'object' && data.attributes[key] !== null) {
+          flattened[key] = flattenStrapi(data.attributes[key]);
+        }
+      }
+    }
+
+    return flattened;
+  }
+
+  // Fallback for regular objects (including metadata like 'meta')
+  return data;
 };

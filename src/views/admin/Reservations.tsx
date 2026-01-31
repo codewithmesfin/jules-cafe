@@ -49,7 +49,8 @@ const Reservations: React.FC = () => {
   const filteredReservations = reservations.filter(res => {
     const customerId = typeof res.customer_id === 'string' ? res.customer_id : (res.customer_id as any)?.id;
     const customer = users.find(u => u.id === customerId);
-    return customer?.full_name.toLowerCase().includes(searchTerm.toLowerCase());
+    const name = customer?.full_name || customer?.username || '';
+    return name.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
   const handleUpdateStatus = async (id: string, status: string) => {
@@ -140,7 +141,7 @@ const Reservations: React.FC = () => {
                     <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-400">
                       <User size={16} />
                     </div>
-                    <span className="font-medium text-gray-900">{customer?.full_name || 'Guest'}</span>
+                    <span className="font-medium text-gray-900">{customer?.full_name || customer?.username || 'Guest'}</span>
                   </div>
                 );
               }

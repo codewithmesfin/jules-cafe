@@ -47,7 +47,8 @@ const Customers: React.FC = () => {
   };
 
   const filteredCustomers = customers.filter(customer => {
-    const matchesSearch = customer.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const name = customer.full_name || '';
+    const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (customer.phone && customer.phone.toLowerCase().includes(searchTerm.toLowerCase()));
     return matchesSearch;
@@ -157,10 +158,10 @@ const Customers: React.FC = () => {
               accessor: (customer) => (
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center font-bold">
-                    {customer.full_name.charAt(0)}
+                    {(customer.full_name || customer.username || 'U').charAt(0)}
                   </div>
                   <div>
-                    <div className="font-medium text-gray-900">{customer.full_name}</div>
+                    <div className="font-medium text-gray-900">{customer.full_name || customer.username || 'Guest'}</div>
                     <div className="text-xs text-gray-500">{customer.email}</div>
                   </div>
                 </div>
@@ -195,7 +196,7 @@ const Customers: React.FC = () => {
                     size="sm"
                     onClick={() => {
                       setEditingCustomer(customer);
-                      setFormFullName(customer.full_name);
+                      setFormFullName(customer.full_name || '');
                       setFormEmail(customer.email);
                       setFormPhone(customer.phone || '');
                       setFormStatus(customer.status);

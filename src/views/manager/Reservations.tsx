@@ -43,7 +43,8 @@ const Reservations: React.FC = () => {
       ]);
     setReservations(resData.filter((r: Reservation) => {
       const branchId = typeof r.branch_id === 'string' ? r.branch_id : (r.branch_id as any)?.id;
-      return branchId === user?.branch_id;
+      const userBId = typeof user?.branch_id === "string" ? user?.branch_id : (user?.branch_id as any)?.id;
+      return branchId === userBId;
     }));
       setAllUsers(userData);
     } catch (error) {
@@ -128,7 +129,8 @@ const Reservations: React.FC = () => {
   const filteredReservations = reservations.filter(res => {
     const customerId = typeof res.customer_id === 'string' ? res.customer_id : (res.customer_id as any)?.id;
     const customer = allUsers.find(u => u.id === customerId);
-    return customer?.full_name.toLowerCase().includes(searchTerm.toLowerCase());
+    const name = customer?.full_name || customer?.username || '';
+    return name.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
   if (!user?.branch_id) {
@@ -172,11 +174,12 @@ const Reservations: React.FC = () => {
               header: 'Customer',
               accessor: (res) => {
                 const customerId = typeof res.customer_id === 'string' ? res.customer_id : (res.customer_id as any)?.id;
+                const customer = allUsers.find(u => u.id === customerId);
                 return (
                   <div className="flex items-center gap-2">
                     <User size={16} className="text-gray-400" />
                     <span className="font-bold text-gray-900">
-                      {allUsers.find(u => u.id === customerId)?.full_name || 'Guest'}
+                      {customer?.full_name || customer?.username || 'Guest'}
                     </span>
                   </div>
                 );
@@ -297,8 +300,12 @@ const Reservations: React.FC = () => {
                 onChange={(e) => setFormWaiterId(e.target.value)}
               >
                 <option value="">Unassigned</option>
-                {allUsers.filter(u => u.role === 'staff' && u.branch_id === user?.branch_id).map(u => (
-                  <option key={u.id} value={u.id}>{u.full_name}</option>
+                {allUsers.filter(u => {
+                  const uBId = typeof u.branch_id === 'string' ? u.branch_id : (u.branch_id as any)?.id;
+                  const userBId = typeof user?.branch_id === 'string' ? user?.branch_id : (user?.branch_id as any)?.id;
+                  return u.role === 'staff' && uBId === userBId;
+                }).map(u => (
+                  <option key={u.id} value={u.id}>{u.full_name || u.username}</option>
                 ))}
               </select>
             </div>

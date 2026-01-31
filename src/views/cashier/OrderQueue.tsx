@@ -30,7 +30,8 @@ const OrderQueue: React.FC = () => {
       ]);
       setOrders(ordData.filter((o: Order) => {
         const bId = typeof o.branch_id === 'string' ? o.branch_id : (o.branch_id as any)?.id;
-        return bId === user?.branch_id;
+        const userBId = typeof user?.branch_id === 'string' ? user?.branch_id : (user?.branch_id as any)?.id;
+        return bId === userBId;
       }));
       setUsers(userData);
     } catch (error) {
@@ -95,7 +96,8 @@ const OrderQueue: React.FC = () => {
                   <p className="text-xs text-gray-500">
                     {(() => {
                       const customerId = typeof order.customer_id === 'string' ? order.customer_id : (order.customer_id as any)?.id;
-                      return users.find(u => u.id === customerId)?.full_name || 'Walk-in Guest';
+                      const customer = users.find(u => u.id === customerId);
+                      return customer?.full_name || customer?.username || 'Walk-in Guest';
                     })()}
                   </p>
                 </div>

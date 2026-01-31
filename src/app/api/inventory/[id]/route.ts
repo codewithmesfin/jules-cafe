@@ -7,7 +7,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const data = await strapiFetch(`/api/inventories/${id}`);
+    const data = await strapiFetch(`/api/inventories/${id}`, {}, request);
     return NextResponse.json(flattenStrapi(data));
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -24,7 +24,7 @@ export async function PUT(
     const data = await strapiFetch(`/api/inventories/${id}`, {
       method: 'PUT',
       body: JSON.stringify({ data: body }),
-    });
+    }, request);
     return NextResponse.json(flattenStrapi(data));
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -39,7 +39,7 @@ export async function DELETE(
     const { id } = await params;
     await strapiFetch(`/api/inventories/${id}`, {
       method: 'DELETE',
-    });
+    }, request);
     return NextResponse.json({ message: 'Deleted' });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

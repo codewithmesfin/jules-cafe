@@ -168,7 +168,7 @@ const Orders: React.FC = () => {
               accessor: (order) => {
                 const customerId = typeof order.customer_id === 'string' ? order.customer_id : (order.customer_id as any)?.id;
                 const customer = users.find(u => u.id === customerId);
-                return customer?.full_name || 'Guest';
+                return customer?.full_name || customer?.username || 'Guest';
               }
             },
             { header: 'Date', accessor: (order) => new Date(order.created_at).toLocaleString() },
@@ -341,7 +341,7 @@ const Orders: React.FC = () => {
                   const customer = users.find(u => u.id === customerId);
                   return (
                     <>
-                      <p><span className="text-gray-500">Name:</span> {customer?.full_name || 'Guest'}</p>
+                      <p><span className="text-gray-500">Name:</span> {customer?.full_name || customer?.username || 'Guest'}</p>
                       <p><span className="text-gray-500">Email:</span> {customer?.email || 'N/A'}</p>
                     </>
                   );

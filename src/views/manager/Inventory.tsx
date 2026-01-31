@@ -41,7 +41,8 @@ const Inventory: React.FC = () => {
       ]);
       setInventory(invData.filter((i: InventoryItem) => {
         const bId = typeof i.branch_id === 'string' ? i.branch_id : (i.branch_id as any)?.id;
-        return bId === user?.branch_id;
+        const userBId = typeof user?.branch_id === "string" ? user?.branch_id : (user?.branch_id as any)?.id;
+        return bId === userBId;
       }));
       setRecipes(recData);
     } catch (error) {

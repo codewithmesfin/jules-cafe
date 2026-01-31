@@ -42,7 +42,7 @@ const Profile: React.FC = () => {
             <div className="w-24 h-24 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white shadow-sm">
               <User size={48} />
             </div>
-            <h3 className="text-xl font-bold">{user.full_name}</h3>
+            <h3 className="text-xl font-bold">{user.full_name || user.username || 'User'}</h3>
             <p className="text-gray-500 capitalize mb-6">{user.role}</p>
             <div className="flex justify-center gap-2">
               <Button size="sm" variant="outline">Change Photo</Button>

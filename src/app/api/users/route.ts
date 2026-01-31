@@ -1,11 +1,21 @@
 import { NextResponse } from 'next/server';
-import { strapiFetch, flattenStrapi } from '@/utils/strapi';
+import { strapiFetch } from '@/utils/strapi';
 
-export async function GET() {
+const mapRole = (strapiRole: any): string => {
+  const name = strapiRole?.name?.toLowerCase() || 'customer';
+  if (name === 'authenticated') return 'customer';
+  return name;
+};
+
+export async function GET(request: Request) {
   try {
-    // Strapi users endpoint is usually /api/users
-    const data = await strapiFetch('/api/users');
-    return NextResponse.json(data); // Strapi users often returns a flat array already
+    const data = await strapiFetch('/api/users?populate=role&populate=company', {}, request);
+    const normalized = data.map((u: any) => ({
+      ...u,
+      id: u.id.toString(),
+      role: mapRole(u.role)
+    }));
+    return NextResponse.json(normalized);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -17,8 +27,11 @@ export async function POST(request: Request) {
     const data = await strapiFetch('/api/users', {
       method: 'POST',
       body: JSON.stringify(body),
-    });
-    return NextResponse.json(data, { status: 201 });
+    }, request);
+    return NextResponse.json({
+      ...data,
+      id: data.id.toString()
+    }, { status: 201 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

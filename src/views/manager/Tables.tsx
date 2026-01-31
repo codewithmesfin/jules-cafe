@@ -35,7 +35,8 @@ const Tables: React.FC = () => {
       const data = await api.tables.getAll();
       setTables(data.filter((t: Table) => {
         const bId = typeof t.branch_id === 'string' ? t.branch_id : (t.branch_id as any)?.id;
-        return bId === user?.branch_id;
+        const userBId = typeof user?.branch_id === "string" ? user?.branch_id : (user?.branch_id as any)?.id;
+        return bId === userBId;
       }));
     } catch (error) {
       console.error('Failed to fetch tables:', error);

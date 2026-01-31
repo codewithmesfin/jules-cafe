@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { strapiFetch, flattenStrapi } from '@/utils/strapi';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const data = await strapiFetch('/api/menu-items?populate=*');
+    const data = await strapiFetch('/api/menu-items?populate=*', {}, request);
     return NextResponse.json(flattenStrapi(data));
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     const data = await strapiFetch('/api/menu-items', {
       method: 'POST',
       body: JSON.stringify({ data: body }),
-    });
+    }, request);
     return NextResponse.json(flattenStrapi(data), { status: 201 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

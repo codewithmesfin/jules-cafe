@@ -54,7 +54,8 @@ const Users: React.FC = () => {
   };
 
   const filteredUsers = users.filter(user => {
-    const matchesSearch = user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const name = user.full_name || '';
+    const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user.email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = selectedRole === 'all' || user.role === selectedRole;
     const matchesStatus = selectedStatus === 'all' || user.status === selectedStatus;
@@ -170,7 +171,7 @@ const Users: React.FC = () => {
         <Table
           data={filteredUsers}
           columns={[
-            { header: 'Full Name', accessor: 'full_name' },
+            { header: 'Full Name', accessor: (u) => u.full_name || u.username || 'N/A' },
             { header: 'Email', accessor: 'email' },
             {
               header: 'Role/Branch',
@@ -210,7 +211,7 @@ const Users: React.FC = () => {
                     size="sm"
                     onClick={() => {
                       setEditingUser(user);
-                      setFormFullName(user.full_name);
+                      setFormFullName(user.full_name || '');
                       setFormEmail(user.email);
                       setFormPhone(user.phone || '');
                       setFormPassword('');
