@@ -24,9 +24,18 @@ const Dashboard: React.FC = () => {
           api.users.getAll(),
         ]);
 
-        const branchOrders = ordData.filter((o: Order) => o.branch_id === user?.branch_id);
-        const branchReservations = resData.filter((r: Reservation) => r.branch_id === user?.branch_id);
-        const branchStaff = userData.filter((u: UserType) => u.role === 'staff' && u.branch_id === user?.branch_id);
+        const branchOrders = ordData.filter((o: Order) => {
+          const bId = typeof o.branch_id === 'string' ? o.branch_id : (o.branch_id as any)?.id;
+          return bId === user?.branch_id;
+        });
+        const branchReservations = resData.filter((r: Reservation) => {
+          const bId = typeof r.branch_id === 'string' ? r.branch_id : (r.branch_id as any)?.id;
+          return bId === user?.branch_id;
+        });
+        const branchStaff = userData.filter((u: UserType) => {
+          const bId = typeof u.branch_id === 'string' ? u.branch_id : (u.branch_id as any)?.id;
+          return u.role === 'staff' && bId === user?.branch_id;
+        });
 
         setOrders(branchOrders);
         setReservations(branchReservations);
@@ -41,6 +50,21 @@ const Dashboard: React.FC = () => {
       fetchData();
     }
   }, [user?.branch_id]);
+
+  if (!user?.branch_id) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 space-y-4">
+        <div className="p-4 bg-orange-100 text-orange-600 rounded-full">
+          <ShoppingBag size={48} />
+        </div>
+        <h2 className="text-xl font-bold text-gray-900">No Branch Assigned</h2>
+        <p className="text-gray-500 text-center max-w-md">
+          This manager account is not yet associated with any branch.
+          Please contact an administrator to assign you to a branch.
+        </p>
+      </div>
+    );
+  }
 
   if (loading) return <div className="text-center py-20">Loading Dashboard...</div>;
 

@@ -28,7 +28,10 @@ const OrderQueue: React.FC = () => {
         api.orders.getAll(),
         api.users.getAll(),
       ]);
-      setOrders(ordData.filter((o: Order) => o.branch_id === user?.branch_id));
+      setOrders(ordData.filter((o: Order) => {
+        const bId = typeof o.branch_id === 'string' ? o.branch_id : (o.branch_id as any)?.id;
+        return bId === user?.branch_id;
+      }));
       setUsers(userData);
     } catch (error) {
       console.error('Failed to fetch order queue:', error);
@@ -90,7 +93,10 @@ const OrderQueue: React.FC = () => {
                     </Badge>
                   </div>
                   <p className="text-xs text-gray-500">
-                    {users.find(u => u.id === order.customer_id)?.full_name || 'Walk-in Guest'}
+                    {(() => {
+                      const customerId = typeof order.customer_id === 'string' ? order.customer_id : (order.customer_id as any)?.id;
+                      return users.find(u => u.id === customerId)?.full_name || 'Walk-in Guest';
+                    })()}
                   </p>
                 </div>
                 <div className="text-right">

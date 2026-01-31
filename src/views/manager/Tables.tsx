@@ -33,7 +33,10 @@ const Tables: React.FC = () => {
     try {
       setLoading(true);
       const data = await api.tables.getAll();
-      setTables(data.filter((t: Table) => t.branch_id === user?.branch_id));
+      setTables(data.filter((t: Table) => {
+        const bId = typeof t.branch_id === 'string' ? t.branch_id : (t.branch_id as any)?.id;
+        return bId === user?.branch_id;
+      }));
     } catch (error) {
       console.error('Failed to fetch tables:', error);
     } finally {
@@ -44,6 +47,20 @@ const Tables: React.FC = () => {
   const filteredTables = tables.filter(table =>
     table.table_number.includes(searchTerm)
   );
+
+  if (!user?.branch_id) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 space-y-4">
+        <div className="p-4 bg-orange-100 text-orange-600 rounded-full">
+          <Grid size={48} />
+        </div>
+        <h2 className="text-xl font-bold text-gray-900">No Branch Associated</h2>
+        <p className="text-gray-500 text-center max-w-md">
+          Please associate this account with a branch to manage tables.
+        </p>
+      </div>
+    );
+  }
 
   const handleOpenModal = (table: Table | null = null) => {
     setSelectedTable(table);

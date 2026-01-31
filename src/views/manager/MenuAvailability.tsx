@@ -33,7 +33,10 @@ const MenuAvailability: React.FC = () => {
       ]);
       setMenuItems(items);
       setCategories(cats);
-      setBranchMenuItems(bmItems.filter((bm: BranchMenuItem) => bm.branch_id === user?.branch_id));
+      setBranchMenuItems(bmItems.filter((bm: BranchMenuItem) => {
+        const bId = typeof bm.branch_id === 'string' ? bm.branch_id : (bm.branch_id as any)?.id;
+        return bId === user?.branch_id;
+      }));
     } catch (error) {
       console.error('Failed to fetch menu availability:', error);
     } finally {
@@ -43,7 +46,10 @@ const MenuAvailability: React.FC = () => {
 
   const handleToggle = async (item: MenuItem, currentAvailability: boolean) => {
     try {
-      const bmItem = branchMenuItems.find(bm => bm.menu_item_id === item.id);
+      const bmItem = branchMenuItems.find(bm => {
+        const mId = typeof bm.menu_item_id === 'string' ? bm.menu_item_id : (bm.menu_item_id as any)?.id;
+        return mId === item.id;
+      });
       if (bmItem) {
         await api.branchMenuItems.update(bmItem.id, { is_available: !currentAvailability });
       } else {
@@ -61,12 +67,29 @@ const MenuAvailability: React.FC = () => {
   };
 
   const branchItems = menuItems.map(item => {
-    const branchInfo = branchMenuItems.find(bm => bm.menu_item_id === item.id);
+    const branchInfo = branchMenuItems.find(bm => {
+      const mId = typeof bm.menu_item_id === 'string' ? bm.menu_item_id : (bm.menu_item_id as any)?.id;
+      return mId === item.id;
+    });
     return {
       ...item,
       is_available: branchInfo ? branchInfo.is_available : true // Default to available if no record
     };
   }).filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()));
+
+  if (!user?.branch_id) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 space-y-4">
+        <div className="p-4 bg-orange-100 text-orange-600 rounded-full">
+          <CheckCircle2 size={48} />
+        </div>
+        <h2 className="text-xl font-bold text-gray-900">No Branch Associated</h2>
+        <p className="text-gray-500 text-center max-w-md">
+          Please associate this account with a branch to manage menu availability.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

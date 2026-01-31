@@ -13,6 +13,7 @@ import type { User, UserRole, UserStatus } from '../../types';
 const Users: React.FC = () => {
   const { showNotification } = useNotification();
   const [users, setUsers] = useState<User[]>([]);
+  const [branches, setBranches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRole, setSelectedRole] = useState('all');
@@ -27,6 +28,7 @@ const Users: React.FC = () => {
   const [formPhone, setFormPhone] = useState('');
   const [formPassword, setFormPassword] = useState('');
   const [formRole, setFormRole] = useState<UserRole>('customer');
+  const [formBranchId, setFormBranchId] = useState('');
   const [formStatus, setFormStatus] = useState<UserStatus>('active');
   const [formCustomerType, setFormCustomerType] = useState<'regular' | 'vip' | 'member'>('regular');
   const [formDiscountRate, setFormDiscountRate] = useState(0);
@@ -38,8 +40,12 @@ const Users: React.FC = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const data = await api.users.getAll();
-      setUsers(data);
+      const [userData, branchData] = await Promise.all([
+        api.users.getAll(),
+        api.branches.getAll()
+      ]);
+      setUsers(userData);
+      setBranches(branchData);
     } catch (error) {
       console.error('Failed to fetch users:', error);
     } finally {
@@ -69,6 +75,7 @@ const Users: React.FC = () => {
         phone: formPhone || 'N/A',
         role: formRole,
         status: formStatus,
+        branch_id: ['manager', 'cashier', 'staff'].includes(formRole) ? formBranchId || undefined : undefined,
         customer_type: formRole === 'customer' ? formCustomerType : undefined,
         discount_rate: formRole === 'customer' ? formDiscountRate : undefined
       };
@@ -149,6 +156,7 @@ const Users: React.FC = () => {
           setFormPhone('');
           setFormPassword('');
           setFormRole('customer');
+          setFormBranchId('');
           setFormStatus('active');
           setIsModalOpen(true);
         }}>
@@ -165,10 +173,17 @@ const Users: React.FC = () => {
             { header: 'Full Name', accessor: 'full_name' },
             { header: 'Email', accessor: 'email' },
             {
-              header: 'Role/Type',
+              header: 'Role/Branch',
               accessor: (user) => (
                 <div className="flex flex-col">
                   <Badge variant="neutral" className="capitalize w-fit">{user.role}</Badge>
+                  {user.branch_id && (
+                    <span className="text-[10px] text-orange-600 font-medium uppercase mt-1">
+                      {typeof user.branch_id === 'string'
+                        ? branches.find(b => b.id === user.branch_id)?.name
+                        : (user.branch_id as any).name}
+                    </span>
+                  )}
                   {user.role === 'customer' && user.customer_type && (
                     <span className="text-[10px] text-gray-500 font-medium uppercase mt-1">
                       {user.customer_type} ({user.discount_rate}%)
@@ -200,6 +215,8 @@ const Users: React.FC = () => {
                       setFormPhone(user.phone || '');
                       setFormPassword('');
                       setFormRole(user.role);
+                      const branchId = typeof user.branch_id === 'string' ? user.branch_id : (user.branch_id as any)?.id;
+                      setFormBranchId(branchId || '');
                       setFormStatus(user.status);
                       setFormCustomerType(user.customer_type || 'regular');
                       setFormDiscountRate(user.discount_rate || 0);
@@ -285,6 +302,22 @@ const Users: React.FC = () => {
               <option value="admin">Admin</option>
             </select>
           </div>
+
+          {['manager', 'cashier', 'staff'].includes(formRole) && (
+            <div className="w-full">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Assign Branch</label>
+              <select
+                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                value={formBranchId}
+                onChange={(e) => setFormBranchId(e.target.value)}
+              >
+                <option value="">Select a Branch</option>
+                {branches.map(b => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {formRole === 'customer' && (
             <div className="grid grid-cols-2 gap-4">

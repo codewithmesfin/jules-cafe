@@ -12,6 +12,7 @@ const Reservations: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [users, setUsers] = useState<UserType[]>([]);
+  const [branches, setBranches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -30,12 +31,14 @@ const Reservations: React.FC = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [resData, userData] = await Promise.all([
+      const [resData, userData, branchData] = await Promise.all([
         api.reservations.getAll(),
         api.users.getAll(),
+        api.branches.getAll(),
       ]);
       setReservations(resData);
       setUsers(userData);
+      setBranches(branchData);
     } catch (error) {
       console.error('Failed to fetch reservations:', error);
     } finally {
@@ -67,9 +70,11 @@ const Reservations: React.FC = () => {
     try {
       setSaving(true);
       const customer = users.find(u => u.id === selectedCustomer);
+      const branchId = typeof customer?.branch_id === 'string' ? customer?.branch_id : (customer?.branch_id as any)?.id;
+
       const resData = {
         customer_id: selectedCustomer,
-        branch_id: customer?.branch_id || '654321098765432109876543', // Fallback
+        branch_id: branchId || branches[0]?.id || '654321098765432109876543', // Fallback
         reservation_date: resDate,
         reservation_time: resTime,
         guests_count: guestsCount,

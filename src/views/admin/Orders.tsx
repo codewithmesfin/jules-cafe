@@ -13,6 +13,7 @@ const Orders: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [orders, setOrders] = useState<Order[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [branches, setBranches] = useState<any[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
@@ -31,14 +32,16 @@ const Orders: React.FC = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [ordData, userData, menuData] = await Promise.all([
+      const [ordData, userData, menuData, branchData] = await Promise.all([
         api.orders.getAll(),
         api.users.getAll(),
         api.menuItems.getAll(),
+        api.branches.getAll(),
       ]);
       setOrders(ordData);
       setUsers(userData);
       setMenuItems(menuData);
+      setBranches(branchData);
     } catch (error) {
       console.error('Failed to fetch orders:', error);
     } finally {
@@ -85,9 +88,11 @@ const Orders: React.FC = () => {
       const discountRate = customer?.discount_rate || 0;
       const discountAmount = (subtotal * discountRate) / 100;
 
+      const branchId = typeof customer?.branch_id === 'string' ? customer?.branch_id : (customer?.branch_id as any)?.id;
+
       const orderData = {
         customer_id: selectedCustomer,
-        branch_id: users.find(u => u.id === selectedCustomer)?.branch_id || '654321098765432109876543', // Fallback
+        branch_id: branchId || branches[0]?.id || '654321098765432109876543', // Fallback to first branch
         status: 'pending',
         type: 'walk-in',
         total_amount: subtotal - discountAmount,
