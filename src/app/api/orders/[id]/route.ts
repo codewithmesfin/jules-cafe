@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import connectToDatabase from '@/lib/mongodb';
-import { OrderModel, OrderItemModel } from '@/models';
+import { strapiFetch, flattenStrapi } from '@/utils/strapi';
 
 export async function GET(
   request: Request,
@@ -8,13 +7,8 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    await connectToDatabase();
-    const order = await OrderModel.findById(id).populate('customer_id branch_id table_id');
-    if (!order) return NextResponse.json({ error: 'Order not found' }, { status: 404 });
-
-    const items = await OrderItemModel.find({ order_id: id });
-
-    return NextResponse.json({ ...order.toObject(), items });
+    const data = await strapiFetch(`/api/orders/${id}?populate=*`);
+    return NextResponse.json(flattenStrapi(data));
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -26,19 +20,12 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
-    await connectToDatabase();
     const body = await request.json();
-
-    const order = await OrderModel.findById(id);
-    if (!order) return NextResponse.json({ error: 'Order not found' }, { status: 404 });
-
-    Object.assign(order, body);
-    await order.save();
-
-    await order.populate('customer_id branch_id table_id');
-    const items = await OrderItemModel.find({ order_id: id });
-
-    return NextResponse.json({ ...order.toObject(), items });
+    const data = await strapiFetch(`/api/orders/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ data: body }),
+    });
+    return NextResponse.json(flattenStrapi(data));
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -50,10 +37,9 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    await connectToDatabase();
-    await OrderItemModel.deleteMany({ order_id: id });
-    const order = await OrderModel.findByIdAndDelete(id);
-    if (!order) return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    await strapiFetch(`/api/orders/${id}`, {
+      method: 'DELETE',
+    });
     return NextResponse.json({ message: 'Order deleted' });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

@@ -1,26 +1,22 @@
 import { NextResponse } from 'next/server';
-import connectToDatabase from '@/lib/mongodb';
-import { UserModel } from '@/models';
-import bcrypt from 'bcryptjs';
+import { strapiFetch } from '@/utils/strapi';
 
 export async function POST(request: Request) {
   try {
-    await connectToDatabase();
     const { email, password } = await request.json();
 
-    const user = await UserModel.findOne({ email });
+    // Strapi uses 'identifier' for either email or username
+    const data = await strapiFetch('/api/auth/local', {
+      method: 'POST',
+      body: JSON.stringify({
+        identifier: email,
+        password,
+      }),
+    });
 
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return NextResponse.json({ error: 'Invalid password' }, { status: 401 });
-    }
-
-    return NextResponse.json(user);
+    // Strapi returns { jwt, user }
+    return NextResponse.json(data);
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: error.message }, { status: 400 });
   }
 }

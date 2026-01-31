@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import connectToDatabase from '@/lib/mongodb';
-import { ReservationModel } from '@/models';
+import { strapiFetch, flattenStrapi } from '@/utils/strapi';
 
 export async function GET(
   request: Request,
@@ -8,10 +7,8 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    await connectToDatabase();
-    const reservation = await ReservationModel.findById(id).populate('customer_id branch_id table_id');
-    if (!reservation) return NextResponse.json({ error: 'Reservation not found' }, { status: 404 });
-    return NextResponse.json(reservation);
+    const data = await strapiFetch(`/api/reservations/${id}?populate=*`);
+    return NextResponse.json(flattenStrapi(data));
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -23,18 +20,12 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
-    await connectToDatabase();
     const body = await request.json();
-
-    const reservation = await ReservationModel.findById(id);
-    if (!reservation) return NextResponse.json({ error: 'Reservation not found' }, { status: 404 });
-
-    Object.assign(reservation, body);
-    await reservation.save();
-
-    await reservation.populate('customer_id branch_id table_id');
-
-    return NextResponse.json(reservation);
+    const data = await strapiFetch(`/api/reservations/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ data: body }),
+    });
+    return NextResponse.json(flattenStrapi(data));
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -46,9 +37,9 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    await connectToDatabase();
-    const reservation = await ReservationModel.findByIdAndDelete(id);
-    if (!reservation) return NextResponse.json({ error: 'Reservation not found' }, { status: 404 });
+    await strapiFetch(`/api/reservations/${id}`, {
+      method: 'DELETE',
+    });
     return NextResponse.json({ message: 'Reservation deleted' });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

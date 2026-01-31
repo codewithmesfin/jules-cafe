@@ -1,12 +1,10 @@
 import { NextResponse } from 'next/server';
-import connectToDatabase from '@/lib/mongodb';
-import { ReviewModel } from '@/models';
+import { strapiFetch, flattenStrapi } from '@/utils/strapi';
 
 export async function GET() {
   try {
-    await connectToDatabase();
-    const reviews = await ReviewModel.find({}).populate('customer_id branch_id');
-    return NextResponse.json(reviews);
+    const data = await strapiFetch('/api/reviews?populate=*');
+    return NextResponse.json(flattenStrapi(data));
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -14,10 +12,12 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    await connectToDatabase();
     const body = await request.json();
-    const review = await ReviewModel.create(body);
-    return NextResponse.json(review, { status: 201 });
+    const data = await strapiFetch('/api/reviews', {
+      method: 'POST',
+      body: JSON.stringify({ data: body }),
+    });
+    return NextResponse.json(flattenStrapi(data), { status: 201 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

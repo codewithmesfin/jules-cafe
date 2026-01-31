@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import connectToDatabase from '@/lib/mongodb';
-import { RecipeModel } from '@/models';
+import { strapiFetch, flattenStrapi } from '@/utils/strapi';
 
 export async function GET(
   request: Request,
@@ -8,10 +7,8 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    await connectToDatabase();
-    const recipe = await RecipeModel.findById(id).populate('menu_item_id');
-    if (!recipe) return NextResponse.json({ error: 'Recipe not found' }, { status: 404 });
-    return NextResponse.json(recipe);
+    const data = await strapiFetch(`/api/recipes/${id}?populate=*`);
+    return NextResponse.json(flattenStrapi(data));
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -23,18 +20,12 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
-    await connectToDatabase();
     const body = await request.json();
-
-    const recipe = await RecipeModel.findById(id);
-    if (!recipe) return NextResponse.json({ error: 'Recipe not found' }, { status: 404 });
-
-    Object.assign(recipe, body);
-    await recipe.save();
-
-    await recipe.populate('menu_item_id');
-
-    return NextResponse.json(recipe);
+    const data = await strapiFetch(`/api/recipes/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ data: body }),
+    });
+    return NextResponse.json(flattenStrapi(data));
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -46,10 +37,10 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    await connectToDatabase();
-    const recipe = await RecipeModel.findByIdAndDelete(id);
-    if (!recipe) return NextResponse.json({ error: 'Recipe not found' }, { status: 404 });
-    return NextResponse.json({ message: 'Recipe deleted' });
+    await strapiFetch(`/api/recipes/${id}`, {
+      method: 'DELETE',
+    });
+    return NextResponse.json({ message: 'Deleted' });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

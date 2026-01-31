@@ -1,12 +1,10 @@
 import { NextResponse } from 'next/server';
-import connectToDatabase from '@/lib/mongodb';
-import { CategoryModel } from '@/models';
+import { strapiFetch, flattenStrapi } from '@/utils/strapi';
 
 export async function GET() {
   try {
-    await connectToDatabase();
-    const categories = await CategoryModel.find({});
-    return NextResponse.json(categories);
+    const data = await strapiFetch('/api/categories');
+    return NextResponse.json(flattenStrapi(data));
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -14,10 +12,12 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    await connectToDatabase();
     const body = await request.json();
-    const category = await CategoryModel.create(body);
-    return NextResponse.json(category, { status: 201 });
+    const data = await strapiFetch('/api/categories', {
+      method: 'POST',
+      body: JSON.stringify({ data: body }),
+    });
+    return NextResponse.json(flattenStrapi(data), { status: 201 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

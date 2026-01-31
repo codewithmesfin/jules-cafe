@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Edit, Trash2, User as UserIcon } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, User as UserIcon, Users } from 'lucide-react';
 import { api } from '../../utils/api';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -8,10 +8,12 @@ import { Table } from '../../components/ui/Table';
 import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
 import { ConfirmationDialog } from '../../components/ui/ConfirmationDialog';
+import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import type { User, UserStatus } from '../../types';
 
 const Customers: React.FC = () => {
+  const { user } = useAuth();
   const { showNotification } = useNotification();
   const [customers, setCustomers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);

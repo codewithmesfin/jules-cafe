@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { Save } from 'lucide-react';
+import { Save, MapPin } from 'lucide-react';
 import { api } from '../../utils/api';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';

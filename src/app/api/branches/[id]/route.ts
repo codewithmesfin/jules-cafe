@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import connectToDatabase from '@/lib/mongodb';
-import { BranchModel } from '@/models';
+import { strapiFetch, flattenStrapi } from '@/utils/strapi';
 
 export async function GET(
   request: Request,
@@ -8,10 +7,8 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    await connectToDatabase();
-    const branch = await BranchModel.findById(id);
-    if (!branch) return NextResponse.json({ error: 'Branch not found' }, { status: 404 });
-    return NextResponse.json(branch);
+    const data = await strapiFetch(`/api/branches/${id}`);
+    return NextResponse.json(flattenStrapi(data));
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -23,16 +20,12 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
-    await connectToDatabase();
     const body = await request.json();
-
-    const branch = await BranchModel.findById(id);
-    if (!branch) return NextResponse.json({ error: 'Branch not found' }, { status: 404 });
-
-    Object.assign(branch, body);
-    await branch.save();
-
-    return NextResponse.json(branch);
+    const data = await strapiFetch(`/api/branches/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ data: body }),
+    });
+    return NextResponse.json(flattenStrapi(data));
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -44,9 +37,9 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    await connectToDatabase();
-    const branch = await BranchModel.findByIdAndDelete(id);
-    if (!branch) return NextResponse.json({ error: 'Branch not found' }, { status: 404 });
+    await strapiFetch(`/api/branches/${id}`, {
+      method: 'DELETE',
+    });
     return NextResponse.json({ message: 'Branch deleted' });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

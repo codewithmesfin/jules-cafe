@@ -1,12 +1,10 @@
 import { NextResponse } from 'next/server';
-import connectToDatabase from '@/lib/mongodb';
-import { OrderModel, OrderItemModel } from '@/models';
+import { strapiFetch, flattenStrapi } from '@/utils/strapi';
 
 export async function GET() {
   try {
-    await connectToDatabase();
-    const orders = await OrderModel.find({}).populate('customer_id branch_id table_id');
-    return NextResponse.json(orders);
+    const data = await strapiFetch('/api/orders?populate=*');
+    return NextResponse.json(flattenStrapi(data));
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -14,24 +12,13 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    await connectToDatabase();
     const body = await request.json();
-    const { items, ...orderData } = body;
-
-    // Auto-generate order number if not provided
-    if (!orderData.order_number) {
-      orderData.order_number = `ORD-${Date.now()}`;
-    }
-
-    const order = await OrderModel.create(orderData);
-    let orderItems = [];
-
-    if (items && Array.isArray(items) && items.length > 0) {
-      const itemsWithOrderId = items.map((item: any) => ({ ...item, order_id: order._id }));
-      orderItems = await OrderItemModel.insertMany(itemsWithOrderId);
-    }
-
-    return NextResponse.json({ ...order.toObject(), items: orderItems }, { status: 201 });
+    // Assuming Strapi has an 'items' component or relation in Order
+    const data = await strapiFetch('/api/orders', {
+      method: 'POST',
+      body: JSON.stringify({ data: body }),
+    });
+    return NextResponse.json(flattenStrapi(data), { status: 201 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

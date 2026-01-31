@@ -1,12 +1,11 @@
 import { NextResponse } from 'next/server';
-import connectToDatabase from '@/lib/mongodb';
-import { UserModel } from '@/models';
+import { strapiFetch, flattenStrapi } from '@/utils/strapi';
 
 export async function GET() {
   try {
-    await connectToDatabase();
-    const users = await UserModel.find({});
-    return NextResponse.json(users);
+    // Strapi users endpoint is usually /api/users
+    const data = await strapiFetch('/api/users');
+    return NextResponse.json(data); // Strapi users often returns a flat array already
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -14,10 +13,12 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    await connectToDatabase();
     const body = await request.json();
-    const user = await UserModel.create(body);
-    return NextResponse.json(user, { status: 201 });
+    const data = await strapiFetch('/api/users', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+    return NextResponse.json(data, { status: 201 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

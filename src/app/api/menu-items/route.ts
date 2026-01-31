@@ -1,12 +1,10 @@
 import { NextResponse } from 'next/server';
-import connectToDatabase from '@/lib/mongodb';
-import { MenuItemModel } from '@/models';
+import { strapiFetch, flattenStrapi } from '@/utils/strapi';
 
 export async function GET() {
   try {
-    await connectToDatabase();
-    const menuItems = await MenuItemModel.find({}).populate('category_id');
-    return NextResponse.json(menuItems);
+    const data = await strapiFetch('/api/menu-items?populate=*');
+    return NextResponse.json(flattenStrapi(data));
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -14,10 +12,12 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    await connectToDatabase();
     const body = await request.json();
-    const menuItem = await MenuItemModel.create(body);
-    return NextResponse.json(menuItem, { status: 201 });
+    const data = await strapiFetch('/api/menu-items', {
+      method: 'POST',
+      body: JSON.stringify({ data: body }),
+    });
+    return NextResponse.json(flattenStrapi(data), { status: 201 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

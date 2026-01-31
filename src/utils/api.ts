@@ -1,8 +1,11 @@
 const fetcher = async (url: string, options?: RequestInit) => {
+  const jwt = typeof window !== 'undefined' ? localStorage.getItem('jwt') : null;
+
   const response = await fetch(url, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
+      ...(jwt ? { 'Authorization': `Bearer ${jwt}` } : {}),
       ...options?.headers,
     },
   });

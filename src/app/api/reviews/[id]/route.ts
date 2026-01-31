@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import connectToDatabase from '@/lib/mongodb';
-import { ReviewModel } from '@/models';
+import { strapiFetch, flattenStrapi } from '@/utils/strapi';
 
 export async function GET(
   request: Request,
@@ -8,10 +7,8 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    await connectToDatabase();
-    const review = await ReviewModel.findById(id).populate('customer_id branch_id');
-    if (!review) return NextResponse.json({ error: 'Review not found' }, { status: 404 });
-    return NextResponse.json(review);
+    const data = await strapiFetch(`/api/reviews/${id}?populate=*`);
+    return NextResponse.json(flattenStrapi(data));
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -23,18 +20,12 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
-    await connectToDatabase();
     const body = await request.json();
-
-    const review = await ReviewModel.findById(id);
-    if (!review) return NextResponse.json({ error: 'Review not found' }, { status: 404 });
-
-    Object.assign(review, body);
-    await review.save();
-
-    await review.populate('customer_id branch_id');
-
-    return NextResponse.json(review);
+    const data = await strapiFetch(`/api/reviews/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ data: body }),
+    });
+    return NextResponse.json(flattenStrapi(data));
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -46,10 +37,10 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    await connectToDatabase();
-    const review = await ReviewModel.findByIdAndDelete(id);
-    if (!review) return NextResponse.json({ error: 'Review not found' }, { status: 404 });
-    return NextResponse.json({ message: 'Review deleted' });
+    await strapiFetch(`/api/reviews/${id}`, {
+      method: 'DELETE',
+    });
+    return NextResponse.json({ message: 'Deleted' });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

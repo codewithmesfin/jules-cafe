@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import connectToDatabase from '@/lib/mongodb';
-import { UserModel } from '@/models';
+import { strapiFetch } from '@/utils/strapi';
 
 export async function GET(
   request: Request,
@@ -8,10 +7,8 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    await connectToDatabase();
-    const user = await UserModel.findById(id);
-    if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    return NextResponse.json(user);
+    const data = await strapiFetch(`/api/users/${id}`);
+    return NextResponse.json(data);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -23,17 +20,12 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
-    await connectToDatabase();
     const body = await request.json();
-
-    const user = await UserModel.findById(id);
-    if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
-
-    // Update fields
-    Object.assign(user, body);
-    await user.save();
-
-    return NextResponse.json(user);
+    const data = await strapiFetch(`/api/users/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    });
+    return NextResponse.json(data);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -45,9 +37,9 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    await connectToDatabase();
-    const user = await UserModel.findByIdAndDelete(id);
-    if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    await strapiFetch(`/api/users/${id}`, {
+      method: 'DELETE',
+    });
     return NextResponse.json({ message: 'User deleted' });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

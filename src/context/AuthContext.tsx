@@ -6,7 +6,8 @@ import { MOCK_USERS } from '../utils/mockData';
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password?: string) => Promise<User>;
+  jwt: string | null;
+  login: (email: string, password?: string) => Promise<any>;
   logout: () => void;
   isAuthenticated: boolean;
   loading: boolean;
@@ -16,13 +17,16 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [jwt, setJwt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     try {
-      const saved = localStorage.getItem('user');
-      if (saved) {
-        setUser(JSON.parse(saved));
+      const savedUser = localStorage.getItem('user');
+      const savedJwt = localStorage.getItem('jwt');
+      if (savedUser && savedJwt) {
+        setUser(JSON.parse(savedUser));
+        setJwt(savedJwt);
       }
     } finally {
       setLoading(false);
@@ -39,10 +43,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     if (response.ok) {
-      const foundUser = await response.json();
-      setUser(foundUser);
-      localStorage.setItem('user', JSON.stringify(foundUser));
-      return foundUser;
+      const data = await response.json(); // { jwt, user }
+      setUser(data.user);
+      setJwt(data.jwt);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      localStorage.setItem('jwt', data.jwt);
+      return data;
     } else {
       const error = await response.json();
       throw new Error(error.error || 'Login failed');
@@ -51,11 +57,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = () => {
     setUser(null);
+    setJwt(null);
     localStorage.removeItem('user');
+    localStorage.removeItem('jwt');
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAuthenticated: !!user, loading }}>
+    <AuthContext.Provider value={{ user, jwt, login, logout, isAuthenticated: !!user, loading }}>
       {children}
     </AuthContext.Provider>
   );

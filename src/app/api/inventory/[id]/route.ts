@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import connectToDatabase from '@/lib/mongodb';
-import { InventoryItemModel } from '@/models';
+import { strapiFetch, flattenStrapi } from '@/utils/strapi';
 
 export async function GET(
   request: Request,
@@ -8,10 +7,8 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    await connectToDatabase();
-    const item = await InventoryItemModel.findById(id);
-    if (!item) return NextResponse.json({ error: 'Inventory item not found' }, { status: 404 });
-    return NextResponse.json(item);
+    const data = await strapiFetch(`/api/inventories/${id}`);
+    return NextResponse.json(flattenStrapi(data));
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -23,16 +20,12 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
-    await connectToDatabase();
     const body = await request.json();
-
-    const item = await InventoryItemModel.findById(id);
-    if (!item) return NextResponse.json({ error: 'Inventory item not found' }, { status: 404 });
-
-    Object.assign(item, body);
-    await item.save();
-
-    return NextResponse.json(item);
+    const data = await strapiFetch(`/api/inventories/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ data: body }),
+    });
+    return NextResponse.json(flattenStrapi(data));
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -44,10 +37,10 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    await connectToDatabase();
-    const item = await InventoryItemModel.findByIdAndDelete(id);
-    if (!item) return NextResponse.json({ error: 'Inventory item not found' }, { status: 404 });
-    return NextResponse.json({ message: 'Inventory item deleted' });
+    await strapiFetch(`/api/inventories/${id}`, {
+      method: 'DELETE',
+    });
+    return NextResponse.json({ message: 'Deleted' });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

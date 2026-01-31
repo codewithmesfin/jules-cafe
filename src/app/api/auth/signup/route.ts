@@ -1,29 +1,29 @@
 import { NextResponse } from 'next/server';
-import connectToDatabase from '@/lib/mongodb';
-import { UserModel } from '@/models';
+import { strapiFetch } from '@/utils/strapi';
 
 export async function POST(request: Request) {
   try {
-    await connectToDatabase();
     const body = await request.json();
 
-    // Ensure role is always customer for public signup
-    const userData = {
-      ...body,
-      role: 'customer',
-      status: 'active',
-      customer_type: 'regular',
-      discount_rate: 0
+    // Map frontend body to Strapi's register payload
+    const strapiPayload = {
+      username: body.email.split('@')[0] + Math.floor(Math.random() * 1000), // Generate a username if not provided
+      email: body.email,
+      password: body.password,
+      // Additional fields can be passed if Strapi user-permissions is configured to accept them
+      full_name: body.full_name,
+      phone: body.phone,
+      role_type: 'customer'
     };
 
-    const existingUser = await UserModel.findOne({ email: userData.email });
-    if (existingUser) {
-      return NextResponse.json({ error: 'User already exists' }, { status: 400 });
-    }
+    const data = await strapiFetch('/api/auth/local/register', {
+      method: 'POST',
+      body: JSON.stringify(strapiPayload),
+    });
 
-    const user = await UserModel.create(userData);
-    return NextResponse.json(user, { status: 201 });
+    // Strapi returns { jwt, user }
+    return NextResponse.json(data, { status: 201 });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: error.message }, { status: 400 });
   }
 }
