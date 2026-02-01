@@ -1,7 +1,6 @@
 import express from 'express';
 import MenuVariant from '../models/MenuVariant';
 import BranchMenuItem from '../models/BranchMenuItem';
-import Reservation from '../models/Reservation';
 import InventoryItem from '../models/InventoryItem';
 import Recipe from '../models/Recipe';
 import * as factory from '../utils/controllerFactory';
@@ -49,14 +48,22 @@ router.route('/branch-menu-items/:id')
   .put(protect, authorize('admin', 'manager'), factory.updateOne(BranchMenuItem))
   .delete(protect, authorize('admin', 'manager'), factory.deleteOne(BranchMenuItem));
 
+import { 
+  getAllReservations, 
+  getReservation, 
+  createReservation, 
+  updateReservation, 
+  deleteReservation 
+} from '../controllers/reservationController';
+
 // Reservation
 router.route('/reservations')
-  .get(protect, factory.getAll(Reservation))
-  .post(protect, factory.createOne(Reservation));
+  .get(protect, getAllReservations)
+  .post(protect, createReservation);
 router.route('/reservations/:id')
-  .get(protect, factory.getOne(Reservation))
-  .put(protect, factory.updateOne(Reservation))
-  .delete(protect, factory.deleteOne(Reservation));
+  .get(protect, getReservation)
+  .put(protect, updateReservation)
+  .delete(protect, deleteReservation);
 
 // InventoryItem (using custom controller for item_id reference)
 router.route('/inventory')

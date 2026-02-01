@@ -9,6 +9,7 @@ import { Card } from '../../components/ui/Card';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { cn } from '../../utils/cn';
+import { getSocket, joinCashierRoom } from '../../utils/socket';
 import type { Order, User } from '../../types';
 
 const OrderQueue: React.FC = () => {
@@ -23,6 +24,83 @@ const OrderQueue: React.FC = () => {
   useEffect(() => {
     fetchData();
   }, [user?.branch_id]);
+
+  // Set up socket connection once on mount
+  useEffect(() => {
+    // Join cashier room for real-time updates
+    console.log('Setting up socket connection for cashier...');
+    joinCashierRoom();
+    
+    const socket = getSocket();
+    console.log('Socket connected:', socket.connected);
+    
+    // Listen for connection events
+    socket.on('connect', () => {
+      console.log('Socket connected successfully');
+      joinCashierRoom(); // Re-join room after connection
+    });
+    
+    socket.on('disconnect', () => {
+      console.log('Socket disconnected');
+    });
+    
+    // Listen for new orders
+    socket.on('new-order', (newOrder: any) => {
+      console.log('Received new-order event:', newOrder);
+      // Normalize order data from socket (camelCase) to match Order interface (snake_case)
+      const normalizedOrder: Order & { items?: any[] } = {
+        id: newOrder.orderId || newOrder.id,
+        order_number: newOrder.orderNumber || newOrder.order_number,
+        customer_id: newOrder.customerId || newOrder.customer_id,
+        branch_id: newOrder.branchId || newOrder.branch_id,
+        table_id: newOrder.tableId || newOrder.table_id,
+        waiter_id: newOrder.waiterId || newOrder.waiter_id,
+        status: newOrder.status,
+        type: newOrder.type,
+        total_amount: newOrder.totalAmount || newOrder.total_amount,
+        discount_amount: newOrder.discountAmount || newOrder.discount_amount,
+        notes: newOrder.notes,
+        created_at: newOrder.createdAt || newOrder.created_at,
+        cancel_reason: newOrder.cancelReason || newOrder.cancel_reason,
+        client_request_id: newOrder.clientRequestId || newOrder.client_request_id,
+        // Normalize items array
+        items: newOrder.items?.map((item: any) => ({
+          id: item.itemId || item.id,
+          order_id: item.orderId || item.order_id,
+          menu_item_id: item.menuItemId || item.menu_item_id,
+          menu_item_name: item.menuItemName || item.menu_item_name,
+          variant_id: item.variantId || item.variant_id,
+          variant_name: item.variantName || item.variant_name,
+          quantity: item.quantity,
+          unit_price: item.unitPrice || item.unit_price,
+        })),
+      };
+      
+      // Use branch_id from either snake_case or camelCase
+      const bId = normalizedOrder.branch_id;
+      const userBId = typeof user?.branch_id === 'string' ? user?.branch_id : (user?.branch_id as any)?.id;
+      if (bId === userBId) {
+        showNotification(`New order #${normalizedOrder.order_number?.split('-').pop()} received!`, 'info');
+        // Add new order to the top of the list
+        setOrders(prev => [normalizedOrder as Order, ...prev]);
+      }
+    });
+    
+    // Listen for order status updates
+    socket.on('order-status-update', (data: any) => {
+      console.log('Received order-status-update event:', data);
+      setOrders(prev => prev.map(order => 
+        order.id === data.orderId ? { ...order, status: data.status as any } : order
+      ));
+    });
+    
+    return () => {
+      socket.off('connect');
+      socket.off('disconnect');
+      socket.off('new-order');
+      socket.off('order-status-update');
+    };
+  }, [user]); // Add user as dependency
 
   const fetchData = async () => {
     try {

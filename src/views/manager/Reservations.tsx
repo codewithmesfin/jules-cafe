@@ -9,6 +9,7 @@ import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
+import { getSocket, joinManagerRoom } from '../../utils/socket';
 import type { Reservation, User as UserType } from '../../types';
 
 const Reservations: React.FC = () => {
@@ -32,6 +33,36 @@ const Reservations: React.FC = () => {
 
   useEffect(() => {
     fetchData();
+    
+    // Join manager room for real-time updates
+    joinManagerRoom();
+    
+    const socket = getSocket();
+    
+    // Listen for new reservations
+    socket.on('new-reservation', (newRes: Reservation) => {
+      setReservations(prev => {
+        const branchId = typeof newRes.branch_id === 'string' ? newRes.branch_id : (newRes.branch_id as any)?.id;
+        const userBId = typeof user?.branch_id === 'string' ? user?.branch_id : (user?.branch_id as any)?.id;
+        if (branchId === userBId) {
+          showNotification(`New reservation received!`, 'info');
+          return [newRes, ...prev];
+        }
+        return prev;
+      });
+    });
+    
+    // Listen for reservation status updates
+    socket.on('reservation-status-update', (data: { reservationId: string; status: string }) => {
+      setReservations(prev => prev.map(res => 
+        res.id === data.reservationId ? { ...res, status: data.status } : res
+      ));
+    });
+    
+    return () => {
+      socket.off('new-reservation');
+      socket.off('reservation-status-update');
+    };
   }, [user?.branch_id]);
 
   const fetchData = async () => {

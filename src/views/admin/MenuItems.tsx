@@ -177,8 +177,8 @@ const MenuItems: React.FC = () => {
     setFormCategoryId(catId || '');
     setFormBasePrice(item.base_price);
     setFormImageUrl(item?.image_url);
-    setFormDescription(item.description);
-    setFormIsActive(item.is_active);
+    setFormDescription(item.description || '');
+    setFormIsActive(Boolean(item.is_active));
     setIsModalOpen(true);
   };
 
@@ -446,7 +446,7 @@ const MenuItems: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {recipes.find(r => r.menu_item_id === viewingRecipe.id)?.ingredients.map((ing, idx) => (
+                    {recipes.find(r => r.menu_item_id === viewingRecipe.id)?.ingredients?.map((ing, idx) => (
                       <tr key={idx}>
                         <td className="px-4 py-2">{ing.item_name}</td>
                         <td className="px-4 py-2 text-right">{ing.quantity} {ing.unit}</td>

@@ -53,6 +53,26 @@ export const updateOrder = catchAsync(async (req: AuthRequest, res: Response, ne
     await deductInventoryForOrder(order, userId);
   }
 
+  // Emit socket event for real-time order status update
+  const io = req.app.get('io');
+  if (io && statusChanged) {
+    // Notify customer about order status change
+    const customerId = typeof order.customer_id === 'string' ? order.customer_id : order.customer_id?.toString();
+    if (customerId) {
+      io.to(`customer-${customerId}`).emit('order-status-update', {
+        orderId: order.id,
+        orderNumber: order.order_number,
+        status: order.status,
+      });
+    }
+    // Notify cashier queue about status change
+    io.to('cashier-queue').emit('order-status-update', {
+      orderId: order.id,
+      orderNumber: order.order_number,
+      status: order.status,
+    });
+  }
+
   res.status(200).json(order);
 });
 
@@ -132,6 +152,24 @@ export const createOrder = catchAsync(async (req: AuthRequest, res: Response, ne
   } catch (emailError) {
     console.error('Failed to send email:', emailError);
     // Don't fail the order creation if email fails
+  }
+
+  // Emit socket event for real-time new order notification
+  const io = req.app.get('io');
+  if (io) {
+    console.log('Emitting new-order event to cashier-queue room');
+    // Notify all connected clients about new order
+    io.to('cashier-queue').emit('new-order', {
+      orderId: order.id,
+      orderNumber: order.order_number,
+      status: order.status,
+      totalAmount: order.total_amount,
+      type: order.type,
+      createdAt: order.created_at,
+    });
+    console.log('new-order event emitted successfully');
+  } else {
+    console.error('Socket.io instance not found on req.app');
   }
 
   res.status(201).json(order);

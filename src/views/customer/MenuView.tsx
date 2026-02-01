@@ -86,7 +86,9 @@ const MenuView: React.FC = () => {
     const matchesCategory = selectedCategory === 'all' || item.category_id === selectedCategory;
     const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.description.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
+    // Only show active items
+    const isActive = item.is_active;
+    return matchesCategory && matchesSearch && isActive;
   });
 
   const selectedBranch = branches.find(b => b.id === selectedBranchId);
@@ -173,7 +175,7 @@ const MenuView: React.FC = () => {
                 />
                 {!item.computed_available && (
                   <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                    <Badge variant="error" className="text-sm px-3 py-1">Sold Out</Badge>
+                    <Badge variant="error" className="text-sm px-3 py-1">Not available</Badge>
                   </div>
                 )}
               </div>

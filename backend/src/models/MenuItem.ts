@@ -12,6 +12,7 @@ export interface IMenuItem extends Document {
   base_price: number;
   image_url?: string;
   is_available: boolean;
+  is_active: boolean;
   is_featured: boolean;
   prep_time_minutes?: number;
   calories?: number;
@@ -29,6 +30,7 @@ const MenuItemSchema: Schema = new Schema({
   base_price: { type: Number, required: true },
   image_url: { type: String, default: '' },
   is_available: { type: Boolean, default: true },
+  is_active: { type: Boolean, default: true },
   is_featured: { type: Boolean, default: false },
   prep_time_minutes: { type: Number },
   calories: { type: Number },
