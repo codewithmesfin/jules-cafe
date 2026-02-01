@@ -1,11 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import Order from '../models/Order';
 import User from '../models/User';
-import Recipe from '../models/Recipe';
-import RecipeIngredient from '../models/RecipeIngredient';
-import InventoryItem from '../models/InventoryItem';
-import StockEntry from '../models/StockEntry';
 import * as factory from '../utils/controllerFactory';
+import { deductInventoryForOrder, revertInventoryForOrder } from '../utils/inventoryUtils';
 import { sendEmail } from '../utils/mailer';
 import { AuthRequest } from '../middleware/auth';
 import catchAsync from '../utils/catchAsync';
@@ -13,8 +10,76 @@ import AppError from '../utils/appError';
 
 export const getAllOrders = factory.getAll(Order);
 export const getOrder = factory.getOne(Order);
-export const updateOrder = factory.updateOne(Order);
-export const deleteOrder = factory.deleteOne(Order);
+export const updateOrder = catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
+  const existingOrder = await Order.findById(req.params.id);
+  if (!existingOrder) {
+    return next(new AppError('Order not found', 404));
+  }
+
+  // Branch security check
+  const filterRoles = ['manager', 'staff', 'cashier'];
+  if (req.user && filterRoles.includes(req.user.role) && existingOrder.branch_id) {
+    if (existingOrder.branch_id.toString() !== req.user.branch_id?.toString()) {
+      return next(new AppError('You do not have permission to update this order', 403));
+    }
+  }
+
+  const itemsChanged = req.body.items && JSON.stringify(req.body.items) !== JSON.stringify(existingOrder.items);
+  const statusChanged = req.body.status && req.body.status !== existingOrder.status;
+
+  // Handle inventory adjustments
+  if (itemsChanged && existingOrder.status !== 'cancelled') {
+    await revertInventoryForOrder(existingOrder, req.user?._id || req.user?.id || 'system');
+  } else if (statusChanged && req.body.status === 'cancelled' && existingOrder.status !== 'cancelled') {
+    await revertInventoryForOrder(existingOrder, req.user?._id || req.user?.id || 'system');
+  } else if (statusChanged && existingOrder.status === 'cancelled' && req.body.status !== 'cancelled') {
+    // Will be handled after update
+  }
+
+  const order = await Order.findByIdAndUpdate(req.params.id, req.body, {
+    new: true,
+    runValidators: true,
+  });
+
+  if (!order) {
+    return next(new AppError('Order not found after update', 404));
+  }
+
+  if (itemsChanged && order.status !== 'cancelled') {
+    await deductInventoryForOrder(order, req.user?._id || req.user?.id || 'system');
+  } else if (statusChanged && existingOrder.status === 'cancelled' && order.status !== 'cancelled') {
+    await deductInventoryForOrder(order, req.user?._id || req.user?.id || 'system');
+  }
+
+  res.status(200).json(order);
+});
+
+export const deleteOrder = catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
+  const order = await Order.findById(req.params.id);
+  if (!order) {
+    return next(new AppError('Order not found', 404));
+  }
+
+  // Branch security check
+  const filterRoles = ['manager', 'staff', 'cashier'];
+  if (req.user && filterRoles.includes(req.user.role) && order.branch_id) {
+    if (order.branch_id.toString() !== req.user.branch_id?.toString()) {
+      return next(new AppError('You do not have permission to delete this order', 403));
+    }
+  }
+
+  // Revert inventory if order was active
+  if (order.status !== 'cancelled' && order.status !== 'completed') {
+    try {
+      await revertInventoryForOrder(order, req.user?._id || req.user?.id || 'system');
+    } catch (err) {
+      console.error('Failed to revert inventory on deletion:', err);
+    }
+  }
+
+  await Order.findByIdAndDelete(req.params.id);
+  res.status(204).json(null);
+});
 
 export const createOrder = catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
   const data = { ...req.body };
@@ -32,46 +97,19 @@ export const createOrder = catchAsync(async (req: AuthRequest, res: Response, ne
     return next(new AppError('branch_id is required', 400));
   }
 
+  // Idempotency check
+  if (data.client_request_id) {
+    const existingOrder = await Order.findOne({ client_request_id: data.client_request_id });
+    if (existingOrder) {
+      return res.status(200).json(existingOrder);
+    }
+  }
+
   const order = await Order.create(data);
 
   // Deduct Inventory based on Recipes
   try {
-    for (const item of order.items) {
-      // Find the default recipe for this menu item
-      const recipe = await Recipe.findOne({ menu_item_id: item.menu_item_id, is_default: true, is_active: true });
-      if (recipe) {
-        const ingredients = await RecipeIngredient.find({ recipe_id: recipe._id });
-        for (const ingredient of ingredients) {
-          const deductionQuantity = (ingredient.quantity * item.quantity) / (recipe.yield_quantity || 1);
-
-          // Find the inventory item for this branch and ingredient
-          const inventoryItem = await InventoryItem.findOne({
-            branch_id: order.branch_id,
-            item_id: ingredient.item_id
-          });
-
-          if (inventoryItem) {
-            const previousQuantity = inventoryItem.current_quantity;
-            inventoryItem.current_quantity -= deductionQuantity;
-            await inventoryItem.save();
-
-            // Create stock entry for deduction
-            await StockEntry.create({
-              branch_id: order.branch_id,
-              item_id: ingredient.item_id,
-              entry_type: 'sale',
-              quantity: deductionQuantity,
-              previous_quantity: previousQuantity,
-              new_quantity: inventoryItem.current_quantity,
-              reference_type: 'Order',
-              reference_id: order._id,
-              performed_by: req.user?._id || req.user?.id || 'system',
-              notes: `Stock deducted for order ${order.order_number}`,
-            });
-          }
-        }
-      }
-    }
+    await deductInventoryForOrder(order, req.user?._id || req.user?.id || 'system');
   } catch (inventoryError) {
     console.error('Failed to deduct inventory:', inventoryError);
     // We continue even if inventory deduction fails to not block the order

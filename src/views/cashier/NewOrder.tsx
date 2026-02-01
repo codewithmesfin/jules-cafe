@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { ShoppingCart, Plus, Minus, Search, Grid, User, UserPlus } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { ShoppingCart, Plus, Minus, Search, Grid, User, UserPlus, ArrowLeft } from 'lucide-react';
 import { api } from '../../utils/api';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -16,6 +17,9 @@ interface CartItem extends MenuItem {
 const NewOrder: React.FC = () => {
   const { user } = useAuth();
   const { showNotification } = useNotification();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const orderId = searchParams.get('id');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -31,6 +35,8 @@ const NewOrder: React.FC = () => {
   const [users, setUsers] = useState<UserType[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
+  const [orderLoading, setOrderLoading] = useState(false);
+  const [clientRequestId, setClientRequestId] = useState(() => Math.random().toString(36).substring(2, 15));
 
   useEffect(() => {
     const fetchData = async () => {
@@ -56,7 +62,41 @@ const NewOrder: React.FC = () => {
       }
     };
     fetchData();
-  }, []);
+    if (orderId) {
+      fetchOrderDetails(orderId);
+    }
+  }, [orderId]);
+
+  const fetchOrderDetails = async (id: string) => {
+    try {
+      setOrderLoading(true);
+      const order = await api.orders.getOne(id);
+
+      setSelectedCustomer(typeof order.customer_id === 'string' ? order.customer_id : order.customer_id.id);
+      setSelectedTable(order.table_id ? (typeof order.table_id === 'string' ? order.table_id : order.table_id.id) : '');
+      setSelectedWaiter(order.waiter_id ? (typeof order.waiter_id === 'string' ? order.waiter_id : order.waiter_id.id) : '');
+
+      const cartItems: CartItem[] = order.items.map((item: any) => {
+        // We need to find the original menu item to get all details like image/description
+        // or we just use what we have in order items.
+        // For editing, having the ID and basic info is enough to render the cart.
+        return {
+          id: item.menu_item_id,
+          name: item.menu_item_name,
+          base_price: item.unit_price,
+          quantity: item.quantity,
+          description: '', // Fallback
+          image_url: '', // Fallback
+          category_id: '' // Fallback
+        } as CartItem;
+      });
+      setCart(cartItems);
+    } catch (error: any) {
+      showNotification(error.message || 'Failed to fetch order details', 'error');
+    } finally {
+      setOrderLoading(false);
+    }
+  };
 
   const filteredItems = menuItems.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -110,14 +150,24 @@ const NewOrder: React.FC = () => {
         }))
       };
 
-      await api.orders.create(orderData);
-      showNotification("Order placed successfully!");
-      setCart([]);
-      setSelectedCustomer('');
-      setSelectedTable('');
-      setSelectedWaiter('');
+      if (orderId) {
+        await api.orders.update(orderId, orderData);
+        showNotification("Order updated successfully!");
+        router.push('/cashier/queue');
+      } else {
+        await api.orders.create({
+          ...orderData,
+          client_request_id: clientRequestId
+        });
+        showNotification("Order placed successfully!");
+        setCart([]);
+        setSelectedCustomer('');
+        setSelectedTable('');
+        setSelectedWaiter('');
+        setClientRequestId(Math.random().toString(36).substring(2, 15));
+      }
     } catch (error: any) {
-      showNotification(error.message || "Failed to place order", "error");
+      showNotification(error.message || `Failed to ${orderId ? 'update' : 'place'} order`, "error");
     }
   };
 
@@ -134,6 +184,8 @@ const NewOrder: React.FC = () => {
       </div>
     );
   }
+
+  if (orderLoading) return <div className="text-center py-20">Loading order details...</div>;
 
   return (
     <div className="flex flex-col lg:flex-row h-full lg:h-[calc(100vh-120px)] gap-6 overflow-auto lg:overflow-hidden">
@@ -188,9 +240,16 @@ const NewOrder: React.FC = () => {
 
       {/* Cart & Checkout */}
       <Card className="w-full lg:w-96 flex flex-col p-0 overflow-hidden shrink-0">
-        <div className="p-4 border-b bg-gray-50 flex items-center gap-2">
-          <ShoppingCart size={20} className="text-orange-600" />
-          <h3 className="font-bold text-gray-900">Current Order</h3>
+        <div className="p-4 border-b bg-gray-50 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <ShoppingCart size={20} className="text-orange-600" />
+            <h3 className="font-bold text-gray-900">{orderId ? 'Edit Order' : 'Current Order'}</h3>
+          </div>
+          {orderId && (
+            <Button variant="ghost" size="sm" onClick={() => router.push('/cashier/queue')} className="text-gray-500">
+              <ArrowLeft size={16} className="mr-1" /> Back
+            </Button>
+          )}
         </div>
 
         <div className="p-4 border-b space-y-4">
@@ -296,7 +355,7 @@ const NewOrder: React.FC = () => {
             disabled={cart.length === 0 || !selectedCustomer}
             onClick={handlePlaceOrder}
           >
-            Place Order
+            {orderId ? 'Update Order' : 'Place Order'}
           </Button>
         </div>
       </Card>

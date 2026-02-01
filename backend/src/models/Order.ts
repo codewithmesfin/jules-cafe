@@ -21,6 +21,7 @@ export interface IOrder extends Document {
   discount_amount?: number;
   cancel_reason?: string;
   items: IOrderItem[];
+  client_request_id?: string;
   created_by?: mongoose.Types.ObjectId;
   created_at: Date;
   updated_at: Date;
@@ -55,6 +56,7 @@ const OrderSchema: Schema = new Schema({
   discount_amount: { type: Number, default: 0 },
   cancel_reason: { type: String },
   items: [OrderItemSchema],
+  client_request_id: { type: String, unique: true, sparse: true },
   created_by: { type: Schema.Types.ObjectId, ref: 'User' },
 }, { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } });
 
