@@ -102,7 +102,7 @@ const Reservations: React.FC = () => {
                   onChange={(e) => setFormData({ ...formData, branch_id: e.target.value })}
                 >
                   {branches.map(b => (
-                    <option key={b.id} value={b.id}>{b.name} - {b.location}</option>
+                    <option key={b.id} value={b.id}>{b.branch_name} - {b.location_address}</option>
                   ))}
                 </select>
               </div>

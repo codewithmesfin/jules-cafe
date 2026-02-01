@@ -35,7 +35,7 @@ const Dashboard: React.FC = () => {
         setReservations(resData);
         // We still need to filter for 'staff' role specifically,
         // though backend likely only returned users for this branch anyway.
-        setStaff(userData.filter(u => u.role === 'staff'));
+        setStaff(userData.filter((u: any) => u.role === 'staff'));
         setInventory(invData);
       } catch (error: any) {
         console.error('Failed to fetch manager dashboard data:', error);

@@ -1,7 +1,6 @@
 import type {
   MenuCategory,
   MenuItem,
-  MenuVariant,
   Branch,
   Table,
   BranchMenuItem,
@@ -17,19 +16,23 @@ import type {
 export const MOCK_BRANCHES: Branch[] = [
   {
     id: 'b1',
-    name: 'Downtown Branch',
-    location: '123 Main St, Downtown',
+    branch_name: 'Downtown Branch',
+    location_address: '123 Main St, Downtown',
     is_active: true,
-    operating_hours: { open: '08:00', close: '22:00' },
-    capacity: 50
+    opening_time: '08:00',
+    closing_time: '22:00',
+    capacity: 50,
+    company: 'c1'
   },
   {
     id: 'b2',
-    name: 'Westside Branch',
-    location: '456 West Ave, Westside',
+    branch_name: 'Westside Branch',
+    location_address: '456 West Ave, Westside',
     is_active: true,
-    operating_hours: { open: '10:00', close: '23:00' },
-    capacity: 30
+    opening_time: '10:00',
+    closing_time: '23:00',
+    capacity: 30,
+    company: 'c1'
   },
 ];
 
@@ -51,11 +54,6 @@ export const MOCK_MENU_ITEMS: MenuItem[] = [
   { id: 'm2', category_id: 'c1', name: 'Calamari', description: 'Crispy fried squid with lemon aioli', base_price: 12.50, image_url: 'https://images.unsplash.com/photo-1599487488170-d11ec9c172f0?auto=format&fit=crop&q=80&w=400', is_active: true, created_at: new Date().toISOString() },
   { id: 'm3', category_id: 'c2', name: 'Grilled Salmon', description: 'Atlantic salmon with roasted vegetables', base_price: 24.00, image_url: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&q=80&w=400', is_active: true, created_at: new Date().toISOString() },
   { id: 'm4', category_id: 'c2', name: 'Beef Burger', description: 'Juicy beef patty with cheese, lettuce, and tomato', base_price: 16.99, image_url: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&q=80&w=400', is_active: true, created_at: new Date().toISOString() },
-];
-
-export const MOCK_MENU_VARIANTS: MenuVariant[] = [
-  { id: 'v1', menu_item_id: 'm4', name: 'Double Patty', price_override: 21.99 },
-  { id: 'v2', menu_item_id: 'm4', name: 'With Bacon', price_override: 18.50 },
 ];
 
 export const MOCK_BRANCH_MENU_ITEMS: BranchMenuItem[] = [

@@ -108,7 +108,7 @@ const Cart: React.FC = () => {
             <Card key={item.id} className="p-0">
               <div className="flex flex-col sm:flex-row p-4 gap-4">
                 <img
-                  src={item.image_url || null}
+                  src={item.image_url || undefined}
                   alt={item.name}
                   className="w-full sm:w-32 h-32 object-cover rounded-lg"
                 />

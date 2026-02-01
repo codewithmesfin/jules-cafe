@@ -134,7 +134,7 @@ const MenuView: React.FC = () => {
             <div key={item.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden group hover:shadow-md transition-shadow">
               <div className="relative h-48 overflow-hidden">
                 <img
-                  src={item.image_url || null}
+                  src={item.image_url || undefined}
                   alt={item.name}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
