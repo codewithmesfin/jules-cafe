@@ -101,7 +101,7 @@ const Dashboard: React.FC = () => {
                 <div key={branch.name} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                   <div>
                     <p className="font-bold text-sm">{branch.name}</p>
-                    <p className="text-xs text-gray-500">${branch.sales.toLocaleString()}</p>
+                    <p className="text-xs text-gray-500">${branch?.sales?.toLocaleString()}</p>
                   </div>
                   <Badge variant="success" className="text-[10px]">{branch.count} orders</Badge>
                 </div>

@@ -31,13 +31,11 @@ const Reviews: React.FC = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [revData, userData, brData] = await Promise.all([
-        api.reviews.getAll(),
-        api.users.getAll(),
+      const [revData, brData] = await Promise.all([
+        api.reviews.getAll('populate=customer_id'),
         api.branches.getAll(),
       ]);
       setReviews(revData.filter((r: Review) => r.is_approved));
-      setUsers(userData);
       setBranches(brData);
       if (brData.length > 0) setSelectedBranchId(brData[0].id);
     } catch (error) {
@@ -164,8 +162,7 @@ const Reviews: React.FC = () => {
             <div className="text-center py-10">Loading reviews...</div>
           ) : reviews.length > 0 ? (
             reviews.map((review) => {
-              const customerId = typeof review.customer_id === 'string' ? review.customer_id : (review.customer_id as any)?.id;
-              const customer = users.find(u => u.id === customerId);
+              const customer = typeof review.customer_id === 'object' ? (review.customer_id as any) : null;
               return (
                 <Card key={review.id}>
                   <div className="flex items-start justify-between mb-4">

@@ -83,8 +83,8 @@ const MenuItems: React.FC = () => {
     if (selectedItem) {
       setFormName(selectedItem.item_name);
       setFormBasePrice(selectedItem.default_price || 0);
-      if (selectedItem.image_url) {
-        setFormImageUrl(selectedItem.image_url);
+      if (selectedItem?.image_url) {
+        setFormImageUrl(selectedItem?.image_url);
       }
       if (selectedItem.description) {
         setFormDescription(selectedItem.description);
@@ -176,7 +176,7 @@ const MenuItems: React.FC = () => {
     const catId = typeof item.category_id === 'string' ? item.category_id : (item.category_id as any)?.id;
     setFormCategoryId(catId || '');
     setFormBasePrice(item.base_price);
-    setFormImageUrl(item.image_url);
+    setFormImageUrl(item?.image_url);
     setFormDescription(item.description);
     setFormIsActive(item.is_active);
     setIsModalOpen(true);
@@ -221,7 +221,7 @@ const MenuItems: React.FC = () => {
               header: 'Item',
               accessor: (item) => (
                 <div className="flex items-center gap-3">
-                  <img src={item.image_url} alt={item.name} className="w-10 h-10 rounded-lg object-cover" />
+                  <img src={item?.image_url} alt={item.name} className="w-10 h-10 rounded-lg object-cover" />
                   <span className="font-bold text-gray-900">{item.name}</span>
                 </div>
               )
