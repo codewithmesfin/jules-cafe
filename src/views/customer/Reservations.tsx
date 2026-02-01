@@ -35,13 +35,17 @@ const Reservations: React.FC = () => {
     try {
       setLoading(true);
       const [resData, brData] = await Promise.all([
-        api.reservations.getAll(),
+        user ? api.reservations.getAll() : Promise.resolve([]),
         api.branches.getAll(),
       ]);
-      setReservations(resData.filter((r: Reservation) => {
-        const customerId = typeof r.customer_id === 'string' ? r.customer_id : (r.customer_id as any)?.id;
-        return customerId === user?.id;
-      }));
+      if (user) {
+        setReservations(resData.filter((r: Reservation) => {
+          const customerId = typeof r.customer_id === 'string' ? r.customer_id : (r.customer_id as any)?.id;
+          return customerId === user?.id;
+        }));
+      } else {
+        setReservations([]);
+      }
       setBranches(brData);
       if (brData.length > 0) setFormData(prev => ({ ...prev, branch_id: brData[0].id }));
     } catch (error) {

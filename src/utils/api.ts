@@ -1,4 +1,4 @@
-export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 const fetcher = async (url: string, options?: RequestInit) => {
   const jwt = typeof window !== 'undefined' ? localStorage.getItem('jwt') : null;
@@ -90,14 +90,14 @@ export const api = {
     delete: (id: string) => fetcher(`/api/orders/${id}`, { method: 'DELETE' }),
   },
   reservations: {
-    getAll: () => fetcher('/api/reservations'),
+    getAll: (params?: string) => fetcher(`/api/reservations${params ? `?${params}` : ''}`),
     getOne: (id: string) => fetcher(`/api/reservations/${id}`),
     create: (data: any) => fetcher('/api/reservations', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: string, data: any) => fetcher(`/api/reservations/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id: string) => fetcher(`/api/reservations/${id}`, { method: 'DELETE' }),
   },
   reviews: {
-    getAll: () => fetcher('/api/reviews'),
+    getAll: (params?: string) => fetcher(`/api/reviews${params ? `?${params}` : ''}`),
     getOne: (id: string) => fetcher(`/api/reviews/${id}`),
     create: (data: any) => fetcher('/api/reviews', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: string, data: any) => fetcher(`/api/reviews/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
