@@ -221,7 +221,7 @@ const MenuItems: React.FC = () => {
               header: 'Item',
               accessor: (item) => (
                 <div className="flex items-center gap-3">
-                  <img src={item?.image_url} alt={item.name} className="w-10 h-10 rounded-lg object-cover" />
+                  <img src={item.image_url || null} alt={item.name} className="w-10 h-10 rounded-lg object-cover" />
                   <span className="font-bold text-gray-900">{item.name}</span>
                 </div>
               )

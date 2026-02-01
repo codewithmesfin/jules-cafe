@@ -240,7 +240,7 @@ const NewOrder: React.FC = () => {
                 onClick={() => addToCart(item)}
               >
                 {item.image_url ? (
-                  <img src={item.image_url} alt={item.name} className="w-full h-32 object-cover rounded-lg mb-3" />
+                  <img src={item.image_url || null} alt={item.name} className="w-full h-32 object-cover rounded-lg mb-3" />
                 ) : (
                   <div className="w-full h-32 bg-gray-100 rounded-lg mb-3 flex items-center justify-center text-gray-400">
                     <Grid size={32} />

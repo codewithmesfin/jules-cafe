@@ -7,7 +7,7 @@ const Home: React.FC = () => {
   return (
     <div className="flex flex-col">
       {/* Hero Section - Starbucks Inspired */}
-      <section className="bg-orange-600 text-white min-h-[600px] flex flex-col md:flex-row items-center overflow-hidden">
+      <section className="bg-[#4a3520] text-white min-h-[600px] flex flex-col md:flex-row items-center overflow-hidden">
         <div className="flex-1 p-12 md:p-24 flex flex-col justify-center items-start text-left">
           <h1 className="text-5xl md:text-7xl font-black mb-6 leading-tight">
             SIP, SAVOR, <br />SMILE.
@@ -92,7 +92,7 @@ const Home: React.FC = () => {
             ].map((item, i) => (
               <div key={i} className="group cursor-pointer">
                 <div className="relative overflow-hidden rounded-2xl aspect-square mb-6 shadow-lg transition-transform hover:scale-[1.02]">
-                  <img src={item.img} alt={item.name} className="w-full h-full object-cover transition-transform group-hover:scale-110 duration-500" />
+                  <img src={item.img || null} alt={item.name} className="w-full h-full object-cover transition-transform group-hover:scale-110 duration-500" />
                   <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors"></div>
                 </div>
                 <div className="flex justify-between items-center">
