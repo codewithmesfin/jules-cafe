@@ -129,7 +129,7 @@ const MenuAvailability: React.FC = () => {
                 </div>
               )
             },
-            { header: 'Base Price', accessor: (item) => `$${item.base_price.toFixed(2)}` },
+            { header: 'Base Price', accessor: (item) => `ETB ${item.base_price.toFixed(2)}` },
             {
               header: 'Status',
               accessor: (item) => (

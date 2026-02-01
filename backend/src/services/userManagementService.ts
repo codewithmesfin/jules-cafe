@@ -59,6 +59,10 @@ class UserManagementService {
       throw new Error('Email already registered');
     }
 
+    // Get creator's company to inherit
+    const creator = await User.findById(created_by);
+    const creatorCompany = creator?.company || undefined;
+
     // Hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
@@ -71,6 +75,7 @@ class UserManagementService {
       phone,
       role,
       branch_id: branch_id || undefined,
+      company: creatorCompany,
       created_by,
       status: status || 'pending',
       

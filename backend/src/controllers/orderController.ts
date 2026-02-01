@@ -128,6 +128,35 @@ export const createOrder = catchAsync(async (req: AuthRequest, res: Response, ne
     }
   }
 
+  // Fetch customer to check for discount
+  let discountAmount = 0;
+  let discountRate = 0;
+  if (data.customer_id) {
+    const customer = await User.findById(data.customer_id);
+    if (customer && customer.discount_rate && customer.discount_rate > 0) {
+      // Calculate discount based on the subtotal in items
+      const subtotal = data.items?.reduce((sum: number, item: any) => 
+        sum + (item.unit_price * item.quantity), 0) || 0;
+      
+      discountRate = customer.discount_rate;
+      discountAmount = subtotal * (discountRate / 100);
+      
+      // Set discount on the order data
+      data.discount_amount = discountAmount;
+      data.total_amount = subtotal - discountAmount;
+    } else {
+      // Calculate total without discount
+      const subtotal = data.items?.reduce((sum: number, item: any) => 
+        sum + (item.unit_price * item.quantity), 0) || 0;
+      data.total_amount = subtotal;
+    }
+  } else {
+    // Calculate total without discount if no customer
+    const subtotal = data.items?.reduce((sum: number, item: any) => 
+      sum + (item.unit_price * item.quantity), 0) || 0;
+    data.total_amount = subtotal;
+  }
+
   const order = await Order.create(data);
 
   // Deduct Inventory based on Recipes

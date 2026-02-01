@@ -104,16 +104,14 @@ export const updateUser = catchAsync(async (req: AuthRequest, res: Response, nex
   }
 
   // Role based security for update
-  if (req.user.role === 'manager') {
-    // Managers can only update users in their own branch
-    if (userToUpdate.branch_id?.toString() !== req.user.branch_id?.toString() && userToUpdate.role !== 'customer') {
-       // Allow updating customers even if branch_id doesn't match?
-       // Actually, customers are usually global or branch-specific.
-       // In this system they seem branch-independent unless created by a manager.
-       // For now, let's say managers can only update their branch staff or customers.
-       if (userToUpdate.role !== 'customer') {
-         return next(new AppError('You can only update users in your own branch', 403));
-       }
+  if (req.user.role === 'admin') {
+    // Admins can update any user without restrictions
+  } else if (req.user.role === 'manager') {
+    // Managers can only update users in their own branch (except customers)
+    const canUpdate = userToUpdate.role === 'customer' || 
+                      userToUpdate.branch_id?.toString() === req.user.branch_id?.toString();
+    if (!canUpdate) {
+      return next(new AppError('You can only update users in your own branch', 403));
     }
 
     // Managers cannot upgrade roles to manager or admin

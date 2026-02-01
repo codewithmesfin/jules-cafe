@@ -8,10 +8,13 @@ import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
 import { ConfirmationDialog } from '../../components/ui/ConfirmationDialog';
 import { useNotification } from '../../context/NotificationContext';
+import { useAuth } from '../../context/AuthContext';
 import type { User, UserRole, UserStatus } from '../../types';
 
 const Users: React.FC = () => {
+  const { user: currentUser } = useAuth();
   const { showNotification } = useNotification();
+  const isAdmin = currentUser?.role === 'admin';
   const [users, setUsers] = useState<User[]>([]);
   const [branches, setBranches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -160,6 +163,8 @@ const Users: React.FC = () => {
             <option value="all">All Status</option>
             <option value="active">Active</option>
             <option value="inactive">Inactive</option>
+            <option value="pending">Pending</option>
+            <option value="suspended">Suspended</option>
           </select>
         </div>
         <Button className="gap-2" onClick={() => {
@@ -318,17 +323,28 @@ const Users: React.FC = () => {
 
           {['manager', 'cashier', 'staff'].includes(formRole) && (
             <div className="w-full">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Assign Branch</label>
-              <select
-                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-                value={formBranchId}
-                onChange={(e) => setFormBranchId(e.target.value)}
-              >
-                <option value="">Select a Branch</option>
-                {branches.map(b => (
-                  <option key={b.id} value={b.id}>{b.name}</option>
-                ))}
-              </select>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Assign Branch {isAdmin ? '' : '(Read-only)'}
+              </label>
+              {isAdmin ? (
+                <select
+                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  value={formBranchId}
+                  onChange={(e) => setFormBranchId(e.target.value)}
+                >
+                  <option value="">Select a Branch</option>
+                  {branches.map(b => (
+                    <option key={b.id} value={b.id}>{b.name}</option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  type="text"
+                  className="w-full rounded-md border border-gray-300 bg-gray-100 px-3 py-2 text-sm"
+                  value={branches.find(b => b.id === formBranchId)?.name || formBranchId || 'Not assigned'}
+                  readOnly
+                />
+              )}
             </div>
           )}
 
@@ -371,6 +387,8 @@ const Users: React.FC = () => {
               >
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
+                <option value="pending">Pending</option>
+                <option value="suspended">Suspended</option>
               </select>
             </div>
           )}

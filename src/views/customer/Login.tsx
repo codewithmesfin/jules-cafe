@@ -31,6 +31,13 @@ const Login: React.FC = () => {
         return;
       }
 
+      // Check if user is active (except for customers)
+      const inactiveStatuses = ['inactive', 'pending', 'suspended'];
+      if (user.role !== 'customer' && inactiveStatuses.includes(user.status)) {
+        router.push('/inactive');
+        return;
+      }
+
       if (user.role === 'admin') router.push('/admin');
       else if (user.role === 'manager') router.push('/manager');
       else if (user.role === 'cashier') router.push('/cashier');

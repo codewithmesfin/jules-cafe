@@ -14,7 +14,7 @@ const generateToken = (id: string) => {
 };
 
 export const register = catchAsync(async (req: any, res: Response, next: NextFunction) => {
-  const { email, password, role, branch_id, company, full_name, phone } = req.body;
+  const { email, password, role, branch_id, full_name, phone } = req.body;
 
   const userExists = await User.findOne({ email });
   if (userExists) {
@@ -31,7 +31,6 @@ export const register = catchAsync(async (req: any, res: Response, next: NextFun
     password: hashedPassword,
     role: 'customer',
     branch_id,
-    company,
     full_name,
     phone,
     passwordResetRequired: false,
@@ -43,6 +42,7 @@ export const register = catchAsync(async (req: any, res: Response, next: NextFun
       id: user._id,
       email: user.email,
       role: user.role,
+      status: user.status,
       branch_id: user.branch_id,
       company: user.company,
       full_name: user.full_name,
@@ -67,6 +67,7 @@ export const login = catchAsync(async (req: Request, res: Response, next: NextFu
       id: user._id,
       email: user.email,
       role: user.role,
+      status: user.status,
       branch_id: user.branch_id,
       company: user.company,
       full_name: user.full_name,

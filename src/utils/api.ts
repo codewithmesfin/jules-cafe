@@ -16,6 +16,14 @@ const fetcher = async (url: string, options?: RequestInit) => {
     },
   });
 
+  // Handle inactive user status (423) - redirect to inactive page
+  if (response.status === 423) {
+    if (typeof window !== 'undefined') {
+      window.location.href = '/inactive';
+    }
+    throw new Error('Account inactive. Please contact Administrator.');
+  }
+
   if (!response.ok) {
     let errorMessage = 'Something went wrong';
     try {

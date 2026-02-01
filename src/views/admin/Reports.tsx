@@ -195,9 +195,9 @@ const Reports: React.FC = () => {
       {/* Top Level KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
-          { label: 'Total Revenue', value: `$${totalRevenue.toLocaleString()}`, icon: DollarSign, color: 'text-orange-600', bg: 'bg-orange-50' },
+          { label: 'Total Revenue', value: `ETB ${totalRevenue.toLocaleString()}`, icon: DollarSign, color: 'text-orange-600', bg: 'bg-orange-50' },
           { label: 'Order Volume', value: totalOrders.toLocaleString(), icon: ShoppingBag, color: 'text-blue-600', bg: 'bg-blue-50' },
-          { label: 'Avg Order Value', value: `$${avgOrderValue.toFixed(2)}`, icon: TrendingUp, color: 'text-green-600', bg: 'bg-green-50' },
+          { label: 'Avg Order Value', value: `ETB ${avgOrderValue.toFixed(2)}`, icon: TrendingUp, color: 'text-green-600', bg: 'bg-green-50' },
           { label: 'Active Items', value: productData.length, icon: Package, color: 'text-purple-600', bg: 'bg-purple-50' },
         ].map((stat, i) => (
           <Card key={i} className="border-none shadow-sm bg-white p-6 rounded-3xl flex items-center gap-5">
@@ -249,7 +249,7 @@ const Reports: React.FC = () => {
                   strokeWidth={4}
                   fillOpacity={1}
                   fill="url(#colorRev)"
-                  name="Revenue ($)"
+                  name="Revenue (ETB)"
                 />
               </AreaChart>
             </ResponsiveContainer>
@@ -279,7 +279,7 @@ const Reports: React.FC = () => {
                   fill="#ea580c"
                   radius={[0, 10, 10, 0]}
                   barSize={24}
-                  name="Total Revenue ($)"
+                  name="Total Revenue (ETB)"
                 >
                   {branchData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -319,7 +319,7 @@ const Reports: React.FC = () => {
                       <span className="font-bold text-gray-600">{item.total_sold} units</span>
                     </td>
                     <td className="px-8 py-5">
-                      <span className="font-black text-orange-600">${item.total_revenue.toFixed(2)}</span>
+                      <span className="font-black text-orange-600">ETB {item.total_revenue.toFixed(2)}</span>
                     </td>
                     <td className="px-8 py-5 text-right">
                        <div className="w-24 h-1.5 bg-gray-100 rounded-full inline-block overflow-hidden">

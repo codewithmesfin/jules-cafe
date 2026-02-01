@@ -178,7 +178,7 @@ const Orders: React.FC = () => {
               }
             },
             { header: 'Date', accessor: (order) => new Date(order.created_at).toLocaleString() },
-            { header: 'Total', accessor: (order) => `$${order.total_amount.toFixed(2)}` },
+            { header: 'Total', accessor: (order) => `ETB ${order.total_amount.toFixed(2)}` },
             {
               header: 'Status',
               accessor: (order) => (
@@ -245,7 +245,7 @@ const Orders: React.FC = () => {
               <div key={item.id} className="flex items-center justify-between p-2 border rounded-lg mb-2">
                 <div className="flex flex-col">
                   <span className="text-sm font-medium">{item.name}</span>
-                  <span className="text-xs text-gray-500">${item.base_price.toFixed(2)}</span>
+                  <span className="text-xs text-gray-500">ETB {item.base_price.toFixed(2)}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <input
@@ -314,7 +314,7 @@ const Orders: React.FC = () => {
                         <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
                       </div>
                     </div>
-                    <span className="text-sm font-bold">${(item.unit_price * item.quantity).toFixed(2)}</span>
+                    <span className="text-sm font-bold">ETB {(item.unit_price * item.quantity).toFixed(2)}</span>
                   </div>
                 ))}
               </div>
@@ -325,17 +325,17 @@ const Orders: React.FC = () => {
             <div className="space-y-2 text-sm">
               <div className="flex justify-between text-gray-500">
                 <span>Subtotal</span>
-                <span>${(selectedOrder.total_amount + (selectedOrder.discount_amount || 0)).toFixed(2)}</span>
+                <span>ETB {(selectedOrder.total_amount + (selectedOrder.discount_amount || 0)).toFixed(2)}</span>
               </div>
               {selectedOrder.discount_amount && (
                 <div className="flex justify-between text-green-600">
                   <span>Discount</span>
-                  <span>-${selectedOrder.discount_amount.toFixed(2)}</span>
+                  <span>-ETB {selectedOrder.discount_amount.toFixed(2)}</span>
                 </div>
               )}
               <div className="flex justify-between text-base font-bold text-gray-900 pt-2 border-t mt-2">
                 <span>Total</span>
-                <span>${selectedOrder.total_amount.toFixed(2)}</span>
+                <span>ETB {selectedOrder.total_amount.toFixed(2)}</span>
               </div>
             </div>
 

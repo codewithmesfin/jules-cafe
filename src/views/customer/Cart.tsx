@@ -144,7 +144,7 @@ const Cart: React.FC = () => {
                         <Plus size={16} />
                       </button>
                     </div>
-                    <span className="font-bold text-lg">${(item.base_price * item.quantity).toFixed(2)}</span>
+                    <span className="font-bold text-lg">ETB {(item.base_price * item.quantity).toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -185,26 +185,26 @@ const Cart: React.FC = () => {
             <div className="space-y-4">
               <div className="flex justify-between text-gray-600">
                 <span>Subtotal</span>
-                <span>${totalAmount.toFixed(2)}</span>
+                <span>ETB {totalAmount.toFixed(2)}</span>
               </div>
               {discountRate > 0 && (
                 <div className="flex justify-between text-green-600 font-medium">
                   <span>Discount ({user?.customer_type?.toUpperCase()} {discountRate}%)</span>
-                  <span>-${discountAmount.toFixed(2)}</span>
+                  <span>-ETB {discountAmount.toFixed(2)}</span>
                 </div>
               )}
               <div className="flex justify-between text-gray-600">
                 <span>Service Fee (5%)</span>
-                <span>${serviceFee.toFixed(2)}</span>
+                <span>ETB {serviceFee.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-gray-600">
                 <span>Tax (8%)</span>
-                <span>${tax.toFixed(2)}</span>
+                <span>ETB {tax.toFixed(2)}</span>
               </div>
               <hr className="border-gray-100" />
               <div className="flex justify-between text-xl font-bold text-gray-900">
                 <span>Total</span>
-                <span className="text-orange-600">${finalTotal.toFixed(2)}</span>
+                <span className="text-orange-600">ETB {finalTotal.toFixed(2)}</span>
               </div>
               <Button
                 className="w-full"

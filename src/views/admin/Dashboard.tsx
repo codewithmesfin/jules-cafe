@@ -32,7 +32,7 @@ const Dashboard: React.FC = () => {
   }, []);
 
   const statCards = [
-    { label: 'Total Revenue', value: stats ? `$${stats.revenuePerDay?.reduce((acc: any, curr: any) => acc + curr.total, 0).toLocaleString()}` : '$0', icon: DollarSign, trend: '+15.2%', trendType: 'up' },
+    { label: 'Total Revenue', value: stats ? `ETB ${stats.revenuePerDay?.reduce((acc: any, curr: any) => acc + curr.total, 0).toLocaleString()}` : 'ETB 0', icon: DollarSign, trend: '+15.2%', trendType: 'up' },
     { label: 'Total Orders', value: stats?.totalOrders || '0', icon: ShoppingBag, trend: '+12.5%', trendType: 'up' },
     { label: 'Total Customers', value: stats?.totalCustomers || '0', icon: Users, trend: '+5.2%', trendType: 'up' },
     { label: 'Avg Rating', value: stats?.avgRating?.toFixed(1) || '0.0', icon: Activity, trend: '+2.4%', trendType: 'up' },
@@ -82,7 +82,7 @@ const Dashboard: React.FC = () => {
                         style={{ height: `${height}%` }}
                       />
                       <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                        ${day.total.toLocaleString()}
+                        ETB {day.total.toLocaleString()}
                       </div>
                     </div>
                     <span className="text-[10px] text-gray-400">{day._id.split('-').slice(1).join('/')}</span>
@@ -101,7 +101,7 @@ const Dashboard: React.FC = () => {
                 <div key={branch.name} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                   <div>
                     <p className="font-bold text-sm">{branch.name}</p>
-                    <p className="text-xs text-gray-500">${branch?.sales?.toLocaleString()}</p>
+                    <p className="text-xs text-gray-500">ETB {branch?.sales?.toLocaleString()}</p>
                   </div>
                   <Badge variant="success" className="text-[10px]">{branch.count} orders</Badge>
                 </div>
@@ -118,7 +118,7 @@ const Dashboard: React.FC = () => {
               columns={[
                 { header: 'Order ID', accessor: 'order_number' },
                 { header: 'Date', accessor: (item) => new Date(item.created_at).toLocaleDateString() },
-                { header: 'Amount', accessor: (item) => `$${item.total_amount.toFixed(2)}` },
+                { header: 'Amount', accessor: (item) => `ETB ${item.total_amount.toFixed(2)}` },
                 {
                   header: 'Status',
                   accessor: (item) => (

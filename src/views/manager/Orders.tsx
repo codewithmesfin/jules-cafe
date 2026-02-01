@@ -109,7 +109,7 @@ const Orders: React.FC = () => {
                 return users.find(u => u.id === customerId)?.full_name || 'Walk-in';
               }
             },
-            { header: 'Amount', accessor: (order) => `$${order.total_amount.toFixed(2)}` },
+            { header: 'Amount', accessor: (order) => `ETB ${order.total_amount.toFixed(2)}` },
             {
               header: 'Status',
               accessor: (order) => (
@@ -179,7 +179,7 @@ const Orders: React.FC = () => {
                 {selectedOrder.items?.map((item: any) => (
                   <div key={item.id} className="flex justify-between text-sm">
                     <span>{item.menu_item_name} x {item.quantity}</span>
-                    <span className="font-medium">${(item.unit_price * item.quantity).toFixed(2)}</span>
+                    <span className="font-medium">ETB {(item.unit_price * item.quantity).toFixed(2)}</span>
                   </div>
                 ))}
               </div>
@@ -192,17 +192,17 @@ const Orders: React.FC = () => {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm text-gray-600">
                   <span>Subtotal</span>
-                  <span>${(selectedOrder.total_amount + (selectedOrder.discount_amount || 0)).toFixed(2)}</span>
+                  <span>ETB {(selectedOrder.total_amount + (selectedOrder.discount_amount || 0)).toFixed(2)}</span>
                 </div>
                 {selectedOrder.discount_amount > 0 && (
                   <div className="flex justify-between text-sm text-green-600">
                     <span>Discount</span>
-                    <span>-${selectedOrder.discount_amount.toFixed(2)}</span>
+                    <span>-ETB {selectedOrder.discount_amount.toFixed(2)}</span>
                   </div>
                 )}
                 <div className="flex justify-between font-bold text-lg pt-2 border-t">
                   <span>Total</span>
-                  <span>${selectedOrder.total_amount.toFixed(2)}</span>
+                  <span>ETB {selectedOrder.total_amount.toFixed(2)}</span>
                 </div>
               </div>
             </div>

@@ -11,6 +11,7 @@ import type { Branch } from '../../types';
 
 const BranchProfile: React.FC = () => {
   const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const { showNotification } = useNotification();
   const [branch, setBranch] = useState<Branch | null>(null);
   const [loading, setLoading] = useState(true);
@@ -109,6 +110,8 @@ const BranchProfile: React.FC = () => {
                 label="Branch Name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                disabled={!isAdmin}
+                className={!isAdmin ? 'bg-gray-50' : ''}
               />
             </div>
             <div className="md:col-span-2">

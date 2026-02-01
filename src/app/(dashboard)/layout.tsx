@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useLayoutEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard,
   Menu as MenuIcon,
@@ -10,7 +10,6 @@ import {
   Users,
   ShoppingBag,
   Calendar,
-  Star,
   LogOut,
   ChevronLeft,
   ChevronRight,
@@ -39,7 +38,115 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
-  const { user, logout } = useAuth();
+  const router = useRouter();
+  const { user, logout, loading } = useAuth();
+  const [storedUser, setStoredUser] = useState<any>(null);
+  const [checkedStorage, setCheckedStorage] = useState(false);
+
+  // Check localStorage only on client side after mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const savedUser = localStorage.getItem('user');
+        if (savedUser) {
+          setStoredUser(JSON.parse(savedUser));
+        }
+      } catch (e) {
+        // Ignore errors
+      }
+      setCheckedStorage(true);
+    }
+  }, []);
+
+  // Check if user is inactive from stored user
+  const isStoredUserInactive = () => {
+    if (!storedUser) return false;
+    if (storedUser.role === 'customer') return false;
+    return storedUser.status === 'inactive' || storedUser.status === 'pending' || storedUser.status === 'suspended';
+  };
+
+  // Get user's default dashboard path based on role
+  const getDefaultPath = () => {
+    const activeUser = user || storedUser;
+    if (!activeUser) return '/';
+    switch (activeUser.role) {
+      case 'admin': return '/admin';
+      case 'manager': return '/manager';
+      case 'cashier':
+      case 'staff': return '/cashier';
+      default: return '/';
+    }
+  };
+
+  // Check if user is truly inactive
+  const isUserInactive = () => {
+    if (!user) return false;
+    if (user.role === 'customer') return false;
+    return user.status === 'inactive' || user.status === 'pending' || user.status === 'suspended';
+  };
+
+  // Immediate redirect for inactive users - runs before any rendering
+  useLayoutEffect(() => {
+    // Check stored user first
+    if (storedUser && isStoredUserInactive()) {
+      router.replace('/inactive');
+      return;
+    }
+
+    // Check if no user in storage but auth context has user
+    if (!loading && user) {
+      if (isUserInactive()) {
+        router.replace('/inactive');
+        return;
+      }
+    } else if (!loading && !user && checkedStorage) {
+      router.replace('/login');
+    }
+  }, [user, router, loading, storedUser, checkedStorage]);
+
+  // Main redirect effect
+  useEffect(() => {
+    // Wait for loading to complete
+    if (loading) return;
+
+    // If no user, redirect to login
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+
+    // If user is inactive, redirect to /inactive page
+    if (isUserInactive()) {
+      router.push('/inactive');
+      return;
+    }
+  }, [user, pathname, router, loading]);
+
+  // Show loading until we've checked storage and auth is loaded
+  if (!checkedStorage || (loading && !storedUser)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+      </div>
+    );
+  }
+
+  // Early return for inactive users
+  if (storedUser && isStoredUserInactive()) {
+    return null;
+  }
+
+  // Early return for inactive users from auth context
+  if (!loading && user && isUserInactive()) {
+    return null;
+  }
+
+  // No user, don't render dashboard
+  if (!user && !storedUser) {
+    return null;
+  }
+
+  const currentUser = user || storedUser;
 
   const getMenuItems = (role: UserRole): MenuItem[] => {
     switch (role) {
@@ -82,7 +189,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   };
 
-  const menuItems = user ? getMenuItems(user.role) : [];
+  const menuItems = getMenuItems(currentUser?.role as UserRole);
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
@@ -96,7 +203,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="p-6 flex items-center justify-between">
           {!isSidebarCollapsed && (
             <span className="text-white font-bold text-xl tracking-tight capitalize">
-              {user?.role} Panel
+              {currentUser?.role} Panel
             </span>
           )}
           <button
@@ -129,8 +236,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className={cn('flex items-center gap-3 px-3 py-2', isSidebarCollapsed && 'justify-center')}>
             {!isSidebarCollapsed && (
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white truncate">{user?.full_name}</p>
-                <p className="text-xs text-gray-500 truncate capitalize">{user?.role}</p>
+                <p className="text-sm font-medium text-white truncate">{currentUser?.full_name}</p>
+                <p className="text-xs text-gray-500 truncate capitalize">{currentUser?.role}</p>
               </div>
             )}
             <button
@@ -161,7 +268,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       >
         <div className="p-6 flex items-center justify-between">
           <span className="text-white font-bold text-xl tracking-tight capitalize">
-            {user?.role} Panel
+            {currentUser?.role} Panel
           </span>
           <button
             onClick={() => setIsMobileMenuOpen(false)}
@@ -193,8 +300,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="p-4 border-t border-gray-800">
           <div className="flex items-center gap-3 px-3 py-2">
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate">{user?.full_name}</p>
-              <p className="text-xs text-gray-500 truncate capitalize">{user?.role}</p>
+              <p className="text-sm font-medium text-white truncate">{currentUser?.full_name}</p>
+              <p className="text-xs text-gray-500 truncate capitalize">{currentUser?.role}</p>
             </div>
             <button
               onClick={logout}

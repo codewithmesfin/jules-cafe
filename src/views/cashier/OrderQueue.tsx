@@ -249,7 +249,7 @@ const OrderQueue: React.FC = () => {
                           <span className="text-orange-600 mr-1.5">{item.quantity}x</span>
                           {item.menu_item_name}
                         </span>
-                        <span className="text-gray-400 ml-2 shrink-0">${(item.unit_price * item.quantity).toFixed(2)}</span>
+                        <span className="text-gray-400 ml-2 shrink-0">ETB {(item.unit_price * item.quantity).toFixed(2)}</span>
                       </div>
                     ))}
                     {((order as any).items?.length || 0) > 3 && (
@@ -271,7 +271,7 @@ const OrderQueue: React.FC = () => {
                       {order.status}
                     </Badge>
                     <div className="font-black text-lg text-gray-900">
-                      ${order.total_amount.toFixed(2)}
+                      ETB {order.total_amount.toFixed(2)}
                     </div>
                   </div>
                 </div>
@@ -410,7 +410,7 @@ const OrderQueue: React.FC = () => {
                         )}
                       </div>
                     </div>
-                    <span className="font-black text-gray-900 shrink-0 ml-4">${(item.unit_price * item.quantity).toFixed(2)}</span>
+                    <span className="font-black text-gray-900 shrink-0 ml-4">ETB {(item.unit_price * item.quantity).toFixed(2)}</span>
                   </div>
                 ))}
               </div>
@@ -420,17 +420,17 @@ const OrderQueue: React.FC = () => {
             <div className="border-t border-gray-200 pt-4 space-y-2">
               <div className="flex justify-between items-center">
                 <span className="text-gray-500 font-medium">Subtotal</span>
-                <span className="font-black text-gray-900">${(selectedOrder.total_amount + (selectedOrder.discount_amount || 0)).toFixed(2)}</span>
+                <span className="font-black text-gray-900">ETB {(selectedOrder.total_amount + (selectedOrder.discount_amount || 0)).toFixed(2)}</span>
               </div>
               {!!selectedOrder.discount_amount && selectedOrder.discount_amount > 0 && (
                 <div className="flex justify-between items-center text-green-600 font-bold">
                   <span>Discount</span>
-                  <span>-${selectedOrder.discount_amount.toFixed(2)}</span>
+                  <span>-ETB {selectedOrder.discount_amount.toFixed(2)}</span>
                 </div>
               )}
               <div className="flex justify-between items-center pt-2 border-t border-gray-100">
                 <span className="font-black text-gray-900 uppercase tracking-widest text-sm">Total</span>
-                <span className="text-2xl font-black text-orange-600">${selectedOrder.total_amount.toFixed(2)}</span>
+                <span className="text-2xl font-black text-orange-600">ETB {selectedOrder.total_amount.toFixed(2)}</span>
               </div>
             </div>
 

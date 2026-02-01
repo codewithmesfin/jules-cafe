@@ -77,7 +77,7 @@ const ItemDetail: React.FC = () => {
             {item.description}
           </p>
           <div className="text-3xl font-bold text-orange-600 mb-8">
-            ${item.base_price.toFixed(2)}
+            ETB {item.base_price.toFixed(2)}
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4">
@@ -105,7 +105,7 @@ const ItemDetail: React.FC = () => {
                 router.push('/cart');
               }}
             >
-              Add to Cart - ${(item.base_price * quantity).toFixed(2)}
+              Add to Cart - ETB {(item.base_price * quantity).toFixed(2)}
             </Button>
           </div>
         </div>

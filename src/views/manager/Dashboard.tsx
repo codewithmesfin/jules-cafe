@@ -124,7 +124,7 @@ const Dashboard: React.FC = () => {
       {/* KPI Ribbons */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
-          { label: 'Revenue', value: `$${totalRevenue.toLocaleString()}`, icon: DollarSign, color: 'text-orange-600', bg: 'bg-orange-50' },
+          { label: 'Revenue', value: `ETB ${totalRevenue.toLocaleString()}`, icon: DollarSign, color: 'text-orange-600', bg: 'bg-orange-50' },
           { label: 'Total Orders', value: orders.length, icon: ShoppingBag, color: 'text-blue-600', bg: 'bg-blue-50' },
           { label: 'Pending Bookings', value: reservations.filter(r => r.status === 'requested').length, icon: Calendar, color: 'text-green-600', bg: 'bg-green-50' },
           { label: 'Active Staff', value: staff.length, icon: Users, color: 'text-purple-600', bg: 'bg-purple-50' },
@@ -223,7 +223,7 @@ const Dashboard: React.FC = () => {
                       <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{item.total_sold} Sold</p>
                     </div>
                   </div>
-                  <span className="font-black text-orange-600">${item.total_revenue.toFixed(2)}</span>
+                  <span className="font-black text-orange-600">ETB {item.total_revenue.toFixed(2)}</span>
                 </div>
                 <div className="w-full h-2 bg-gray-50 rounded-full overflow-hidden">
                   <motion.div
@@ -241,7 +241,7 @@ const Dashboard: React.FC = () => {
           <div className="mt-12 p-6 bg-orange-600 rounded-3xl text-white relative overflow-hidden group">
             <div className="relative z-10">
               <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-2 opacity-80">Shift Goal</p>
-              <h4 className="text-2xl font-black mb-4">Target: $5,000</h4>
+              <h4 className="text-2xl font-black mb-4">Target: ETB 500,000</h4>
               <div className="w-full h-2 bg-white/20 rounded-full overflow-hidden">
                 <div className="w-3/4 h-full bg-white rounded-full" />
               </div>

@@ -21,6 +21,18 @@ export const protect = catchAsync(async (req: AuthRequest, res: Response, next: 
 
   const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'secret');
   req.user = await User.findById(decoded.id).select('-password');
+  
+  if (!req.user) {
+    return next(new AppError('User not found', 401));
+  }
+
+  // Check if user is active (except for customers who can access their own routes)
+  // Only block if status is explicitly set to inactive, pending, or suspended
+  const inactiveStatuses = ['inactive', 'pending', 'suspended'];
+  if (req.user.role !== 'customer' && inactiveStatuses.includes(req.user.status)) {
+    return next(new AppError('Your account is not active. Please contact the Administrator to activate your account.', 423));
+  }
+
   next();
 });
 

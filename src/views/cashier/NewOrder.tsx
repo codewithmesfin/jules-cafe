@@ -194,8 +194,8 @@ const NewOrder: React.FC = () => {
   };
 
   const cartContent = (
-    <div className="flex flex-col h-full">
-      <div className="p-4 border-b space-y-4">
+    <div className="flex flex-col h-full flex-1 overflow-y-auto">
+      <div className="p-4 border-b border-gray-200 space-y-4">
         <div className="space-y-1">
           <label className="text-xs font-bold text-gray-400 uppercase flex items-center gap-1">
             <Grid size={12} /> Table
@@ -263,7 +263,7 @@ const NewOrder: React.FC = () => {
 
         <div className="pt-2">
           <textarea
-            className="w-full text-xs border border-gray-200 rounded-md p-2 bg-gray-50 focus:ring-orange-500 focus:border-orange-500"
+            className="w-full text-xs border border-gray-200 rounded-md p-2 bg-white focus:ring-orange-500 focus:border-orange-500"
             placeholder="Order notes (customizations, allergies...)"
             rows={2}
             value={orderNotes}
@@ -272,7 +272,7 @@ const NewOrder: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 p-4 space-y-4 pb-10">
         {cart.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-gray-400 space-y-2">
             <ShoppingCart size={48} strokeWidth={1.5} />
@@ -284,7 +284,7 @@ const NewOrder: React.FC = () => {
             <div key={item.id} className="flex justify-between items-center gap-3 p-2 hover:bg-gray-50 rounded-lg transition-colors">
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold text-gray-900 truncate">{item.name}</p>
-                <p className="text-xs text-orange-600 font-bold">${item.base_price.toFixed(2)}</p>
+                <p className="text-xs text-orange-600 font-bold">ETB {item.base_price.toFixed(2)}</p>
               </div>
               <div className="flex items-center gap-3 bg-white border border-gray-100 rounded-full px-2 py-1 shadow-sm">
                 <button
@@ -306,21 +306,21 @@ const NewOrder: React.FC = () => {
         )}
       </div>
 
-      <div className="p-4 bg-gray-50 border-t space-y-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+      <div className="sticky bottom-0 p-4 bg-gray-50 border-t border-gray-200 space-y-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
         <div className="space-y-2">
           <div className="flex justify-between text-sm text-gray-500">
             <span>Subtotal</span>
-            <span className="font-medium text-gray-900">${subtotal.toFixed(2)}</span>
+            <span className="font-medium text-gray-900">ETB {subtotal.toFixed(2)}</span>
           </div>
           {discountRate > 0 && (
             <div className="flex justify-between text-sm text-green-600 font-medium">
               <span>Discount ({customerData?.customer_type?.toUpperCase()} {discountRate}%)</span>
-              <span>-${discountAmount.toFixed(2)}</span>
+              <span>-ETB {discountAmount.toFixed(2)}</span>
             </div>
           )}
           <div className="flex justify-between text-xl font-black text-gray-900 pt-2 border-t border-gray-200">
             <span>Total</span>
-            <span className="text-orange-600">${total.toFixed(2)}</span>
+            <span className="text-orange-600">ETB {total.toFixed(2)}</span>
           </div>
         </div>
         <Button
@@ -360,7 +360,7 @@ const NewOrder: React.FC = () => {
   );
 
   return (
-    <div className="flex flex-col lg:flex-row h-full lg:h-[calc(100vh-120px)] gap-6 overflow-hidden relative pb-24 lg:pb-0">
+    <div className="flex flex-col lg:flex-row h-full gap-6 relative pb-24 lg:pb-0">
       {/* Menu Selection */}
       <div className="flex-1 flex flex-col min-w-0 h-full">
         {/* Header Actions */}
@@ -479,7 +479,7 @@ const NewOrder: React.FC = () => {
                     <h4 className="font-bold text-gray-900 text-sm sm:text-base mb-1 line-clamp-1 group-hover:text-orange-600 transition-colors">{item.name}</h4>
                     <p className="text-[10px] sm:text-xs text-gray-500 line-clamp-2 mb-2 min-h-[2.5em]">{item.description}</p>
                     <div className="mt-auto pt-2 flex justify-between items-center border-t border-gray-50">
-                      <span className="font-black text-orange-600 text-base">${item.base_price.toFixed(2)}</span>
+                      <span className="font-black text-orange-600 text-base">ETB {item.base_price.toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
@@ -490,7 +490,7 @@ const NewOrder: React.FC = () => {
       </div>
 
       {/* Desktop Cart Panel */}
-      <aside className="hidden lg:flex w-96 shrink-0 flex-col bg-white border border-gray-100 rounded-3xl shadow-2xl shadow-gray-200/50 overflow-hidden h-full">
+      <aside className="hidden lg:flex w-96 shrink-0 flex-col bg-white border border-gray-100 rounded-3xl shadow-2xl shadow-gray-200/50 h-full overflow-hidden">
         <div className="p-6 bg-orange-600 text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-white/20 rounded-xl backdrop-blur-md">
@@ -512,7 +512,7 @@ const NewOrder: React.FC = () => {
       <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4 z-40 flex items-center gap-4 shadow-[0_-8px_30px_rgb(0,0,0,0.12)]">
         <div className="flex-1">
           <p className="text-[10px] text-gray-500 font-black uppercase tracking-wider">Total Amount</p>
-          <p className="text-2xl font-black text-orange-600">${total.toFixed(2)}</p>
+          <p className="text-2xl font-black text-orange-600">ETB {total.toFixed(2)}</p>
         </div>
         <button
           className="bg-orange-600 text-white px-6 h-12 rounded-xl flex items-center gap-2 font-black shadow-lg shadow-orange-100 relative active:scale-95 transition-transform"

@@ -134,9 +134,9 @@ const Home: React.FC = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-12 lg:gap-16">
             {[
-              { name: 'Signature Latte', price: '$5.49', img: 'https://images.unsplash.com/photo-1570968915860-54d5c301fa9f?auto=format&fit=crop&q=80&w=600' },
-              { name: 'Avocado Toast', price: '$8.99', img: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&q=80&w=600' },
-              { name: 'Berry Smoothie', price: '$6.25', img: 'https://images.unsplash.com/photo-1536304993881-ff6e9eefa2a6?auto=format&fit=crop&q=80&w=600' }
+              { name: 'Signature Latte', price: 'ETB 549', img: 'https://images.unsplash.com/photo-1570968915860-54d5c301fa9f?auto=format&fit=crop&q=80&w=600' },
+              { name: 'Avocado Toast', price: 'ETB 899', img: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&q=80&w=600' },
+              { name: 'Berry Smoothie', price: 'ETB 625', img: 'https://images.unsplash.com/photo-1536304993881-ff6e9eefa2a6?auto=format&fit=crop&q=80&w=600' }
             ].map((item, i) => (
               <div key={i} className="group cursor-pointer">
                 <div className="relative overflow-hidden rounded-[2.5rem] aspect-square mb-8 shadow-2xl transition-all hover:-translate-y-2 hover:shadow-orange-200">

@@ -189,7 +189,7 @@ const Items = () => {
             },
             { header: "Category", accessor: (item) => item.category || "N/A" },
             { header: "Unit", accessor: (item) => item.unit || "N/A" },
-            { header: "Default Price", accessor: (item) => `$${item.default_price?.toFixed(2) || "0.00"}` },
+            { header: "Default Price", accessor: (item) => `ETB ${item.default_price?.toFixed(2) || "0.00"}` },
             {
               header: "Status",
               accessor: (item) => (

@@ -75,8 +75,8 @@ const Dashboard: React.FC = () => {
         {[
           { label: 'Active Orders', value: activeOrders.length, icon: ShoppingBag, color: 'text-blue-600', bg: 'bg-blue-50' },
           { label: 'Completed Today', value: completedToday.length, icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-50' },
-          { label: 'Total Revenue', value: `$${totalRevenue.toLocaleString()}`, icon: DollarSign, color: 'text-orange-600', bg: 'bg-orange-50' },
-          { label: 'Avg Ticket Size', value: `$${orders.length > 0 ? (totalRevenue / (orders.filter(o => o.status === 'completed').length || 1)).toFixed(2) : '0.00'}`, icon: TrendingUp, color: 'text-purple-600', bg: 'bg-purple-50' },
+          { label: 'Total Revenue', value: `ETB ${totalRevenue.toLocaleString()}`, icon: DollarSign, color: 'text-orange-600', bg: 'bg-orange-50' },
+          { label: 'Avg Ticket Size', value: `ETB ${orders.length > 0 ? (totalRevenue / (orders.filter(o => o.status === 'completed').length || 1)).toFixed(2) : '0.00'}`, icon: TrendingUp, color: 'text-purple-600', bg: 'bg-purple-50' },
         ].map((stat, i) => (
           <Card key={i} className="border-none shadow-sm bg-white p-6 rounded-[2rem] flex items-center gap-5 hover:shadow-xl transition-shadow group">
             <div className={cn("p-4 rounded-2xl transition-transform group-hover:scale-110 duration-300", stat.bg, stat.color)}>
@@ -184,7 +184,7 @@ const Dashboard: React.FC = () => {
               <h3 className="text-xl font-black mb-2">Shift Performance</h3>
               <p className="text-orange-100 text-sm font-medium mb-6">You're doing great today!</p>
               <div className="flex items-end gap-2">
-                <span className="text-4xl font-black">${totalRevenue.toLocaleString()}</span>
+                <span className="text-4xl font-black">ETB {totalRevenue.toLocaleString()}</span>
                 <span className="text-orange-100 text-[10px] font-black uppercase tracking-widest mb-1.5">Total Revenue</span>
               </div>
             </div>

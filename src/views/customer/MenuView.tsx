@@ -182,7 +182,7 @@ const MenuView: React.FC = () => {
               <div className="p-4">
                 <div className="flex justify-between items-start mb-2">
                   <h3 className="font-bold text-gray-900">{item.name}</h3>
-                  <span className="text-orange-600 font-bold">${item.base_price.toFixed(2)}</span>
+                  <span className="text-orange-600 font-bold">ETB {item.base_price.toFixed(2)}</span>
                 </div>
                 <p className="text-sm text-gray-500 line-clamp-2 mb-4 h-10">{item.description}</p>
                 <Button

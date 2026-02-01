@@ -6,6 +6,12 @@ import AppError from './appError';
 
 export const getAll = (model: Model<any>) =>
   catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
+    // Check if user is active (except for customers)
+    const inactiveStatuses = ['inactive', 'pending', 'suspended'];
+    if (req.user && req.user.role !== 'customer' && inactiveStatuses.includes(req.user.status)) {
+      return next(new AppError('Your account is not active. Please contact the Administrator to activate your account.', 423));
+    }
+    
     const features = model.find();
 
     // Automatic branch filtering for manager/staff/cashier
@@ -31,6 +37,12 @@ export const getAll = (model: Model<any>) =>
 
 export const getOne = (model: Model<any>) =>
   catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
+    // Check if user is active (except for customers)
+    const inactiveStatuses = ['inactive', 'pending', 'suspended'];
+    if (req.user && req.user.role !== 'customer' && inactiveStatuses.includes(req.user.status)) {
+      return next(new AppError('Your account is not active. Please contact the Administrator to activate your account.', 423));
+    }
+
     const doc = await model.findById(req.params.id).populate(req.query.populate as string || '');
     if (!doc) {
       return next(new AppError('Document not found', 404));
@@ -51,6 +63,12 @@ export const getOne = (model: Model<any>) =>
 
 export const createOne = (model: Model<any>) =>
   catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
+    // Check if user is active (except for customers)
+    const inactiveStatuses = ['inactive', 'pending', 'suspended'];
+    if (req.user && req.user.role !== 'customer' && inactiveStatuses.includes(req.user.status)) {
+      return next(new AppError('Your account is not active. Please contact the Administrator to activate your account.', 423));
+    }
+
     // Automatically set created_by to the authenticated user's ID
     const requestBody = {
       ...req.body,
@@ -81,6 +99,12 @@ export const createOne = (model: Model<any>) =>
 
 export const updateOne = (model: Model<any>) =>
   catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
+    // Check if user is active (except for customers)
+    const inactiveStatuses = ['inactive', 'pending', 'suspended'];
+    if (req.user && req.user.role !== 'customer' && inactiveStatuses.includes(req.user.status)) {
+      return next(new AppError('Your account is not active. Please contact the Administrator to activate your account.', 423));
+    }
+
     let doc = await model.findById(req.params.id);
     if (!doc) {
       return next(new AppError('Document not found', 404));
@@ -92,6 +116,11 @@ export const updateOne = (model: Model<any>) =>
       if (doc.branch_id.toString() !== req.user.branch_id?.toString()) {
         return next(new AppError('You do not have permission to update this document', 403));
       }
+    }
+
+    // Prevent non-admins from changing branch_name (for Branch model)
+    if (req.user?.role !== 'admin' && model.modelName === 'Branch') {
+      delete req.body.branch_name;
     }
 
     doc = await model.findByIdAndUpdate(req.params.id, req.body, {
@@ -106,6 +135,12 @@ export const updateOne = (model: Model<any>) =>
 
 export const deleteOne = (model: Model<any>) =>
   catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
+    // Check if user is active (except for customers)
+    const inactiveStatuses = ['inactive', 'pending', 'suspended'];
+    if (req.user && req.user.role !== 'customer' && inactiveStatuses.includes(req.user.status)) {
+      return next(new AppError('Your account is not active. Please contact the Administrator to activate your account.', 423));
+    }
+
     const doc = await model.findById(req.params.id);
     if (!doc) {
       return next(new AppError('Document not found', 404));
