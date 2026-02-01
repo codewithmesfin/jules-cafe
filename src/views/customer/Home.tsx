@@ -92,7 +92,7 @@ const Home: React.FC = () => {
             ].map((item, i) => (
               <div key={i} className="group cursor-pointer">
                 <div className="relative overflow-hidden rounded-2xl aspect-square mb-6 shadow-lg transition-transform hover:scale-[1.02]">
-                  <img src={item.img} alt={item.name} className="w-full h-full object-cover transition-transform group-hover:scale-110 duration-500" />
+                  <img src={item.img || null} alt={item.name} className="w-full h-full object-cover transition-transform group-hover:scale-110 duration-500" />
                   <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors"></div>
                 </div>
                 <div className="flex justify-between items-center">

@@ -221,7 +221,7 @@ const Recipes: React.FC = () => {
               )}
               <div className="flex items-start gap-4 mb-4">
                 <img
-                  src={menuItem?.image_url}
+                  src={menuItem?.image_url || null}
                   alt={menuItem?.name}
                   className="w-12 h-12 rounded-lg object-cover border border-gray-100"
                 />
