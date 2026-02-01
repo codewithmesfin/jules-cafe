@@ -7,7 +7,7 @@ const Home: React.FC = () => {
   return (
     <div className="flex flex-col">
       {/* Hero Section - Starbucks Inspired */}
-      <section className="bg-[#4a3520] text-white min-h-[600px] flex flex-col md:flex-row items-center overflow-hidden">
+      <section className="bg-green-600 text-white min-h-[600px] flex flex-col md:flex-row items-center overflow-hidden">
         <div className="flex-1 p-12 md:p-24 flex flex-col justify-center items-start text-left">
           <h1 className="text-5xl md:text-7xl font-black mb-6 leading-tight">
             SIP, SAVOR, <br />SMILE.
