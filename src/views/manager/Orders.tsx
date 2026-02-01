@@ -8,10 +8,12 @@ import { Table } from '../../components/ui/Table';
 import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
 import { useAuth } from '../../context/AuthContext';
+import { useNotification } from '../../context/NotificationContext';
 import type { Order, User } from '../../types';
 
 const Orders: React.FC = () => {
   const { user } = useAuth();
+  const { showNotification } = useNotification();
   const [searchTerm, setSearchTerm] = useState('');
   const [orders, setOrders] = useState<Order[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -57,7 +59,7 @@ const Orders: React.FC = () => {
       setSelectedOrder(null);
       fetchData();
     } catch (error) {
-      alert('Failed to update order status');
+      showNotification('Failed to update order status', 'error');
     }
   };
 

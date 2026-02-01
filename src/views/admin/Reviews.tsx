@@ -6,12 +6,17 @@ import { Input } from '../../components/ui/Input';
 import { Table } from '../../components/ui/Table';
 import { Badge } from '../../components/ui/Badge';
 import type { Review, User } from '../../types';
+import { useNotification } from '../../context/NotificationContext';
+import { ConfirmationDialog } from '../../components/ui/ConfirmationDialog';
 
 const Reviews: React.FC = () => {
+  const { showNotification } = useNotification();
   const [searchTerm, setSearchTerm] = useState('');
   const [reviews, setReviews] = useState<Review[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [reviewToDelete, setReviewToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -27,6 +32,7 @@ const Reviews: React.FC = () => {
       setReviews(revData);
       setUsers(userData);
     } catch (error) {
+      showNotification('Failed to fetch reviews', 'error');
       console.error('Failed to fetch reviews:', error);
     } finally {
       setLoading(false);
@@ -36,19 +42,29 @@ const Reviews: React.FC = () => {
   const handleToggleApproval = async (review: Review) => {
     try {
       await api.reviews.update(review.id, { is_approved: !review.is_approved });
+      showNotification('Review status updated', 'success');
       fetchData();
     } catch (error) {
-      alert('Failed to update review');
+      showNotification('Failed to update review', 'error');
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm('Are you sure you want to delete this review?')) {
+  const handleDelete = (id: string) => {
+    setReviewToDelete(id);
+    setIsConfirmOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (reviewToDelete) {
       try {
-        await api.reviews.delete(id);
+        await api.reviews.delete(reviewToDelete);
+        showNotification('Review deleted successfully', 'success');
         fetchData();
       } catch (error) {
-        alert('Failed to delete review');
+        showNotification('Failed to delete review', 'error');
+      } finally {
+        setIsConfirmOpen(false);
+        setReviewToDelete(null);
       }
     }
   };
@@ -145,6 +161,15 @@ const Reviews: React.FC = () => {
           ]}
         />
       )}
+
+      <ConfirmationDialog
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        onConfirm={confirmDelete}
+        title="Delete Review"
+        description="Are you sure you want to delete this review? This action cannot be undone."
+        variant="danger"
+      />
     </div>
   );
 };

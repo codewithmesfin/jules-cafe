@@ -7,8 +7,10 @@ import { Input } from '../../components/ui/Input';
 import { Card } from '../../components/ui/Card';
 import { api } from '../../utils/api';
 import Link from 'next/link';
+import { useNotification } from '../../context/NotificationContext';
 
 const Signup: React.FC = () => {
+  const { showNotification } = useNotification();
   const [formData, setFormData] = useState({
     full_name: '',
     email: '',
@@ -24,10 +26,11 @@ const Signup: React.FC = () => {
     try {
       setLoading(true);
       await api.auth.signup(formData);
-      alert('Account created successfully! Please log in.');
+      showNotification('Account created successfully! Please log in.', 'success');
       router.push('/login');
     } catch (error: any) {
-      alert(error.message);
+      console.log(error)
+      showNotification(error.message, 'error');
     } finally {
       setLoading(false);
     }

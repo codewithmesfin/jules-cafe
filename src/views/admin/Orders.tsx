@@ -8,8 +8,10 @@ import { Badge } from '../../components/ui/Badge';
 import { Drawer } from '../../components/ui/Drawer';
 import { Modal } from '../../components/ui/Modal';
 import type { Order, User, MenuItem } from '../../types';
+import { useNotification } from '../../context/NotificationContext';
 
 const Orders: React.FC = () => {
+  const { showNotification } = useNotification();
   const [searchTerm, setSearchTerm] = useState('');
   const [orders, setOrders] = useState<Order[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -43,6 +45,7 @@ const Orders: React.FC = () => {
       setMenuItems(menuData);
       setBranches(branchData);
     } catch (error) {
+      showNotification('Failed to fetch orders', 'error');
       console.error('Failed to fetch orders:', error);
     } finally {
       setLoading(false);
@@ -54,13 +57,14 @@ const Orders: React.FC = () => {
       const details = await api.orders.getOne(order.id);
       setSelectedOrder(details);
     } catch (error) {
+      showNotification('Failed to fetch order details', 'error');
       console.error('Failed to fetch order details:', error);
     }
   };
 
   const handleCreateOrder = async () => {
     if (!selectedCustomer) {
-      alert('Please select a customer');
+      showNotification('Please select a customer', 'warning');
       return;
     }
 
@@ -79,7 +83,7 @@ const Orders: React.FC = () => {
         });
 
       if (items.length === 0) {
-        alert('Please add at least one item to the order');
+        showNotification('Please add at least one item to the order', 'warning');
         return;
       }
 
@@ -101,12 +105,13 @@ const Orders: React.FC = () => {
       };
 
       await api.orders.create(orderData);
+      showNotification('Order created successfully', 'success');
       setIsCreateModalOpen(false);
       resetForm();
       fetchData();
     } catch (error) {
       console.error('Failed to create order:', error);
-      alert('Failed to create order');
+      showNotification('Failed to create order', 'error');
     } finally {
       setSaving(false);
     }
@@ -117,10 +122,11 @@ const Orders: React.FC = () => {
       await api.orders.update(id, { status });
       const updatedOrder = await api.orders.getOne(id);
       setSelectedOrder(updatedOrder);
+      showNotification(`Order status updated to ${status}`, 'success');
       fetchData();
     } catch (error) {
       console.error('Failed to update status:', error);
-      alert('Failed to update status');
+      showNotification('Failed to update status', 'error');
     }
   };
 

@@ -7,8 +7,10 @@ import { Table } from '../../components/ui/Table';
 import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
 import type { Reservation, User as UserType } from '../../types';
+import { useNotification } from '../../context/NotificationContext';
 
 const Reservations: React.FC = () => {
+  const { showNotification } = useNotification();
   const [searchTerm, setSearchTerm] = useState('');
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [users, setUsers] = useState<UserType[]>([]);
@@ -58,13 +60,13 @@ const Reservations: React.FC = () => {
       await api.reservations.update(id, { status });
       fetchData();
     } catch (error) {
-      alert('Failed to update status');
+      showNotification('Failed to update status', 'error');
     }
   };
 
   const handleCreateReservation = async () => {
     if (!selectedCustomer || !resDate || !resTime) {
-      alert('Please fill in all required fields');
+      showNotification('Please fill in all required fields', 'warning');
       return;
     }
 
@@ -84,12 +86,13 @@ const Reservations: React.FC = () => {
       };
 
       await api.reservations.create(resData);
+      showNotification('Reservation created successfully', 'success');
       setIsCreateModalOpen(false);
       resetForm();
       fetchData();
     } catch (error) {
       console.error('Failed to create reservation:', error);
-      alert('Failed to create reservation');
+      showNotification('Failed to create reservation', 'error');
     } finally {
       setSaving(false);
     }

@@ -5,10 +5,11 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Card } from '../../components/ui/Card';
 import { useAuth } from '../../context/AuthContext';
-import type { UserRole } from '../../types';
 import Link from 'next/link';
+import { useNotification } from '../../context/NotificationContext';
 
 const Login: React.FC = () => {
+  const { showNotification } = useNotification();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const { login } = useAuth();
@@ -35,7 +36,7 @@ const Login: React.FC = () => {
       else if (user.role === 'cashier') router.push('/cashier');
       else router.push('/');
     } catch (error: any) {
-      alert(error.message);
+      showNotification(error.message, 'error');
     }
   };
 

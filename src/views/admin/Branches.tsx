@@ -8,15 +8,20 @@ import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
 import type { Branch } from '../../types';
 import { useAuth } from '../../context/AuthContext';
+import { useNotification } from '../../context/NotificationContext';
+import { ConfirmationDialog } from '../../components/ui/ConfirmationDialog';
 
 const Branches: React.FC = () => {
   const { user } = useAuth();
+  const { showNotification } = useNotification();
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [branchToDelete, setBranchToDelete] = useState<string | null>(null);
 
   // Form state
   const [name, setName] = useState('');
@@ -36,6 +41,7 @@ const Branches: React.FC = () => {
       const data = await api.branches.getAll();
       setBranches(data);
     } catch (error) {
+      showNotification('Failed to fetch branches', 'error');
       console.error('Failed to fetch branches:', error);
     } finally {
       setLoading(false);
@@ -82,26 +88,37 @@ const Branches: React.FC = () => {
 
       if (selectedBranch) {
         await api.branches.update(selectedBranch.id, branchData);
+        showNotification('Branch updated successfully', 'success');
       } else {
         await api.branches.create(branchData);
+        showNotification('Branch created successfully', 'success');
       }
       setIsModalOpen(false);
       fetchBranches();
     } catch (error) {
       console.error('Failed to save branch:', error);
-      alert('Failed to save branch');
+      showNotification('Failed to save branch', 'error');
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm('Are you sure you want to delete this branch?')) {
+  const handleDelete = (id: string) => {
+    setBranchToDelete(id);
+    setIsConfirmOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (branchToDelete) {
       try {
-        await api.branches.delete(id);
+        await api.branches.delete(branchToDelete);
+        showNotification('Branch deleted successfully', 'success');
         fetchBranches();
       } catch (error) {
-        alert('Failed to delete branch');
+        showNotification('Failed to delete branch', 'error');
+      } finally {
+        setIsConfirmOpen(false);
+        setBranchToDelete(null);
       }
     }
   };
@@ -245,6 +262,15 @@ const Branches: React.FC = () => {
           </div>
         </div>
       </Modal>
+
+      <ConfirmationDialog
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        onConfirm={confirmDelete}
+        title="Delete Branch"
+        description="Are you sure you want to delete this branch? This action cannot be undone."
+        variant="danger"
+      />
     </div>
   );
 };

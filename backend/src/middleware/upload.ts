@@ -1,5 +1,6 @@
 import multer from 'multer';
 import path from 'path';
+import AppError from '../utils/appError';
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -14,7 +15,7 @@ const fileFilter = (req: any, file: any, cb: any) => {
   if (file.mimetype.startsWith('image/')) {
     cb(null, true);
   } else {
-    cb(new Error('Not an image! Please upload an image.'), false);
+    cb(new AppError('Not an image! Please upload an image.', 400), false);
   }
 };
 

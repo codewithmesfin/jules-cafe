@@ -10,6 +10,7 @@ import orderRoutes from './routes/orderRoutes';
 import userRoutes from './routes/userRoutes';
 import itemRoutes from './routes/itemRoutes';
 import otherRoutes from './routes/otherRoutes';
+import errorHandler from './middleware/errorHandler';
 
 const app = express();
 
@@ -33,5 +34,8 @@ app.use('/api', otherRoutes);
 
 // Health check
 app.get('/health', (req, res) => res.send('API is running...'));
+
+// Error Handler Middleware
+app.use(errorHandler);
 
 export default app;
