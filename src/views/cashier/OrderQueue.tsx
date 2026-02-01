@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { Clock, MoreVertical, Edit2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { api } from '../../utils/api';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
@@ -12,6 +13,7 @@ import type { Order, User } from '../../types';
 const OrderQueue: React.FC = () => {
   const { user } = useAuth();
   const { showNotification } = useNotification();
+  const router = useRouter();
   const [filter, setFilter] = useState('active'); // active, completed, cancelled
   const [orders, setOrders] = useState<Order[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -136,7 +138,14 @@ const OrderQueue: React.FC = () => {
                     {order.status}
                   </Badge>
                   <div className="flex gap-1">
-                    <Button variant="ghost" size="sm" title="Edit Order"><Edit2 size={14} /></Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      title="Edit Order"
+                      onClick={() => router.push(`/cashier/new-order?id=${order.id}`)}
+                    >
+                      <Edit2 size={14} />
+                    </Button>
                     <Button variant="ghost" size="sm"><MoreVertical size={14} /></Button>
                   </div>
                 </div>
