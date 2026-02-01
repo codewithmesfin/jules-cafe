@@ -1,11 +1,12 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { Clock, Edit2, ShoppingBag, CheckCircle, Play, XCircle, ChevronRight } from 'lucide-react';
+import { Clock, Edit2, ShoppingBag, CheckCircle, Play, XCircle, ChevronRight, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { api } from '../../utils/api';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { Card } from '../../components/ui/Card';
+import { Modal } from '../../components/ui/Modal';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { cn } from '../../utils/cn';
@@ -16,38 +17,35 @@ const OrderQueue: React.FC = () => {
   const { user } = useAuth();
   const { showNotification } = useNotification();
   const router = useRouter();
-  const [filter, setFilter] = useState('active'); // active, completed, cancelled
+  const [filter, setFilter] = useState('active');
   const [orders, setOrders] = useState<Order[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     fetchData();
   }, [user?.branch_id]);
 
-  // Set up socket connection once on mount
   useEffect(() => {
-    // Join cashier room for real-time updates
     console.log('Setting up socket connection for cashier...');
     joinCashierRoom();
     
     const socket = getSocket();
     console.log('Socket connected:', socket.connected);
     
-    // Listen for connection events
     socket.on('connect', () => {
       console.log('Socket connected successfully');
-      joinCashierRoom(); // Re-join room after connection
+      joinCashierRoom();
     });
     
     socket.on('disconnect', () => {
       console.log('Socket disconnected');
     });
     
-    // Listen for new orders
     socket.on('new-order', (newOrder: any) => {
       console.log('Received new-order event:', newOrder);
-      // Normalize order data from socket (camelCase) to match Order interface (snake_case)
       const normalizedOrder: Order & { items?: any[] } = {
         id: newOrder.orderId || newOrder.id,
         order_number: newOrder.orderNumber || newOrder.order_number,
@@ -63,7 +61,6 @@ const OrderQueue: React.FC = () => {
         created_at: newOrder.createdAt || newOrder.created_at,
         cancel_reason: newOrder.cancelReason || newOrder.cancel_reason,
         client_request_id: newOrder.clientRequestId || newOrder.client_request_id,
-        // Normalize items array
         items: newOrder.items?.map((item: any) => ({
           id: item.itemId || item.id,
           order_id: item.orderId || item.order_id,
@@ -76,17 +73,14 @@ const OrderQueue: React.FC = () => {
         })),
       };
       
-      // Use branch_id from either snake_case or camelCase
       const bId = normalizedOrder.branch_id;
       const userBId = typeof user?.branch_id === 'string' ? user?.branch_id : (user?.branch_id as any)?.id;
       if (bId === userBId) {
         showNotification(`New order #${normalizedOrder.order_number?.split('-').pop()} received!`, 'info');
-        // Add new order to the top of the list
         setOrders(prev => [normalizedOrder as Order, ...prev]);
       }
     });
     
-    // Listen for order status updates
     socket.on('order-status-update', (data: any) => {
       console.log('Received order-status-update event:', data);
       setOrders(prev => prev.map(order => 
@@ -100,7 +94,7 @@ const OrderQueue: React.FC = () => {
       socket.off('new-order');
       socket.off('order-status-update');
     };
-  }, [user]); // Add user as dependency
+  }, [user]);
 
   const fetchData = async () => {
     try {
@@ -127,9 +121,20 @@ const OrderQueue: React.FC = () => {
       await api.orders.update(id, { status });
       showNotification(`Order marked as ${status}`);
       fetchData();
+      handleCloseModal();
     } catch (error) {
       showNotification('Failed to update status', 'error');
     }
+  };
+
+  const handleOrderClick = (order: Order) => {
+    setSelectedOrder(order);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedOrder(null);
   };
 
   const filteredOrders = orders.filter(order => {
@@ -201,7 +206,11 @@ const OrderQueue: React.FC = () => {
             const itemsCount = (order as any).items?.reduce((acc: number, item: any) => acc + item.quantity, 0) || 0;
 
             return (
-              <Card key={order.id} className="p-0 overflow-hidden flex flex-col border-gray-100 rounded-[2rem] hover:shadow-2xl hover:shadow-gray-200/50 transition-all group border hover:border-orange-100">
+              <Card 
+                key={order.id} 
+                className="p-0 overflow-hidden flex flex-col border-gray-100 rounded-[2rem] hover:shadow-2xl hover:shadow-gray-200/50 transition-all group cursor-pointer hover:border-orange-100"
+                onClick={() => handleOrderClick(order)}
+              >
                 {/* Header */}
                 <div className="p-5 border-b border-gray-50">
                   <div className="flex justify-between items-start mb-3">
@@ -268,7 +277,7 @@ const OrderQueue: React.FC = () => {
                 </div>
 
                 {/* Footer - Actions */}
-                <div className="p-4 bg-white flex items-center gap-2 border-t border-gray-50">
+                <div className="p-4 bg-white flex items-center gap-2 border-t border-gray-50" onClick={(e) => e.stopPropagation()}>
                   {filter === 'active' && (
                     <>
                       {order.status === 'pending' && (
@@ -326,7 +335,7 @@ const OrderQueue: React.FC = () => {
                     <Button
                       variant="ghost"
                       className="w-full h-10 rounded-xl font-black text-gray-400 group-hover:text-orange-600 transition-colors gap-2"
-                      onClick={() => router.push(`/cashier/new-order?id=${order.id}`)}
+                      onClick={() => handleOrderClick(order)}
                     >
                       View Details <ChevronRight size={16} />
                     </Button>
@@ -337,6 +346,163 @@ const OrderQueue: React.FC = () => {
           })}
         </div>
       )}
+
+      {/* Order Details Modal */}
+      <Modal isOpen={isModalOpen} onClose={handleCloseModal} title={`Order #${selectedOrder?.order_number?.split('-').pop()}`}>
+        {selectedOrder && (
+          <div className="space-y-6">
+            {/* Customer Info */}
+            {(() => {
+              const customerId = typeof selectedOrder.customer_id === 'string' ? selectedOrder.customer_id : (selectedOrder.customer_id as any)?.id;
+              const customer = users.find(u => u.id === customerId);
+              return (
+                <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl">
+                  <div className="w-12 h-12 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center font-black text-lg">
+                    {customer?.full_name?.charAt(0) || customer?.username?.charAt(0) || 'G'}
+                  </div>
+                  <div>
+                    <p className="font-black text-gray-900">{customer?.full_name || customer?.username || 'Guest'}</p>
+                    <p className="text-sm text-gray-500">{customer?.email || 'No email'}</p>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Order Status */}
+            <div className="flex items-center justify-between">
+              <span className="text-gray-500 font-bold">Status</span>
+              <Badge
+                variant={
+                  selectedOrder.status === 'preparing' ? 'warning' :
+                  selectedOrder.status === 'ready' ? 'info' :
+                  selectedOrder.status === 'completed' ? 'success' : 
+                  selectedOrder.status === 'cancelled' ? 'error' : 'neutral'
+                }
+                className="capitalize px-3 py-1 rounded-lg font-black"
+              >
+                {selectedOrder.status}
+              </Badge>
+            </div>
+
+            {/* Order Type */}
+            <div className="flex items-center justify-between">
+              <span className="text-gray-500 font-bold">Order Type</span>
+              <Badge variant={selectedOrder.type === 'walk-in' ? 'info' : 'neutral'} className="capitalize font-black">
+                {selectedOrder.type}
+              </Badge>
+            </div>
+
+            {/* Order Items */}
+            <div className="space-y-4">
+              <h4 className="font-black text-gray-900 uppercase tracking-widest text-xs">Order Items</h4>
+              <div className="bg-gray-50 rounded-2xl p-4 space-y-3">
+                {(selectedOrder as any).items?.map((item: any, idx: number) => (
+                  <div key={idx} className="flex justify-between items-start">
+                    <div className="flex items-start gap-3">
+                      <span className="text-orange-600 font-black min-w-[24px]">{item.quantity}x</span>
+                      <div>
+                        <p className="font-bold text-gray-900">{item.menu_item_name}</p>
+                        {item.variant_name && (
+                          <p className="text-xs text-gray-500">{item.variant_name}</p>
+                        )}
+                        {item.notes && (
+                          <p className="text-xs text-gray-400 italic mt-1">Note: {item.notes}</p>
+                        )}
+                      </div>
+                    </div>
+                    <span className="font-black text-gray-900 shrink-0 ml-4">${(item.unit_price * item.quantity).toFixed(2)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Order Summary */}
+            <div className="border-t border-gray-200 pt-4 space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-500 font-medium">Subtotal</span>
+                <span className="font-black text-gray-900">${(selectedOrder.total_amount + (selectedOrder.discount_amount || 0)).toFixed(2)}</span>
+              </div>
+              {!!selectedOrder.discount_amount && selectedOrder.discount_amount > 0 && (
+                <div className="flex justify-between items-center text-green-600 font-bold">
+                  <span>Discount</span>
+                  <span>-${selectedOrder.discount_amount.toFixed(2)}</span>
+                </div>
+              )}
+              <div className="flex justify-between items-center pt-2 border-t border-gray-100">
+                <span className="font-black text-gray-900 uppercase tracking-widest text-sm">Total</span>
+                <span className="text-2xl font-black text-orange-600">${selectedOrder.total_amount.toFixed(2)}</span>
+              </div>
+            </div>
+
+            {/* Order Notes */}
+            {selectedOrder.notes && (
+              <div className="bg-yellow-50 border border-yellow-100 rounded-2xl p-4">
+                <p className="text-[10px] font-black text-yellow-600 uppercase tracking-widest mb-1">Order Notes</p>
+                <p className="text-sm text-gray-700">{selectedOrder.notes}</p>
+              </div>
+            )}
+
+            {/* Order Info */}
+            <div className="bg-gray-50 rounded-2xl p-4 space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-500 font-medium text-sm">Order ID</span>
+                <span className="font-bold text-gray-900 text-sm">{selectedOrder.order_number}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-500 font-medium text-sm">Order Date</span>
+                <span className="font-bold text-gray-900">{new Date(selectedOrder.created_at).toLocaleDateString()}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-500 font-medium text-sm">Order Time</span>
+                <span className="font-bold text-gray-900">{new Date(selectedOrder.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            {filter === 'active' && (
+              <div className="grid grid-cols-2 gap-3">
+                {selectedOrder.status === 'pending' && (
+                  <Button
+                    className="h-12 rounded-xl bg-orange-600 hover:bg-orange-700 font-black gap-2"
+                    onClick={() => handleUpdateStatus(selectedOrder.id, 'preparing')}
+                  >
+                    <Play size={16} fill="currentColor" /> Accept Order
+                  </Button>
+                )}
+                {selectedOrder.status === 'preparing' && (
+                  <Button
+                    className="h-12 rounded-xl bg-blue-600 hover:bg-blue-700 font-black gap-2"
+                    onClick={() => handleUpdateStatus(selectedOrder.id, 'ready')}
+                  >
+                    <CheckCircle size={16} /> Mark Ready
+                  </Button>
+                )}
+                {selectedOrder.status === 'ready' && (
+                  <Button
+                    className="h-12 rounded-xl bg-green-600 hover:bg-green-700 font-black gap-2 col-span-2"
+                    onClick={() => handleUpdateStatus(selectedOrder.id, 'completed')}
+                  >
+                    <CheckCircle size={16} /> Complete Order
+                  </Button>
+                )}
+                {['pending', 'preparing'].includes(selectedOrder.status) && (
+                  <Button
+                    variant="outline"
+                    className="h-12 rounded-xl border-red-200 text-red-500 hover:bg-red-50 font-black"
+                    onClick={() => handleUpdateStatus(selectedOrder.id, 'cancelled')}
+                  >
+                    <XCircle size={16} /> Cancel Order
+                  </Button>
+                )}
+              </div>
+            )}
+
+            <Button variant="outline" onClick={handleCloseModal} className="w-full h-12 rounded-xl font-black">
+              Close
+            </Button>
+          </div>
+        )}
+      </Modal>
 
       <style jsx global>{`
         .no-scrollbar::-webkit-scrollbar {
