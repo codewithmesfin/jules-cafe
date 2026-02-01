@@ -13,12 +13,18 @@ interface CartContextType {
   updateQuantity: (itemId: string, quantity: number) => void;
   clearCart: () => void;
   totalAmount: number;
+  branchId: string | null;
+  tableId: string | null;
+  setBranchId: (id: string | null) => void;
+  setTableId: (id: string | null) => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [branchId, setBranchId] = useState<string | null>(null);
+  const [tableId, setTableId] = useState<string | null>(null);
 
   const addToCart = (item: MenuItem) => {
     setCartItems(prev => {
@@ -42,12 +48,26 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setCartItems(prev => prev.map(i => i.id === itemId ? { ...i, quantity } : i));
   };
 
-  const clearCart = () => setCartItems([]);
+  const clearCart = () => {
+    setCartItems([]);
+    // We don't necessarily want to clear branch/table ID as the customer might want to order again
+  };
 
   const totalAmount = cartItems.reduce((acc, item) => acc + item.base_price * item.quantity, 0);
 
   return (
-    <CartContext.Provider value={{ cartItems, addToCart, removeFromCart, updateQuantity, clearCart, totalAmount }}>
+    <CartContext.Provider value={{
+      cartItems,
+      addToCart,
+      removeFromCart,
+      updateQuantity,
+      clearCart,
+      totalAmount,
+      branchId,
+      tableId,
+      setBranchId,
+      setTableId
+    }}>
       {children}
     </CartContext.Provider>
   );

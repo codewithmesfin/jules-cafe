@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft } from 'lucide-react';
+import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft, Grid } from 'lucide-react';
 import { api } from '../../utils/api';
 import { Button } from '../../components/ui/Button';
 import { useCart } from '../../context/CartContext';
@@ -12,7 +12,7 @@ import { useNotification } from '../../context/NotificationContext';
 import type { Branch } from '../../types';
 
 const Cart: React.FC = () => {
-  const { cartItems, removeFromCart, updateQuantity, totalAmount, clearCart } = useCart();
+  const { cartItems, removeFromCart, updateQuantity, totalAmount, clearCart, branchId, tableId } = useCart();
   const { user } = useAuth();
   const { showNotification } = useNotification();
   const router = useRouter();
@@ -25,13 +25,17 @@ const Cart: React.FC = () => {
       try {
         const data = await api.branches.getAll();
         setBranches(data);
-        if (data.length > 0) setSelectedBranchId(data[0].id);
+        if (branchId) {
+          setSelectedBranchId(branchId);
+        } else if (data.length > 0) {
+          setSelectedBranchId(data[0].id);
+        }
       } catch (error) {
         console.error('Failed to fetch branches:', error);
       }
     };
     fetchBranches();
-  }, []);
+  }, [branchId]);
 
   const discountRate = user?.discount_rate || 0;
   const discountAmount = (totalAmount * discountRate) / 100;
@@ -52,6 +56,7 @@ const Cart: React.FC = () => {
       const orderData = {
         customer_id: user.id,
         branch_id: selectedBranchId,
+        table_id: tableId || undefined,
         status: 'pending',
         type: 'self-service',
         total_amount: finalTotal,
@@ -149,17 +154,30 @@ const Cart: React.FC = () => {
 
         <div className="lg:col-span-1 space-y-6">
           <Card title="Order Settings">
-            <div className="w-full">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Select Branch</label>
-              <select
-                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-                value={selectedBranchId}
-                onChange={(e) => setSelectedBranchId(e.target.value)}
-              >
-                {branches.map(b => (
-                  <option key={b.id} value={b.id}>{b.name}</option>
-                ))}
-              </select>
+            <div className="space-y-4">
+              <div className="w-full">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Select Branch</label>
+                <select
+                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:bg-gray-50 disabled:text-gray-500"
+                  value={selectedBranchId}
+                  onChange={(e) => setSelectedBranchId(e.target.value)}
+                  disabled={!!branchId}
+                >
+                  {branches.map(b => (
+                    <option key={b.id} value={b.id}>{b.name || b.branch_name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {tableId && (
+                <div className="p-3 bg-orange-50 rounded-lg flex items-center gap-3 text-orange-800">
+                  <Grid className="text-orange-500" size={18} />
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider">Assigned Table</p>
+                    <p className="font-bold">Table {tableId}</p>
+                  </div>
+                </div>
+              )}
             </div>
           </Card>
 
@@ -170,7 +188,7 @@ const Cart: React.FC = () => {
                 <span>${totalAmount.toFixed(2)}</span>
               </div>
               {discountRate > 0 && (
-                <div className="flex justify-between text-green-600">
+                <div className="flex justify-between text-green-600 font-medium">
                   <span>Discount ({user?.customer_type?.toUpperCase()} {discountRate}%)</span>
                   <span>-${discountAmount.toFixed(2)}</span>
                 </div>
@@ -186,7 +204,7 @@ const Cart: React.FC = () => {
               <hr className="border-gray-100" />
               <div className="flex justify-between text-xl font-bold text-gray-900">
                 <span>Total</span>
-                <span>${finalTotal.toFixed(2)}</span>
+                <span className="text-orange-600">${finalTotal.toFixed(2)}</span>
               </div>
               <Button
                 className="w-full"
