@@ -53,7 +53,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           { icon: Utensils, label: 'Menu Items', path: '/admin/menu-items' },
           { icon: ShoppingBag, label: 'Orders', path: '/admin/orders' },
           { icon: Calendar, label: 'Reservations', path: '/admin/reservations' },
-          { icon: Star, label: 'Reviews', path: '/admin/reviews' },
           { icon: BarChart3, label: 'Reports', path: '/admin/reports' },
           { icon: Utensils, label: 'Recipes', path: '/admin/recipes' },
         ];
@@ -70,7 +69,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           { icon: Grid, label: 'Tables', path: '/manager/tables' },
           { icon: Users, label: 'Staff', path: '/manager/staff' },
           { icon: Users, label: 'Customers', path: '/manager/customers' },
-          { icon: Star, label: 'Reviews', path: '/manager/reviews' },
         ];
       case 'cashier':
       case 'staff':

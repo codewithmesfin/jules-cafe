@@ -1,7 +1,8 @@
 "use client"
 
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, MapPin } from 'lucide-react';
+import { Search, Plus, MapPin, Info } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
 import { api } from '../../utils/api';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -10,6 +11,11 @@ import { useCart } from '../../context/CartContext';
 import type { MenuItem, MenuCategory, Branch, BranchMenuItem } from '../../types';
 
 const MenuView: React.FC = () => {
+  const searchParams = useSearchParams();
+  const urlBranchId = searchParams.get('branchId');
+  const urlTableId = searchParams.get('tableId');
+  const urlTableNo = searchParams.get('tableNo');
+
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedBranchId, setSelectedBranchId] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -18,7 +24,21 @@ const MenuView: React.FC = () => {
   const [branches, setBranches] = useState<Branch[]>([]);
   const [branchMenuItems, setBranchMenuItems] = useState<BranchMenuItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const { addToCart } = useCart();
+
+  const { addToCart, setBranchId, setTableId, setTableNo, tableNo } = useCart();
+
+  useEffect(() => {
+    if (urlBranchId) {
+      setSelectedBranchId(urlBranchId);
+      setBranchId(urlBranchId);
+    }
+    if (urlTableId) {
+      setTableId(urlTableId);
+    }
+    if (urlTableNo) {
+      setTableNo(urlTableNo);
+    }
+  }, [urlBranchId, urlTableId, urlTableNo]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -69,8 +89,17 @@ const MenuView: React.FC = () => {
     return matchesCategory && matchesSearch;
   });
 
+  const selectedBranch = branches.find(b => b.id === selectedBranchId);
+
   return (
     <div className="container mx-auto px-4 py-8">
+      {tableNo && (
+        <div className="mb-6 p-4 bg-orange-50 border border-orange-100 rounded-xl flex items-center gap-3 text-orange-800">
+          <Info className="text-orange-500" size={20} />
+          <p className="font-bold">Ordering for Table {tableNo} {selectedBranch && `at ${selectedBranch.branch_name}`}</p>
+        </div>
+      )}
+
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Our Menu</h1>
@@ -82,7 +111,11 @@ const MenuView: React.FC = () => {
             <select
               className="w-full pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 appearance-none"
               value={selectedBranchId}
-              onChange={(e) => setSelectedBranchId(e.target.value)}
+              onChange={(e) => {
+                setSelectedBranchId(e.target.value);
+                setBranchId(e.target.value === 'all' ? null : e.target.value);
+              }}
+              disabled={!!urlBranchId}
             >
               <option value="all">All Branches</option>
               {branches.map(branch => (
@@ -134,7 +167,7 @@ const MenuView: React.FC = () => {
             <div key={item.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden group hover:shadow-md transition-shadow">
               <div className="relative h-48 overflow-hidden">
                 <img
-                  src={item.image_url || null}
+                  src={item.image_url || undefined}
                   alt={item.name}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />

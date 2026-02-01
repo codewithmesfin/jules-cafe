@@ -2,12 +2,17 @@ import express from 'express';
 import MenuVariant from '../models/MenuVariant';
 import BranchMenuItem from '../models/BranchMenuItem';
 import Reservation from '../models/Reservation';
-import Review from '../models/Review';
 import InventoryItem from '../models/InventoryItem';
 import Recipe from '../models/Recipe';
 import * as factory from '../utils/controllerFactory';
 import { protect, authorize } from '../middleware/auth';
 import { getStats } from '../controllers/orderController';
+import {
+  getSalesAnalytics,
+  getStockAnalytics,
+  getProductAnalytics,
+  getBranchPerformance
+} from '../controllers/analyticsController';
 import { 
   getAllInventory, 
   getOneInventory, 
@@ -19,6 +24,12 @@ import {
 const router = express.Router();
 
 router.get('/stats', protect, authorize('admin', 'manager'), getStats);
+
+// Analytics
+router.get('/analytics/sales', protect, authorize('admin', 'manager'), getSalesAnalytics);
+router.get('/analytics/stock', protect, authorize('admin', 'manager'), getStockAnalytics);
+router.get('/analytics/products', protect, authorize('admin', 'manager'), getProductAnalytics);
+router.get('/analytics/branches', protect, authorize('admin'), getBranchPerformance);
 
 // MenuVariant
 router.route('/menu-variants')
@@ -46,15 +57,6 @@ router.route('/reservations/:id')
   .get(protect, factory.getOne(Reservation))
   .put(protect, factory.updateOne(Reservation))
   .delete(protect, factory.deleteOne(Reservation));
-
-// Review
-router.route('/reviews')
-  .get(factory.getAll(Review))
-  .post(protect, factory.createOne(Review));
-router.route('/reviews/:id')
-  .get(factory.getOne(Review))
-  .put(protect, authorize('admin', 'manager'), factory.updateOne(Review))
-  .delete(protect, authorize('admin', 'manager'), factory.deleteOne(Review));
 
 // InventoryItem (using custom controller for item_id reference)
 router.route('/inventory')

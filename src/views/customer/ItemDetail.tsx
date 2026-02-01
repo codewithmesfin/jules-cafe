@@ -51,7 +51,7 @@ const ItemDetail: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
         <div className="rounded-2xl overflow-hidden shadow-lg h-[400px] md:h-[600px]">
           <img
-            src={item.image_url || null}
+            src={item.image_url || undefined}
             alt={item.name}
             className="w-full h-full object-cover"
           />
