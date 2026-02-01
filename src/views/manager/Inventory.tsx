@@ -51,24 +51,12 @@ const Inventory: React.FC = () => {
         api.recipes.getAll(),
         api.items.getAll(),
       ]);
-      console.log('Raw inventory data:', invData);
-      console.log('User branch_id:', user?.branch_id);
-      const filtered = invData.filter((i: InventoryItemType) => {
-        const bId = typeof i.branch_id === 'string' ? i.branch_id : (i.branch_id as any)?.id;
-        const userBId = typeof user?.branch_id === 'string' ? user?.branch_id : (user?.branch_id as any)?.id;
-        console.log('Inventory item branch_id:', bId, 'User branch_id:', userBId, 'Match:', bId === userBId);
-        // If user has no branch_id, show all inventory (for debugging)
-        if (!userBId) {
-          return true;
-        }
-        return bId === userBId;
-      });
-      console.log('Filtered inventory:', filtered);
-      setInventory(filtered);
+      setInventory(invData);
       setRecipes(recData);
       setAllItems(itemsData);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to fetch inventory:', error);
+      showNotification(error.message || 'Failed to fetch inventory', 'error');
     } finally {
       setLoading(false);
     }
@@ -140,8 +128,8 @@ const Inventory: React.FC = () => {
       }
       setIsModalOpen(false);
       fetchData();
-    } catch (error) {
-      showNotification('Failed to save inventory item', 'error');
+    } catch (error: any) {
+      showNotification(error.message || 'Failed to save inventory item', 'error');
     }
   };
 

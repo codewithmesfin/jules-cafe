@@ -48,8 +48,9 @@ const NewOrder: React.FC = () => {
         setTables(tbls);
         setUsers(usrs);
         setBranches(brnchs);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Failed to fetch data:', error);
+        showNotification(error.message || 'Failed to fetch data', 'error');
       } finally {
         setLoading(false);
       }
@@ -115,8 +116,8 @@ const NewOrder: React.FC = () => {
       setSelectedCustomer('');
       setSelectedTable('');
       setSelectedWaiter('');
-    } catch (error) {
-      showNotification("Failed to place order", "error");
+    } catch (error: any) {
+      showNotification(error.message || "Failed to place order", "error");
     }
   };
 
@@ -307,8 +308,8 @@ const NewOrder: React.FC = () => {
                 // Refresh users
                 const usrs = await api.users.getAll();
                 setUsers(usrs);
-              } catch (error) {
-                showNotification("Failed to add customer", "error");
+              } catch (error: any) {
+                showNotification(error.message || "Failed to add customer", "error");
               }
             }}>Add Customer</Button>
           </>

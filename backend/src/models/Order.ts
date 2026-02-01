@@ -36,7 +36,7 @@ const OrderItemSchema = new Schema({
 });
 
 const OrderSchema: Schema = new Schema({
-  order_number: { type: String, required: true, unique: true },
+  order_number: { type: String, unique: true },
   customer_id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   branch_id: { type: Schema.Types.ObjectId, ref: 'Branch', required: true },
   table_id: { type: Schema.Types.ObjectId, ref: 'Table' },
@@ -57,5 +57,16 @@ const OrderSchema: Schema = new Schema({
   items: [OrderItemSchema],
   created_by: { type: Schema.Types.ObjectId, ref: 'User' },
 }, { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } });
+
+// Pre-validate hook to generate order number
+OrderSchema.pre<IOrder>('validate', async function(next) {
+  if (!this.order_number) {
+    const date = new Date();
+    const dateString = date.toISOString().slice(0, 10).replace(/-/g, '');
+    const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+    this.order_number = `ORD-${dateString}-${random}`;
+  }
+  next();
+});
 
 export default mongoose.model<IOrder>('Order', OrderSchema);
