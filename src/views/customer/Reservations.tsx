@@ -16,6 +16,8 @@ const Reservations: React.FC = () => {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [clientRequestId, setClientRequestId] = useState(() => Math.random().toString(36).substring(2, 15));
 
   const [formData, setFormData] = useState({
     branch_id: '',
@@ -57,6 +59,7 @@ const Reservations: React.FC = () => {
     }
 
     try {
+      setSaving(true);
       await api.reservations.create({
         customer_id: user.id,
         branch_id: formData.branch_id,
@@ -64,12 +67,17 @@ const Reservations: React.FC = () => {
         reservation_time: formData.time,
         guests_count: parseInt(formData.guests),
         note: formData.note,
-        status: 'requested'
+        status: 'requested',
+        client_request_id: clientRequestId
       });
       showNotification('Reservation requested! We will notify you once it is confirmed.');
       fetchData();
-    } catch (error) {
-      showNotification('Failed to book reservation', 'error');
+      setFormData(prev => ({ ...prev, note: '' }));
+      setClientRequestId(Math.random().toString(36).substring(2, 15));
+    } catch (error: any) {
+      showNotification(error.message || 'Failed to book reservation', 'error');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -130,8 +138,8 @@ const Reservations: React.FC = () => {
                   onChange={(e) => setFormData({ ...formData, note: e.target.value })}
                 />
               </div>
-              <Button type="submit" className="w-full" size="lg">
-                Request Reservation
+              <Button type="submit" className="w-full" size="lg" disabled={saving}>
+                {saving ? 'Requesting...' : 'Request Reservation'}
               </Button>
             </form>
           </Card>

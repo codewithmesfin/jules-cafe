@@ -57,6 +57,14 @@ export const createOne = (model: Model<any>) =>
       created_by: req.user?._id || req.user?.id,
     };
 
+    // Idempotency check
+    if (requestBody.client_request_id && model.schema.path('client_request_id')) {
+      const existingDoc = await model.findOne({ client_request_id: requestBody.client_request_id });
+      if (existingDoc) {
+        return res.status(200).json({ ...existingDoc.toObject(), id: existingDoc._id.toString() });
+      }
+    }
+
     // Auto-set branch_id for manager/staff/cashier if not provided
     const filterRoles = ['manager', 'staff', 'cashier'];
     if (req.user && filterRoles.includes(req.user.role) && model.schema.path('branch_id')) {
