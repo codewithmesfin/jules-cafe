@@ -6,7 +6,28 @@ import { AuthRequest } from '../middleware/auth';
 import catchAsync from '../utils/catchAsync';
 import AppError from '../utils/appError';
 
-export const getAllUsers = factory.getAll(User);
+export const getAllUsers = catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
+  let query: any = {};
+
+  if (req.user.role === 'manager' || req.user.role === 'staff' || req.user.role === 'cashier') {
+    // Managers/Staff/Cashiers can see users in their branch OR any customer
+    query = {
+      $or: [
+        { branch_id: req.user.branch_id },
+        { role: 'customer' }
+      ]
+    };
+  }
+
+  const docs = await User.find(query).populate(req.query.populate as string || '');
+
+  const transformedDocs = docs.map((doc: any) => ({
+    ...doc.toObject(),
+    id: doc._id.toString()
+  }));
+
+  res.status(200).json(transformedDocs);
+});
 export const getUser = factory.getOne(User);
 export const deleteUser = catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
   const userToDelete = await User.findById(req.params.id);
@@ -25,6 +46,11 @@ export const deleteUser = catchAsync(async (req: AuthRequest, res: Response, nex
     if (userToDelete.branch_id?.toString() !== req.user.branch_id?.toString() && userToDelete.role !== 'customer') {
       return next(new AppError('You can only delete users in your own branch', 403));
     }
+  } else if (req.user.role === 'staff' || req.user.role === 'cashier') {
+    // Staff/Cashiers can only delete customers
+    if (userToDelete.role !== 'customer') {
+      return next(new AppError('You only have permission to delete customer accounts', 403));
+    }
   }
 
   await User.findByIdAndDelete(req.params.id);
@@ -42,6 +68,14 @@ export const createUser = catchAsync(async (req: AuthRequest, res: Response, nex
     if (!allowedRoles.includes(data.role)) {
       return next(new AppError('Managers can only create staff, cashier or customer accounts', 403));
     }
+    data.branch_id = req.user.branch_id;
+  } else if (req.user.role === 'staff' || req.user.role === 'cashier') {
+    // Staff and Cashiers can ONLY create customer accounts
+    if (data.role !== 'customer') {
+      return next(new AppError('You only have permission to create customer accounts', 403));
+    }
+    // They can't set branch_id for customers (or it defaults to their own if we want, but customers are often branch-independent)
+    // For consistency with manager, let's set it to their branch.
     data.branch_id = req.user.branch_id;
   }
 
@@ -88,6 +122,14 @@ export const updateUser = catchAsync(async (req: AuthRequest, res: Response, nex
     }
 
     // Ensure branch_id is not changed by manager
+    delete data.branch_id;
+  } else if (req.user.role === 'staff' || req.user.role === 'cashier') {
+    // Staff/Cashiers can only update customers
+    if (userToUpdate.role !== 'customer') {
+      return next(new AppError('You only have permission to update customer accounts', 403));
+    }
+    // They cannot change the role or branch_id
+    delete data.role;
     delete data.branch_id;
   }
 

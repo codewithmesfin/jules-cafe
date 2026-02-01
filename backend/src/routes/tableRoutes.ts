@@ -6,7 +6,7 @@ import { protect, authorize } from '../middleware/auth';
 const router = express.Router();
 
 router.route('/')
-  .get(factory.getAll(Table))
+  .get(protect, factory.getAll(Table))
   .post(protect, authorize('admin', 'manager'), factory.createOne(Table));
 
 router.route('/:id')
