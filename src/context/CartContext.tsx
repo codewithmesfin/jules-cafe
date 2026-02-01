@@ -15,8 +15,10 @@ interface CartContextType {
   totalAmount: number;
   branchId: string | null;
   tableId: string | null;
+  tableNo: string | null;
   setBranchId: (id: string | null) => void;
   setTableId: (id: string | null) => void;
+  setTableNo: (no: string | null) => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -25,6 +27,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [branchId, setBranchId] = useState<string | null>(null);
   const [tableId, setTableId] = useState<string | null>(null);
+  const [tableNo, setTableNo] = useState<string | null>(null);
 
   const addToCart = (item: MenuItem) => {
     setCartItems(prev => {
@@ -65,8 +68,10 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       totalAmount,
       branchId,
       tableId,
+      tableNo,
       setBranchId,
-      setTableId
+      setTableId,
+      setTableNo
     }}>
       {children}
     </CartContext.Provider>

@@ -14,6 +14,7 @@ const MenuView: React.FC = () => {
   const searchParams = useSearchParams();
   const urlBranchId = searchParams.get('branchId');
   const urlTableId = searchParams.get('tableId');
+  const urlTableNo = searchParams.get('tableNo');
 
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedBranchId, setSelectedBranchId] = useState<string>('all');
@@ -24,7 +25,7 @@ const MenuView: React.FC = () => {
   const [branchMenuItems, setBranchMenuItems] = useState<BranchMenuItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const { addToCart, setBranchId, setTableId, tableId } = useCart();
+  const { addToCart, setBranchId, setTableId, setTableNo, tableNo } = useCart();
 
   useEffect(() => {
     if (urlBranchId) {
@@ -34,7 +35,10 @@ const MenuView: React.FC = () => {
     if (urlTableId) {
       setTableId(urlTableId);
     }
-  }, [urlBranchId, urlTableId]);
+    if (urlTableNo) {
+      setTableNo(urlTableNo);
+    }
+  }, [urlBranchId, urlTableId, urlTableNo]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -89,10 +93,10 @@ const MenuView: React.FC = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      {tableId && (
+      {tableNo && (
         <div className="mb-6 p-4 bg-orange-50 border border-orange-100 rounded-xl flex items-center gap-3 text-orange-800">
           <Info className="text-orange-500" size={20} />
-          <p className="font-bold">Ordering for Table {tableId} {selectedBranch && `at ${selectedBranch.branch_name}`}</p>
+          <p className="font-bold">Ordering for Table {tableNo} {selectedBranch && `at ${selectedBranch.branch_name}`}</p>
         </div>
       )}
 

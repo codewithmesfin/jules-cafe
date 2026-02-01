@@ -125,7 +125,7 @@ const Tables: React.FC = () => {
 
   const generateQrUrl = (table: Table) => {
     const baseUrl = window.location.origin;
-    const menuUrl = `${baseUrl}/menu?branchId=${user.branch_id}&tableId=${table.table_number}`;
+    const menuUrl = `${baseUrl}/menu?branchId=${user.branch_id}&tableId=${table.id}&tableNo=${table.table_number}`;
     return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(menuUrl)}`;
   };
 

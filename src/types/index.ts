@@ -128,24 +128,9 @@ export interface Reservation {
   created_at: string;
 }
 
-export interface Review {
-  id: string;
-  _id?: string;
-  customer_id: string;
-  order_id?: string;
-  reservation_id?: string;
-  branch_id: string;
-  rating: number;
-  comment: string;
-  is_approved: boolean;
-  client_request_id?: string;
-  created_at: string;
-}
-
 export interface Report {
   orders_per_branch: { branch_name: string; count: number }[];
   top_selling_items: { item_name: string; count: number }[];
-  average_rating_per_branch: { branch_name: string; rating: number }[];
 }
 
 export interface InventoryItem {

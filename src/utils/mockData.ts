@@ -8,7 +8,6 @@ import type {
   Order,
   OrderItem,
   Reservation,
-  Review,
   InventoryItem,
   Recipe
 } from '../types';
@@ -86,10 +85,6 @@ export const MOCK_ORDER_ITEMS: OrderItem[] = [
 
 export const MOCK_RESERVATIONS: Reservation[] = [
   { id: 'r1', customer_id: 'u4', branch_id: 'b1', reservation_date: '2024-06-20', reservation_time: '19:00', guests_count: 4, status: 'confirmed', note: 'Window seat if possible', created_at: new Date().toISOString() },
-];
-
-export const MOCK_REVIEWS: Review[] = [
-  { id: 'rv1', customer_id: 'u4', branch_id: 'b1', rating: 5, comment: 'Excellent food and service!', order_id: 'o1', is_approved: true, created_at: new Date().toISOString() },
 ];
 
 export const MOCK_INVENTORY: InventoryItem[] = [

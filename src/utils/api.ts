@@ -96,13 +96,6 @@ export const api = {
     update: (id: string, data: any) => fetcher(`/api/reservations/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id: string) => fetcher(`/api/reservations/${id}`, { method: 'DELETE' }),
   },
-  reviews: {
-    getAll: (params?: string) => fetcher(`/api/reviews${params ? `?${params}` : ''}`),
-    getOne: (id: string) => fetcher(`/api/reviews/${id}`),
-    create: (data: any) => fetcher('/api/reviews', { method: 'POST', body: JSON.stringify(data) }),
-    update: (id: string, data: any) => fetcher(`/api/reviews/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-    delete: (id: string) => fetcher(`/api/reviews/${id}`, { method: 'DELETE' }),
-  },
   inventory: {
     getAll: () => fetcher('/api/inventory'),
     getOne: (id: string) => fetcher(`/api/inventory/${id}`),

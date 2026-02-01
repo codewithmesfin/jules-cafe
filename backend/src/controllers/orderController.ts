@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import Order from '../models/Order';
 import User from '../models/User';
-import Review from '../models/Review';
 import Branch from '../models/Branch';
 import * as factory from '../utils/controllerFactory';
 import { deductInventoryForOrder, revertInventoryForOrder } from '../utils/inventoryUtils';
@@ -202,20 +201,9 @@ export const getStats = catchAsync(async (req: AuthRequest, res: Response, next:
     }));
   }
 
-  // 5. Average Rating
-  const reviewMatch: any = { is_approved: true };
-  if (branchId) reviewMatch.branch_id = branchId;
-
-  const ratingData = await Review.aggregate([
-    { $match: reviewMatch },
-    { $group: { _id: null, avg: { $avg: "$rating" } } }
-  ]);
-  const avgRating = ratingData[0]?.avg || 0;
-
   res.json({
     totalOrders,
     totalRevenue,
-    avgRating,
     topBranches,
     revenuePerDay
   });

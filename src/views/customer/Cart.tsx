@@ -12,7 +12,7 @@ import { useNotification } from '../../context/NotificationContext';
 import type { Branch } from '../../types';
 
 const Cart: React.FC = () => {
-  const { cartItems, removeFromCart, updateQuantity, totalAmount, clearCart, branchId, tableId } = useCart();
+  const { cartItems, removeFromCart, updateQuantity, totalAmount, clearCart, branchId, tableId, tableNo } = useCart();
   const { user } = useAuth();
   const { showNotification } = useNotification();
   const router = useRouter();
@@ -169,12 +169,12 @@ const Cart: React.FC = () => {
                 </select>
               </div>
 
-              {tableId && (
+              {tableNo && (
                 <div className="p-3 bg-orange-50 rounded-lg flex items-center gap-3 text-orange-800">
                   <Grid className="text-orange-500" size={18} />
                   <div>
                     <p className="text-xs font-bold uppercase tracking-wider">Assigned Table</p>
-                    <p className="font-bold">Table {tableId}</p>
+                    <p className="font-bold">Table {tableNo}</p>
                   </div>
                 </div>
               )}
