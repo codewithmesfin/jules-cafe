@@ -108,8 +108,8 @@ const Users: React.FC = () => {
       setIsModalOpen(false);
       setEditingUser(null);
       fetchUsers();
-    } catch (error) {
-      showNotification("Failed to save user", "error");
+    } catch (error: any) {
+      showNotification(error.message || "Failed to save user", "error");
     }
   };
 
@@ -119,8 +119,8 @@ const Users: React.FC = () => {
         await api.users.delete(userToDelete.id);
         showNotification("User deleted successfully", "warning");
         fetchUsers();
-      } catch (error) {
-        showNotification("Failed to delete user", "error");
+      } catch (error: any) {
+        showNotification(error.message || "Failed to delete user", "error");
       } finally {
         setUserToDelete(null);
       }

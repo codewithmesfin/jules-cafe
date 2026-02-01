@@ -18,6 +18,16 @@ export const createOrder = catchAsync(async (req: AuthRequest, res: Response, ne
   // Automatically set created_by to the authenticated user's ID
   data.created_by = req.user?._id || req.user?.id;
 
+  // Force branch_id for non-admins
+  const filterRoles = ['manager', 'staff', 'cashier'];
+  if (req.user && filterRoles.includes(req.user.role)) {
+    data.branch_id = req.user.branch_id;
+  }
+
+  if (!data.branch_id) {
+    return next(new AppError('branch_id is required', 400));
+  }
+
   const order = await Order.create(data);
 
   // Attempt to send email to customer if email is provided

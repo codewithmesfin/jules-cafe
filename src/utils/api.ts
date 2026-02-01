@@ -20,14 +20,24 @@ const fetcher = async (url: string, options?: RequestInit) => {
     let errorMessage = 'Something went wrong';
     try {
       const error = await response.json();
-      errorMessage = error.error || errorMessage;
+      errorMessage = error.message || error.error || errorMessage;
     } catch (e) {
       // Not a JSON error
+      try {
+        errorMessage = await response.text() || errorMessage;
+      } catch (textError) {
+        // Fallback to default message
+      }
     }
     throw new Error(errorMessage);
   }
 
-  return response.json();
+  const text = await response.text();
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    return text;
+  }
 };
 
 export const api = {

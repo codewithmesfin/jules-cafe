@@ -24,18 +24,17 @@ export const register = catchAsync(async (req: any, res: Response, next: NextFun
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(password, salt);
 
-  // If an admin is creating a user, set passwordResetRequired to true
-  const isAdminCreating = req.user && req.user.role === 'admin';
-
+  // Self-registration should always be as 'customer' and not require password reset
+  // Only admins can create non-customer users via the user management dashboard
   const user = await User.create({
     email,
     password: hashedPassword,
-    role: role || 'customer',
+    role: 'customer',
     branch_id,
     company,
     full_name,
     phone,
-    passwordResetRequired: isAdminCreating,
+    passwordResetRequired: false,
   });
 
   res.status(201).json({

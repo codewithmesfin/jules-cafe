@@ -51,7 +51,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return data;
     } else {
       const error = await response.json();
-      throw new Error(error.error || 'Login failed');
+      throw new Error(error.message || error.error || 'Login failed');
     }
   };
 
