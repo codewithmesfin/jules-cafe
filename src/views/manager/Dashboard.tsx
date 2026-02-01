@@ -1,12 +1,14 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { Card } from '../../components/ui/Card';
-import { ShoppingBag, Calendar, Users, DollarSign } from 'lucide-react';
+import { ShoppingBag, Calendar, Users, DollarSign, AlertTriangle, Package } from 'lucide-react';
 import { Badge } from '../../components/ui/Badge';
+import { Button } from '../../components/ui/Button';
 import { api } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
-import type { Order, Reservation, User as UserType } from '../../types';
+import type { Order, Reservation, User as UserType, InventoryItem } from '../../types';
+import Link from 'next/link';
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
@@ -14,16 +16,18 @@ const Dashboard: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [staff, setStaff] = useState<UserType[]>([]);
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [ordData, resData, userData] = await Promise.all([
+        const [ordData, resData, userData, invData] = await Promise.all([
           api.orders.getAll(),
           api.reservations.getAll(),
           api.users.getAll(),
+          api.inventory.getAll(),
         ]);
 
         // Branch filtering is now handled by the backend
@@ -32,6 +36,7 @@ const Dashboard: React.FC = () => {
         // We still need to filter for 'staff' role specifically,
         // though backend likely only returned users for this branch anyway.
         setStaff(userData.filter(u => u.role === 'staff'));
+        setInventory(invData);
       } catch (error: any) {
         console.error('Failed to fetch manager dashboard data:', error);
         showNotification(error.message || 'Failed to load dashboard data', 'error');
@@ -60,6 +65,8 @@ const Dashboard: React.FC = () => {
   }
 
   if (loading) return <div className="text-center py-20">Loading Dashboard...</div>;
+
+  const lowStockItems = inventory.filter(i => i.quantity <= i.min_stock);
 
   return (
     <div className="space-y-8">
@@ -108,6 +115,38 @@ const Dashboard: React.FC = () => {
           </div>
         </Card>
       </div>
+
+      {lowStockItems.length > 0 && (
+        <Card className="border-red-200 bg-red-50">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3 text-red-700">
+              <AlertTriangle size={24} />
+              <div>
+                <h3 className="font-bold">Purchase Required</h3>
+                <p className="text-sm">{lowStockItems.length} items are below minimum stock level.</p>
+              </div>
+            </div>
+            <Link href="/manager/inventory">
+              <Button variant="outline" size="sm" className="bg-white border-red-200 text-red-700 hover:bg-red-50">
+                View Inventory
+              </Button>
+            </Link>
+          </div>
+          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+            {lowStockItems.slice(0, 6).map(item => (
+              <div key={item.id} className="text-xs bg-white p-2 rounded border border-red-100 flex justify-between items-center">
+                <span className="font-medium truncate mr-2">{item.item_name}</span>
+                <span className="text-red-600 font-bold shrink-0">{item.quantity} {item.unit}</span>
+              </div>
+            ))}
+            {lowStockItems.length > 6 && (
+              <div className="text-xs text-red-600 font-medium flex items-center px-2 italic">
+                And {lowStockItems.length - 6} more...
+              </div>
+            )}
+          </div>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <Card title="Staff Workload (Orders Assigned)">

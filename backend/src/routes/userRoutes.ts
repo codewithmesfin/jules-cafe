@@ -6,11 +6,11 @@ const router = express.Router();
 
 router.route('/')
   .get(protect, authorize('admin', 'manager'), getAllUsers)
-  .post(protect, authorize('admin'), createUser);
+  .post(protect, authorize('admin', 'manager'), createUser);
 
 router.route('/:id')
   .get(protect, getUser)
-  .put(protect, updateUser)
-  .delete(protect, authorize('admin'), deleteUser);
+  .put(protect, authorize('admin', 'manager'), updateUser)
+  .delete(protect, authorize('admin', 'manager'), deleteUser);
 
 export default router;

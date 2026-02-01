@@ -68,6 +68,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           { icon: Utensils, label: 'Recipes', path: '/manager/recipes' },
           { icon: Calendar, label: 'Reservations', path: '/manager/reservations' },
           { icon: Grid, label: 'Tables', path: '/manager/tables' },
+          { icon: Users, label: 'Staff', path: '/manager/staff' },
           { icon: Users, label: 'Customers', path: '/manager/customers' },
           { icon: Star, label: 'Reviews', path: '/manager/reviews' },
         ];

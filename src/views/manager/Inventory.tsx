@@ -5,6 +5,7 @@ import { api } from '../../utils/api';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Table } from '../../components/ui/Table';
+import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
 import { Card } from '../../components/ui/Card';
 import { useAuth } from '../../context/AuthContext';
@@ -216,11 +217,16 @@ const Inventory: React.FC = () => {
             {
               header: 'Quantity',
               accessor: (i) => (
-                <div className="flex items-center gap-2">
-                  <span className={i.quantity <= i.min_stock ? 'text-red-600 font-bold' : 'text-gray-900'}>
-                    {i.quantity} {i.unit}
-                  </span>
-                  {i.quantity <= i.min_stock && <AlertTriangle size={14} className="text-red-600" />}
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-2">
+                    <span className={i.quantity <= i.min_stock ? 'text-red-600 font-bold' : 'text-gray-900'}>
+                      {i.quantity} {i.unit}
+                    </span>
+                    {i.quantity <= i.min_stock && <AlertTriangle size={14} className="text-red-600" />}
+                  </div>
+                  {i.quantity <= i.min_stock && (
+                    <Badge variant="error" className="mt-1 text-[10px] py-0">Purchase Required</Badge>
+                  )}
                 </div>
               )
             },
