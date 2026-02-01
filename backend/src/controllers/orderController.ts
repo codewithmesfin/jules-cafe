@@ -166,6 +166,7 @@ export const createOrder = catchAsync(async (req: AuthRequest, res: Response, ne
       totalAmount: order.total_amount,
       type: order.type,
       createdAt: order.created_at,
+      branchId: order.branch_id?.toString(),
     });
     console.log('new-order event emitted successfully');
   } else {
