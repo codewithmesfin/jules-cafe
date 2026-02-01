@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { ShoppingCart, Plus, Minus, Search, Grid, User, UserPlus, ArrowLeft } from 'lucide-react';
 import { api } from '../../utils/api';
@@ -6,8 +6,11 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Card } from '../../components/ui/Card';
 import { Modal } from '../../components/ui/Modal';
+import { Drawer } from '../../components/ui/Drawer';
+import { Badge } from '../../components/ui/Badge';
 import { useNotification } from '../../context/NotificationContext';
 import { useAuth } from '../../context/AuthContext';
+import { cn } from '../../utils/cn';
 import type { MenuItem, MenuCategory, Table, User as UserType, Branch } from '../../types';
 
 interface CartItem extends MenuItem {
@@ -20,6 +23,7 @@ const NewOrder: React.FC = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const orderId = searchParams.get('id');
+
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -27,7 +31,9 @@ const NewOrder: React.FC = () => {
   const [selectedWaiter, setSelectedWaiter] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState('');
   const [orderNotes, setOrderNotes] = useState('');
+
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
+  const [isCartDrawerOpen, setIsCartDrawerOpen] = useState(false);
   const [newCustomer, setNewCustomer] = useState({ name: '', email: '', phone: '', type: 'regular' as 'regular' | 'vip' | 'member', discount: 0 });
 
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
@@ -75,7 +81,6 @@ const NewOrder: React.FC = () => {
       setOrderLoading(true);
       const order = await api.orders.getOne(id);
 
-      // Check if editable
       const editableStatuses = ['pending', 'accepted', 'preparing'];
       if (!editableStatuses.includes(order.status)) {
         showNotification(`Orders in ${order.status} status cannot be edited.`, 'warning');
@@ -147,7 +152,7 @@ const NewOrder: React.FC = () => {
       setSaving(true);
       const orderData = {
         customer_id: selectedCustomer,
-        branch_id: user?.branch_id || (branches.length > 0 ? branches[0].id : ''), // Fallback if user branch not set
+        branch_id: user?.branch_id || (branches.length > 0 ? branches[0].id : ''),
         table_id: selectedTable || undefined,
         waiter_id: selectedWaiter || undefined,
         notes: orderNotes,
@@ -179,6 +184,7 @@ const NewOrder: React.FC = () => {
         setSelectedWaiter('');
         setOrderNotes('');
         setClientRequestId(Math.random().toString(36).substring(2, 15));
+        setIsCartDrawerOpen(false);
       }
     } catch (error: any) {
       showNotification(error.message || `Failed to ${orderId ? 'update' : 'place'} order`, "error");
@@ -187,264 +193,404 @@ const NewOrder: React.FC = () => {
     }
   };
 
-  if (!user?.branch_id) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20 space-y-4">
-        <div className="p-4 bg-orange-100 text-orange-600 rounded-full">
-          <ShoppingCart size={48} />
-        </div>
-        <h2 className="text-xl font-bold text-gray-900">No Branch Associated</h2>
-        <p className="text-gray-500 text-center max-w-md">
-          Please associate this account with a branch to create orders.
-        </p>
-      </div>
-    );
-  }
-
-  if (orderLoading) return <div className="text-center py-20">Loading order details...</div>;
-
-  return (
-    <div className="flex flex-col lg:flex-row h-full lg:h-[calc(100vh-120px)] gap-6 overflow-auto lg:overflow-hidden">
-      {/* Menu Selection */}
-      <div className="flex-1 flex flex-col min-w-0">
-        <div className="flex flex-col sm:flex-row gap-4 mb-6">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <Input
-              placeholder="Search items..."
-              className="pl-10"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
+  const cartContent = (
+    <div className="flex flex-col h-full">
+      <div className="p-4 border-b space-y-4">
+        <div className="space-y-1">
+          <label className="text-xs font-bold text-gray-400 uppercase flex items-center gap-1">
+            <Grid size={12} /> Table
+          </label>
           <select
-            className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
+            className="w-full text-sm border-gray-200 rounded-md bg-gray-50 px-3 py-2 focus:ring-orange-500 focus:border-orange-500"
+            value={selectedTable}
+            onChange={(e) => setSelectedTable(e.target.value)}
           >
-            <option value="all">All Categories</option>
-            {categories.map(cat => (
-              <option key={cat.id} value={cat.id}>{cat.name}</option>
+            <option value="">Select Table (Optional)</option>
+            {tables.filter(t => {
+              const bId = typeof t.branch_id === 'string' ? t.branch_id : (t.branch_id as any)?.id;
+              const userBId = typeof user?.branch_id === 'string' ? user?.branch_id : (user?.branch_id as any)?.id;
+              return bId === userBId;
+            }).map(t => (
+              <option key={t.id} value={t.id}>Table {t.table_number} ({t.capacity} seats)</option>
             ))}
           </select>
         </div>
 
-        {loading ? (
-          <div className="text-center py-10 text-gray-500">Loading menu...</div>
-        ) : (
-          <div className="flex-1 overflow-y-auto pr-2 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-            {filteredItems.map(item => (
-              <Card
-                key={item.id}
-                className="p-3 cursor-pointer hover:border-orange-500 transition-colors flex flex-col"
-                onClick={() => addToCart(item)}
-              >
-                {item.image_url ? (
-                  <img src={item.image_url || null} alt={item.name} className="w-full h-32 object-cover rounded-lg mb-3" />
-                ) : (
-                  <div className="w-full h-32 bg-gray-100 rounded-lg mb-3 flex items-center justify-center text-gray-400">
-                    <Grid size={32} />
-                  </div>
-                )}
-                <div className="flex-1">
-                  <h4 className="font-bold text-gray-900 mb-1">{item.name}</h4>
-                  <p className="text-xs text-gray-500 line-clamp-1 mb-2">{item.description}</p>
-                </div>
-                <div className="flex justify-between items-center mt-auto">
-                  <span className="font-bold text-orange-600">${item.base_price.toFixed(2)}</span>
-                  <Button size="sm" variant="outline"><Plus size={14} /></Button>
-                </div>
-              </Card>
+        <div className="space-y-1">
+          <label className="text-xs font-bold text-gray-400 uppercase flex items-center gap-1">
+            <User size={12} /> Waiter
+          </label>
+          <select
+            className="w-full text-sm border-gray-200 rounded-md bg-gray-50 px-3 py-2 focus:ring-orange-500 focus:border-orange-500"
+            value={selectedWaiter}
+            onChange={(e) => setSelectedWaiter(e.target.value)}
+          >
+            <option value="">Assign Waiter (Optional)</option>
+            {users.filter(u => {
+              const bId = typeof u.branch_id === 'string' ? u.branch_id : (u.branch_id as any)?.id;
+              const userBId = typeof user?.branch_id === 'string' ? user?.branch_id : (user?.branch_id as any)?.id;
+              return u.role === 'staff' && bId === userBId;
+            }).map(u => (
+              <option key={u.id} value={u.id}>{u.full_name || u.username}</option>
             ))}
-          </div>
-        )}
-      </div>
-
-      {/* Cart & Checkout */}
-      <Card className="w-full lg:w-96 flex flex-col p-0 overflow-hidden shrink-0">
-        <div className="p-4 border-b bg-gray-50 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <ShoppingCart size={20} className="text-orange-600" />
-            <h3 className="font-bold text-gray-900">{orderId ? 'Edit Order' : 'Current Order'}</h3>
-          </div>
-          {orderId && (
-            <Button variant="ghost" size="sm" onClick={() => router.push('/cashier/queue')} className="text-gray-500">
-              <ArrowLeft size={16} className="mr-1" /> Back
-            </Button>
-          )}
+          </select>
         </div>
 
-        <div className="p-4 border-b space-y-4">
+        <div className="space-y-1">
+          <label className="text-xs font-bold text-gray-400 uppercase flex items-center gap-1">
+            <User size={12} className="text-orange-600" /> Customer *
+          </label>
           <div className="flex items-center gap-2">
-            <Grid size={16} className="text-gray-400" />
             <select
-              className="flex-1 text-sm border-none bg-transparent focus:ring-0"
-              value={selectedTable}
-              onChange={(e) => setSelectedTable(e.target.value)}
-            >
-              <option value="">Select Table (Optional)</option>
-              {tables.filter(t => {
-                const bId = typeof t.branch_id === 'string' ? t.branch_id : (t.branch_id as any)?.id;
-                const userBId = typeof user?.branch_id === 'string' ? user?.branch_id : (user?.branch_id as any)?.id;
-                return bId === userBId;
-              }).map(t => (
-                <option key={t.id} value={t.id}>Table {t.table_number} ({t.capacity} seats)</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <User size={16} className="text-gray-400" />
-            <select
-              className="flex-1 text-sm border-none bg-transparent focus:ring-0"
-              value={selectedWaiter}
-              onChange={(e) => setSelectedWaiter(e.target.value)}
-            >
-              <option value="">Assign Waiter (Optional)</option>
-              {users.filter(u => {
-                const bId = typeof u.branch_id === 'string' ? u.branch_id : (u.branch_id as any)?.id;
-                const userBId = typeof user?.branch_id === 'string' ? user?.branch_id : (user?.branch_id as any)?.id;
-                return u.role === 'staff' && bId === userBId;
-              }).map(u => (
-                <option key={u.id} value={u.id}>{u.full_name || u.username}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <User size={16} className="text-orange-600" />
-            <select
-              className="flex-1 text-sm border-none bg-transparent focus:ring-0 font-medium"
+              className="flex-1 text-sm border-gray-200 rounded-md bg-gray-50 px-3 py-2 focus:ring-orange-500 focus:border-orange-500 font-medium"
               value={selectedCustomer}
               onChange={(e) => setSelectedCustomer(e.target.value)}
             >
-              <option value="">Select Customer *</option>
+              <option value="">Select Customer</option>
               {users.filter(u => u.role === 'customer').map(u => (
                 <option key={u.id} value={u.id}>{u.full_name} ({u.phone})</option>
               ))}
             </select>
             <button
               onClick={() => setIsCustomerModalOpen(true)}
-              className="p-1 text-orange-600 hover:bg-orange-50 rounded"
+              className="p-2 text-orange-600 hover:bg-orange-50 rounded-md border border-orange-200 transition-colors"
               title="Add New Customer"
             >
               <UserPlus size={18} />
             </button>
           </div>
+        </div>
 
-          <div className="pt-2">
-            <textarea
-              className="w-full text-xs border border-gray-200 rounded-md p-2 focus:ring-orange-500 focus:border-orange-500"
-              placeholder="Order notes (customizations, allergies...)"
-              rows={2}
-              value={orderNotes}
-              onChange={(e) => setOrderNotes(e.target.value)}
-            />
+        <div className="pt-2">
+          <textarea
+            className="w-full text-xs border border-gray-200 rounded-md p-2 bg-gray-50 focus:ring-orange-500 focus:border-orange-500"
+            placeholder="Order notes (customizations, allergies...)"
+            rows={2}
+            value={orderNotes}
+            onChange={(e) => setOrderNotes(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {cart.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-gray-400 space-y-2">
+            <ShoppingCart size={48} strokeWidth={1.5} />
+            <p className="text-sm font-medium">Your cart is empty</p>
+            <p className="text-xs">Select items from the menu to start</p>
           </div>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {cart.length === 0 ? (
-            <div className="text-center py-12 text-gray-400">
-              <p className="text-sm">Cart is empty.</p>
-              <p className="text-xs">Click items to add to order.</p>
-            </div>
-          ) : (
-            cart.map(item => (
-              <div key={item.id} className="flex justify-between items-start gap-3">
-                <div className="flex-1">
-                  <p className="text-sm font-bold text-gray-900">{item.name}</p>
-                  <p className="text-xs text-orange-600 font-medium">${item.base_price.toFixed(2)}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button onClick={() => updateQuantity(item.id, -1)} className="p-1 hover:bg-gray-100 rounded text-gray-500"><Minus size={14} /></button>
-                  <span className="text-sm font-bold w-4 text-center">{item.quantity}</span>
-                  <button onClick={() => updateQuantity(item.id, 1)} className="p-1 hover:bg-gray-100 rounded text-gray-500"><Plus size={14} /></button>
-                </div>
+        ) : (
+          cart.map(item => (
+            <div key={item.id} className="flex justify-between items-center gap-3 p-2 hover:bg-gray-50 rounded-lg transition-colors">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-gray-900 truncate">{item.name}</p>
+                <p className="text-xs text-orange-600 font-bold">${item.base_price.toFixed(2)}</p>
               </div>
-            ))
-          )}
-        </div>
+              <div className="flex items-center gap-3 bg-white border border-gray-100 rounded-full px-2 py-1 shadow-sm">
+                <button
+                  onClick={() => updateQuantity(item.id, -1)}
+                  className="p-1 hover:bg-orange-50 text-orange-600 rounded-full transition-colors"
+                >
+                  <Minus size={14} />
+                </button>
+                <span className="text-sm font-black w-4 text-center">{item.quantity}</span>
+                <button
+                  onClick={() => updateQuantity(item.id, 1)}
+                  className="p-1 hover:bg-orange-50 text-orange-600 rounded-full transition-colors"
+                >
+                  <Plus size={14} />
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
 
-        <div className="p-4 bg-gray-50 border-t space-y-3">
-          <div className="flex justify-between text-sm text-gray-600">
+      <div className="p-4 bg-gray-50 border-t space-y-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+        <div className="space-y-2">
+          <div className="flex justify-between text-sm text-gray-500">
             <span>Subtotal</span>
-            <span>${subtotal.toFixed(2)}</span>
+            <span className="font-medium text-gray-900">${subtotal.toFixed(2)}</span>
           </div>
           {discountRate > 0 && (
-            <div className="flex justify-between text-sm text-green-600">
+            <div className="flex justify-between text-sm text-green-600 font-medium">
               <span>Discount ({customerData?.customer_type?.toUpperCase()} {discountRate}%)</span>
               <span>-${discountAmount.toFixed(2)}</span>
             </div>
           )}
-          <div className="flex justify-between text-lg font-bold text-gray-900">
+          <div className="flex justify-between text-xl font-black text-gray-900 pt-2 border-t border-gray-200">
             <span>Total</span>
-            <span>${total.toFixed(2)}</span>
+            <span className="text-orange-600">${total.toFixed(2)}</span>
           </div>
-          <Button
-            className="w-full"
-            size="lg"
-            disabled={cart.length === 0 || !selectedCustomer || saving}
-            onClick={handlePlaceOrder}
-          >
-            {saving ? 'Processing...' : orderId ? 'Update Order' : 'Place Order'}
-          </Button>
         </div>
-      </Card>
+        <Button
+          className="w-full h-12 text-lg font-bold shadow-lg shadow-orange-200"
+          size="lg"
+          disabled={cart.length === 0 || !selectedCustomer || saving}
+          onClick={handlePlaceOrder}
+        >
+          {saving ? 'Processing...' : orderId ? 'Update Order' : 'Place Order'}
+        </Button>
+      </div>
+    </div>
+  );
+
+  if (!user?.branch_id) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 space-y-6">
+        <div className="w-24 h-24 bg-orange-100 text-orange-600 rounded-3xl flex items-center justify-center shadow-inner">
+          <ShoppingCart size={48} strokeWidth={1.5} />
+        </div>
+        <div className="text-center space-y-2">
+          <h2 className="text-2xl font-black text-gray-900">No Branch Associated</h2>
+          <p className="text-gray-500 max-w-sm">
+            Please associate this account with a branch to begin creating and managing orders.
+          </p>
+        </div>
+        <Button variant="outline" onClick={() => router.push('/cashier/dashboard')}>Return to Dashboard</Button>
+      </div>
+    );
+  }
+
+  if (orderLoading) return (
+    <div className="flex flex-col items-center justify-center h-full space-y-4">
+      <div className="w-12 h-12 border-4 border-orange-200 border-t-orange-600 rounded-full animate-spin"></div>
+      <p className="text-gray-500 font-medium">Loading order details...</p>
+    </div>
+  );
+
+  return (
+    <div className="flex flex-col lg:flex-row h-full lg:h-[calc(100vh-120px)] gap-6 overflow-hidden relative pb-24 lg:pb-0">
+      {/* Menu Selection */}
+      <div className="flex-1 flex flex-col min-w-0 h-full">
+        {/* Header Actions */}
+        <div className="space-y-4 mb-6">
+          <div className="flex items-center gap-4">
+            {orderId && (
+              <button
+                onClick={() => router.push('/cashier/queue')}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500"
+              >
+                <ArrowLeft size={20} />
+              </button>
+            )}
+            <h1 className="text-2xl font-black text-gray-900 truncate">
+              {orderId ? `Editing Order #${orderId.slice(-4)}` : 'Create New Order'}
+            </h1>
+          </div>
+
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="relative flex-1 group">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-orange-500 transition-colors w-4 h-4" />
+              <input
+                placeholder="Search by name or description..."
+                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            {/* Desktop Category Dropdown (fallback for wide screens) */}
+            <div className="hidden xl:block w-64">
+              <select
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all"
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+              >
+                <option value="all">All Categories</option>
+                {categories.map(cat => (
+                  <option key={cat.id} value={cat.id}>{cat.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Category Pills (Mobile & Tablet optimized) */}
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-2 px-2 no-scrollbar">
+            <button
+              onClick={() => setSelectedCategory('all')}
+              className={cn(
+                "whitespace-nowrap px-6 py-2 rounded-full text-sm font-bold transition-all border shrink-0",
+                selectedCategory === 'all'
+                  ? "bg-orange-600 border-orange-600 text-white shadow-md shadow-orange-100 scale-105"
+                  : "bg-white border-gray-200 text-gray-600 hover:border-orange-200 hover:bg-orange-50"
+              )}
+            >
+              All Items
+            </button>
+            {categories.map(cat => (
+              <button
+                key={cat.id}
+                onClick={() => setSelectedCategory(cat.id)}
+                className={cn(
+                  "whitespace-nowrap px-6 py-2 rounded-full text-sm font-bold transition-all border shrink-0",
+                  selectedCategory === cat.id
+                    ? "bg-orange-600 border-orange-600 text-white shadow-md shadow-orange-100 scale-105"
+                    : "bg-white border-gray-200 text-gray-600 hover:border-orange-200 hover:bg-orange-50"
+                )}
+              >
+                {cat.name}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Menu Items Grid */}
+        <div className="flex-1 overflow-y-auto pr-2 pb-6 no-scrollbar">
+          {loading ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+                <div key={i} className="bg-gray-100 animate-pulse rounded-2xl h-56" />
+              ))}
+            </div>
+          ) : filteredItems.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 text-gray-400 space-y-4">
+              <div className="p-4 bg-gray-50 rounded-full">
+                <Search size={32} strokeWidth={1.5} />
+              </div>
+              <p className="font-medium">No items found matching your criteria</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+              {filteredItems.map(item => (
+                <div
+                  key={item.id}
+                  className="group relative bg-white border border-gray-100 rounded-2xl p-3 shadow-sm hover:shadow-xl hover:border-orange-200 transition-all cursor-pointer flex flex-col active:scale-95"
+                  onClick={() => addToCart(item)}
+                >
+                  <div className="relative aspect-square mb-3 overflow-hidden rounded-xl bg-gray-50">
+                    {item.image_url ? (
+                      <img
+                        src={item.image_url || undefined}
+                        alt={item.name}
+                        className="w-full h-full object-cover transition-transform group-hover:scale-110 duration-500"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-300 group-hover:text-orange-300 transition-colors">
+                        <Grid size={48} strokeWidth={1} />
+                      </div>
+                    )}
+                    <div className="absolute top-2 right-2">
+                      <div className="bg-white/90 backdrop-blur-md p-1.5 rounded-full shadow-sm">
+                        <Plus size={16} className="text-orange-600" />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex-1 flex flex-col">
+                    <h4 className="font-bold text-gray-900 text-sm sm:text-base mb-1 line-clamp-1 group-hover:text-orange-600 transition-colors">{item.name}</h4>
+                    <p className="text-[10px] sm:text-xs text-gray-500 line-clamp-2 mb-2 min-h-[2.5em]">{item.description}</p>
+                    <div className="mt-auto pt-2 flex justify-between items-center border-t border-gray-50">
+                      <span className="font-black text-orange-600 text-base">${item.base_price.toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Desktop Cart Panel */}
+      <aside className="hidden lg:flex w-96 shrink-0 flex-col bg-white border border-gray-100 rounded-3xl shadow-2xl shadow-gray-200/50 overflow-hidden h-full">
+        <div className="p-6 bg-orange-600 text-white flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-white/20 rounded-xl backdrop-blur-md">
+              <ShoppingCart size={20} />
+            </div>
+            <div>
+              <h3 className="font-black text-lg leading-tight">Order Details</h3>
+              <p className="text-orange-100 text-xs font-medium uppercase tracking-widest">Cashier Terminal</p>
+            </div>
+          </div>
+          {orderId && (
+            <Badge className="bg-white/20 text-white border-none">EDIT</Badge>
+          )}
+        </div>
+        {cartContent}
+      </aside>
+
+      {/* Mobile Sticky Footer */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4 z-40 flex items-center gap-4 shadow-[0_-8px_30px_rgb(0,0,0,0.12)]">
+        <div className="flex-1">
+          <p className="text-[10px] text-gray-500 font-black uppercase tracking-wider">Total Amount</p>
+          <p className="text-2xl font-black text-orange-600">${total.toFixed(2)}</p>
+        </div>
+        <button
+          className="bg-orange-600 text-white px-6 h-12 rounded-xl flex items-center gap-2 font-black shadow-lg shadow-orange-100 relative active:scale-95 transition-transform"
+          onClick={() => setIsCartDrawerOpen(true)}
+        >
+          <ShoppingCart size={18} />
+          View Cart
+          {cart.length > 0 && (
+            <span className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white text-[10px] font-bold flex items-center justify-center rounded-full border-2 border-white animate-bounce">
+              {cart.reduce((acc, item) => acc + item.quantity, 0)}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {/* Mobile Cart Drawer */}
+      <Drawer
+        isOpen={isCartDrawerOpen}
+        onClose={() => setIsCartDrawerOpen(false)}
+        title="Current Order"
+      >
+        <div className="h-[calc(100vh-140px)]">
+          {cartContent}
+        </div>
+      </Drawer>
 
       <Modal
         isOpen={isCustomerModalOpen}
         onClose={() => setIsCustomerModalOpen(false)}
-        title="Add New Customer"
+        title="Register New Customer"
         footer={
-          <>
-            <Button variant="outline" onClick={() => setIsCustomerModalOpen(false)}>Cancel</Button>
-            <Button onClick={async () => {
+          <div className="flex gap-3 w-full">
+            <Button variant="outline" className="flex-1" onClick={() => setIsCustomerModalOpen(false)}>Cancel</Button>
+            <Button className="flex-1" onClick={async () => {
               try {
                 await api.users.create({
                   ...newCustomer,
                   full_name: newCustomer.name,
                   role: 'customer',
                   status: 'active',
-                  password: 'password123' // Default password for new customers
+                  password: 'password123'
                 });
                 showNotification("Customer added successfully!");
                 setIsCustomerModalOpen(false);
-                // Refresh users
                 const usrs = await api.users.getAll();
                 setUsers(usrs);
               } catch (error: any) {
                 showNotification(error.message || "Failed to add customer", "error");
               }
-            }}>Add Customer</Button>
-          </>
+            }}>Register Customer</Button>
+          </div>
         }
       >
-        <div className="space-y-4">
+        <div className="space-y-5 py-2">
           <Input
             label="Full Name"
-            placeholder="John Doe"
+            placeholder="e.g. John Doe"
             value={newCustomer.name}
             onChange={(e) => setNewCustomer({...newCustomer, name: e.target.value})}
           />
           <Input
             label="Phone Number"
-            placeholder="555-0123"
+            placeholder="e.g. +1 234 567 890"
             value={newCustomer.phone}
             onChange={(e) => setNewCustomer({...newCustomer, phone: e.target.value})}
           />
           <Input
             label="Email Address (Optional)"
             type="email"
-            placeholder="john@example.com"
+            placeholder="e.g. john@example.com"
             value={newCustomer.email}
             onChange={(e) => setNewCustomer({...newCustomer, email: e.target.value})}
           />
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Customer Type</label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div className="space-y-1">
+              <label className="block text-sm font-bold text-gray-700">Loyalty Status</label>
               <select
-                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all"
                 value={newCustomer.type}
                 onChange={(e) => {
                   const type = e.target.value as 'regular' | 'vip' | 'member';
@@ -454,9 +600,9 @@ const NewOrder: React.FC = () => {
                   setNewCustomer({...newCustomer, type, discount});
                 }}
               >
-                <option value="regular">Regular</option>
-                <option value="member">Member (5%)</option>
-                <option value="vip">VIP (15%)</option>
+                <option value="regular">Regular Guest</option>
+                <option value="member">Member (5% Off)</option>
+                <option value="vip">VIP Guest (15% Off)</option>
               </select>
             </div>
             <Input
@@ -468,6 +614,16 @@ const NewOrder: React.FC = () => {
           </div>
         </div>
       </Modal>
+
+      <style jsx global>{`
+        .no-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        .no-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+      `}</style>
     </div>
   );
 };

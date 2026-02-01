@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { Clock, MoreVertical, Edit2 } from 'lucide-react';
+import { Clock, Edit2, ShoppingBag, CheckCircle, Play, XCircle, ChevronRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { api } from '../../utils/api';
 import { Button } from '../../components/ui/Button';
@@ -8,6 +8,7 @@ import { Badge } from '../../components/ui/Badge';
 import { Card } from '../../components/ui/Card';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
+import { cn } from '../../utils/cn';
 import type { Order, User } from '../../types';
 
 const OrderQueue: React.FC = () => {
@@ -61,31 +62,38 @@ const OrderQueue: React.FC = () => {
   if (!user?.branch_id) {
     return (
       <div className="flex flex-col items-center justify-center py-20 space-y-4">
-        <div className="p-4 bg-orange-100 text-orange-600 rounded-full">
-          <Clock size={48} />
+        <div className="p-6 bg-orange-100 text-orange-600 rounded-3xl shadow-inner">
+          <Clock size={48} strokeWidth={1.5} />
         </div>
-        <h2 className="text-xl font-bold text-gray-900">No Branch Associated</h2>
-        <p className="text-gray-500 text-center max-w-md">
-          Please associate this account with a branch to view the order queue.
-        </p>
+        <div className="text-center space-y-2">
+          <h2 className="text-2xl font-black text-gray-900">No Branch Associated</h2>
+          <p className="text-gray-500 max-w-sm">
+            Please associate this account with a branch to view the live order queue.
+          </p>
+        </div>
       </div>
     );
   }
 
-  if (loading) return <div className="text-center py-20">Loading queue...</div>;
-
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-2xl font-bold text-gray-900">Live Order Queue</h1>
-        <div className="flex gap-2 p-1 bg-gray-100 rounded-lg">
+    <div className="space-y-8 pb-10">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
+        <div>
+          <h1 className="text-3xl font-black text-gray-900 tracking-tight">Live Order Queue</h1>
+          <p className="text-gray-500 font-medium">Manage and track incoming orders in real-time</p>
+        </div>
+
+        <div className="flex p-1.5 bg-gray-100 rounded-2xl w-full sm:w-auto overflow-x-auto no-scrollbar">
           {(['active', 'completed', 'cancelled'] as const).map((f) => (
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${
-                filter === f ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-              }`}
+              className={cn(
+                "px-6 py-2 text-sm font-black rounded-xl transition-all whitespace-nowrap shrink-0",
+                filter === f
+                  ? "bg-white text-orange-600 shadow-sm"
+                  : "text-gray-500 hover:text-gray-700 hover:bg-white/50"
+              )}
             >
               <span className="capitalize">{f}</span>
             </button>
@@ -93,87 +101,174 @@ const OrderQueue: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {filteredOrders.length === 0 ? (
-          <div className="col-span-full py-20 text-center bg-white rounded-xl border-2 border-dashed border-gray-200">
-            <p className="text-gray-500">No orders found in this category.</p>
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          {[1, 2, 3, 4, 5, 6].map(i => (
+            <div key={i} className="bg-white border border-gray-100 rounded-3xl h-64 animate-pulse shadow-sm" />
+          ))}
+        </div>
+      ) : filteredOrders.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-32 bg-white rounded-[2rem] border-2 border-dashed border-gray-100">
+          <div className="p-4 bg-gray-50 rounded-full text-gray-300 mb-4">
+            <ShoppingBag size={48} />
           </div>
-        ) : (
-          filteredOrders.map(order => (
-            <Card key={order.id} className="p-0 overflow-hidden flex flex-col">
-              <div className="p-4 border-b flex justify-between items-start">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-bold text-lg text-gray-900">{order.order_number}</span>
-                    <Badge variant={order.type === 'walk-in' ? 'info' : 'neutral'}>
+          <p className="text-gray-400 font-bold text-lg">No {filter} orders found</p>
+          <p className="text-gray-300 text-sm">New orders will appear here automatically</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {filteredOrders.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).map(order => {
+            const customerId = typeof order.customer_id === 'string' ? order.customer_id : (order.customer_id as any)?.id;
+            const customer = users.find(u => u.id === customerId);
+            const itemsCount = (order as any).items?.reduce((acc: number, item: any) => acc + item.quantity, 0) || 0;
+
+            return (
+              <Card key={order.id} className="p-0 overflow-hidden flex flex-col border-gray-100 rounded-[2rem] hover:shadow-2xl hover:shadow-gray-200/50 transition-all group border hover:border-orange-100">
+                {/* Header */}
+                <div className="p-5 border-b border-gray-50">
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-[10px] font-black text-orange-600 uppercase tracking-widest mb-1">
+                        Order #{order.order_number.split('-').pop()}
+                      </span>
+                      <h3 className="font-black text-gray-900 truncate">
+                        {customer?.full_name || customer?.username || 'Guest'}
+                      </h3>
+                    </div>
+                    <Badge variant={order.type === 'walk-in' ? 'info' : 'neutral'} className="font-black shrink-0">
                       {order.type}
                     </Badge>
                   </div>
-                  <p className="text-xs text-gray-500">
-                    {(() => {
-                      const customerId = typeof order.customer_id === 'string' ? order.customer_id : (order.customer_id as any)?.id;
-                      const customer = users.find(u => u.id === customerId);
-                      return customer?.full_name || customer?.username || 'Walk-in Guest';
-                    })()}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-bold text-orange-600">${order.total_amount.toFixed(2)}</p>
-                  <div className="flex items-center gap-1 text-[10px] text-gray-400 mt-1">
-                    <Clock size={10} />
-                    <span>{new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                  </div>
-                </div>
-              </div>
 
-              <div className="flex-1 p-4 bg-gray-50/50">
-                <div className="flex justify-between items-center mb-4">
-                  <Badge
-                    variant={
-                      ['preparing', 'ready'].includes(order.status) ? 'warning' :
-                      order.status === 'completed' ? 'success' : 'neutral'
-                    }
-                    className="capitalize"
-                  >
-                    {order.status}
-                  </Badge>
-                  <div className="flex gap-1">
-                    {['pending', 'accepted', 'preparing'].includes(order.status) && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        title="Edit Order"
-                        onClick={() => router.push(`/cashier/new-order?id=${order.id}`)}
-                      >
-                        <Edit2 size={14} />
-                      </Button>
-                    )}
-                    <Button variant="ghost" size="sm"><MoreVertical size={14} /></Button>
+                  <div className="flex items-center gap-3 text-[10px] font-bold text-gray-400 uppercase tracking-tight">
+                    <div className="flex items-center gap-1">
+                      <Clock size={12} className="text-gray-300" />
+                      <span>{new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    </div>
+                    <div className="w-1 h-1 bg-gray-200 rounded-full" />
+                    <div className="flex items-center gap-1">
+                      <ShoppingBag size={12} className="text-gray-300" />
+                      <span>{itemsCount} {itemsCount === 1 ? 'Item' : 'Items'}</span>
+                    </div>
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Quick Actions</div>
-                  <div className="flex gap-2">
-                    {order.status === 'pending' && (
-                      <Button size="sm" className="w-full bg-orange-600 hover:bg-orange-700" onClick={() => handleUpdateStatus(order.id, 'preparing')}>Accept</Button>
-                    )}
-                    {order.status === 'preparing' && (
-                      <Button size="sm" className="w-full bg-green-600 hover:bg-green-700" onClick={() => handleUpdateStatus(order.id, 'ready')}>Ready</Button>
-                    )}
-                    {order.status === 'ready' && (
-                      <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-700" onClick={() => handleUpdateStatus(order.id, 'completed')}>Complete</Button>
-                    )}
-                    {['pending', 'preparing'].includes(order.status) && (
-                      <Button size="sm" variant="outline" className="text-red-600 border-red-200 hover:bg-red-50" onClick={() => handleUpdateStatus(order.id, 'cancelled')}>Cancel</Button>
+                {/* Body - Items Summary */}
+                <div className="flex-1 p-5 bg-gray-50/30">
+                  <div className="space-y-2 mb-6">
+                    {(order as any).items?.slice(0, 3).map((item: any, idx: number) => (
+                      <div key={idx} className="flex justify-between text-xs font-bold">
+                        <span className="text-gray-600 truncate flex-1">
+                          <span className="text-orange-600 mr-1.5">{item.quantity}x</span>
+                          {item.menu_item_name}
+                        </span>
+                        <span className="text-gray-400 ml-2 shrink-0">${(item.unit_price * item.quantity).toFixed(2)}</span>
+                      </div>
+                    ))}
+                    {((order as any).items?.length || 0) > 3 && (
+                      <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest pt-1">
+                        + {((order as any).items?.length || 0) - 3} more items
+                      </div>
                     )}
                   </div>
+
+                  <div className="flex justify-between items-center mt-auto pt-4 border-t border-gray-100">
+                    <Badge
+                      variant={
+                        order.status === 'preparing' ? 'warning' :
+                        order.status === 'ready' ? 'info' :
+                        order.status === 'completed' ? 'success' : 'neutral'
+                      }
+                      className="capitalize px-3 py-1 rounded-lg"
+                    >
+                      {order.status}
+                    </Badge>
+                    <div className="font-black text-lg text-gray-900">
+                      ${order.total_amount.toFixed(2)}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </Card>
-          ))
-        )}
-      </div>
+
+                {/* Footer - Actions */}
+                <div className="p-4 bg-white flex items-center gap-2 border-t border-gray-50">
+                  {filter === 'active' && (
+                    <>
+                      {order.status === 'pending' && (
+                        <Button
+                          size="sm"
+                          className="flex-1 h-10 rounded-xl bg-orange-600 hover:bg-orange-700 shadow-lg shadow-orange-100 font-black gap-2"
+                          onClick={() => handleUpdateStatus(order.id, 'preparing')}
+                        >
+                          <Play size={14} fill="currentColor" /> Accept
+                        </Button>
+                      )}
+                      {order.status === 'preparing' && (
+                        <Button
+                          size="sm"
+                          className="flex-1 h-10 rounded-xl bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-100 font-black gap-2"
+                          onClick={() => handleUpdateStatus(order.id, 'ready')}
+                        >
+                          <CheckCircle size={14} /> Ready
+                        </Button>
+                      )}
+                      {order.status === 'ready' && (
+                        <Button
+                          size="sm"
+                          className="flex-1 h-10 rounded-xl bg-green-600 hover:bg-green-700 shadow-lg shadow-green-100 font-black gap-2"
+                          onClick={() => handleUpdateStatus(order.id, 'completed')}
+                        >
+                          <CheckCircle size={14} /> Complete
+                        </Button>
+                      )}
+
+                      {['pending', 'accepted', 'preparing'].includes(order.status) && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-10 w-10 p-0 rounded-xl border-gray-200 hover:bg-gray-50 hover:border-orange-200 shrink-0"
+                          onClick={() => router.push(`/cashier/new-order?id=${order.id}`)}
+                        >
+                          <Edit2 size={16} className="text-gray-400 group-hover:text-orange-500 transition-colors" />
+                        </Button>
+                      )}
+
+                      {['pending', 'preparing'].includes(order.status) && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-10 w-10 p-0 rounded-xl border-gray-200 hover:bg-red-50 hover:border-red-200 text-red-400 shrink-0"
+                          onClick={() => handleUpdateStatus(order.id, 'cancelled')}
+                        >
+                          <XCircle size={16} />
+                        </Button>
+                      )}
+                    </>
+                  )}
+                  {filter !== 'active' && (
+                    <Button
+                      variant="ghost"
+                      className="w-full h-10 rounded-xl font-black text-gray-400 group-hover:text-orange-600 transition-colors gap-2"
+                      onClick={() => router.push(`/cashier/new-order?id=${order.id}`)}
+                    >
+                      View Details <ChevronRight size={16} />
+                    </Button>
+                  )}
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      <style jsx global>{`
+        .no-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        .no-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+      `}</style>
     </div>
   );
 };

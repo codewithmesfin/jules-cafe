@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Edit, Trash2, Grid } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, Grid, QrCode, Download, Printer } from 'lucide-react';
 import { api } from '../../utils/api';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -16,6 +16,7 @@ const Tables: React.FC = () => {
   const { showNotification } = useNotification();
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   const [selectedTable, setSelectedTable] = useState<Table | null>(null);
   const [tables, setTables] = useState<Table[]>([]);
   const [loading, setLoading] = useState(true);
@@ -77,6 +78,11 @@ const Tables: React.FC = () => {
     setIsModalOpen(true);
   };
 
+  const handleOpenQrModal = (table: Table) => {
+    setSelectedTable(table);
+    setIsQrModalOpen(true);
+  };
+
   const handleSave = async () => {
     if (!formTableNumber || !user?.branch_id) {
       showNotification('Please fill in all fields (Branch ID missing)', 'error');
@@ -115,6 +121,12 @@ const Tables: React.FC = () => {
         showNotification('Failed to delete table', 'error');
       }
     }
+  };
+
+  const generateQrUrl = (table: Table) => {
+    const baseUrl = window.location.origin;
+    const menuUrl = `${baseUrl}/menu?branchId=${user.branch_id}&tableId=${table.id}&tableNo=${table.table_number}`;
+    return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(menuUrl)}`;
   };
 
   return (
@@ -168,6 +180,7 @@ const Tables: React.FC = () => {
               header: 'Actions',
               accessor: (t) => (
                 <div className="flex items-center gap-2">
+                  <Button variant="ghost" size="sm" className="text-blue-600" onClick={() => handleOpenQrModal(t)} title="Generate QR Code"><QrCode size={16} /></Button>
                   <Button variant="ghost" size="sm" onClick={() => handleOpenModal(t)}><Edit size={16} /></Button>
                   <Button variant="ghost" size="sm" className="text-red-600" onClick={() => handleDelete(t.id)}><Trash2 size={16} /></Button>
                 </div>
@@ -177,6 +190,7 @@ const Tables: React.FC = () => {
         />
       )}
 
+      {/* Add/Edit Modal */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -218,6 +232,69 @@ const Tables: React.FC = () => {
           </div>
         </div>
       </Modal>
+
+      {/* QR Code Modal */}
+      <Modal
+        isOpen={isQrModalOpen}
+        onClose={() => setIsQrModalOpen(false)}
+        title={`QR Code for Table ${selectedTable?.table_number}`}
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setIsQrModalOpen(false)}>Close</Button>
+            <Button className="gap-2" onClick={() => window.print()}>
+              <Printer size={16} /> Print
+            </Button>
+          </>
+        }
+      >
+        {selectedTable && (
+          <div className="flex flex-col items-center justify-center py-8 space-y-6" id="printable-qr">
+            <div className="bg-white p-6 rounded-3xl shadow-xl border border-gray-100 flex flex-col items-center space-y-4">
+              <div className="text-center">
+                <h2 className="text-2xl font-black text-gray-900">TABLE {selectedTable.table_number}</h2>
+                <p className="text-orange-600 font-bold text-sm uppercase tracking-widest">Scan to Order</p>
+              </div>
+
+              <div className="w-64 h-64 bg-gray-50 rounded-2xl flex items-center justify-center overflow-hidden border-4 border-white shadow-inner">
+                <img
+                  src={generateQrUrl(selectedTable)}
+                  alt="Table QR Code"
+                  className="w-full h-full"
+                />
+              </div>
+
+              <div className="text-center space-y-1">
+                <p className="text-xs text-gray-400 font-medium italic">Powered by</p>
+                <div className="flex items-center gap-1">
+                   <span className="text-lg font-black tracking-tighter uppercase">Coffee<span className="text-orange-600">Hub</span></span>
+                </div>
+              </div>
+            </div>
+
+            <p className="text-sm text-gray-500 text-center max-w-xs">
+              Print this code and attach it to Table {selectedTable.table_number}. Customers can scan this to view the menu and place orders directly from their seats.
+            </p>
+          </div>
+        )}
+      </Modal>
+
+      <style jsx global>{`
+        @media print {
+          body * {
+            visibility: hidden;
+          }
+          #printable-qr, #printable-qr * {
+            visibility: visible;
+          }
+          #printable-qr {
+            position: fixed;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+          }
+        }
+      `}</style>
     </div>
   );
 };
