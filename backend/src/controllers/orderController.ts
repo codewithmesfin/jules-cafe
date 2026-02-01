@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import Order from '../models/Order';
 import User from '../models/User';
+import Review from '../models/Review';
+import Branch from '../models/Branch';
 import * as factory from '../utils/controllerFactory';
 import { deductInventoryForOrder, revertInventoryForOrder } from '../utils/inventoryUtils';
 import { sendEmail } from '../utils/mailer';
@@ -28,10 +30,11 @@ export const updateOrder = catchAsync(async (req: AuthRequest, res: Response, ne
   const statusChanged = req.body.status && req.body.status !== existingOrder.status;
 
   // Handle inventory adjustments
+  const userId = req.user?._id || req.user?.id || (existingOrder.created_by as any);
   if (itemsChanged && existingOrder.status !== 'cancelled') {
-    await revertInventoryForOrder(existingOrder, req.user?._id || req.user?.id || 'system');
+    await revertInventoryForOrder(existingOrder, userId);
   } else if (statusChanged && req.body.status === 'cancelled' && existingOrder.status !== 'cancelled') {
-    await revertInventoryForOrder(existingOrder, req.user?._id || req.user?.id || 'system');
+    await revertInventoryForOrder(existingOrder, userId);
   } else if (statusChanged && existingOrder.status === 'cancelled' && req.body.status !== 'cancelled') {
     // Will be handled after update
   }
@@ -46,9 +49,9 @@ export const updateOrder = catchAsync(async (req: AuthRequest, res: Response, ne
   }
 
   if (itemsChanged && order.status !== 'cancelled') {
-    await deductInventoryForOrder(order, req.user?._id || req.user?.id || 'system');
+    await deductInventoryForOrder(order, userId);
   } else if (statusChanged && existingOrder.status === 'cancelled' && order.status !== 'cancelled') {
-    await deductInventoryForOrder(order, req.user?._id || req.user?.id || 'system');
+    await deductInventoryForOrder(order, userId);
   }
 
   res.status(200).json(order);
@@ -71,7 +74,8 @@ export const deleteOrder = catchAsync(async (req: AuthRequest, res: Response, ne
   // Revert inventory if order was active
   if (order.status !== 'cancelled' && order.status !== 'completed') {
     try {
-      await revertInventoryForOrder(order, req.user?._id || req.user?.id || 'system');
+      const userId = req.user?._id || req.user?.id || (order.created_by as any);
+      await revertInventoryForOrder(order, userId);
     } catch (err) {
       console.error('Failed to revert inventory on deletion:', err);
     }
@@ -109,7 +113,8 @@ export const createOrder = catchAsync(async (req: AuthRequest, res: Response, ne
 
   // Deduct Inventory based on Recipes
   try {
-    await deductInventoryForOrder(order, req.user?._id || req.user?.id || 'system');
+    const userId = req.user?._id || req.user?.id || (order.created_by as any);
+    await deductInventoryForOrder(order, userId);
   } catch (inventoryError) {
     console.error('Failed to deduct inventory:', inventoryError);
     // We continue even if inventory deduction fails to not block the order
@@ -135,29 +140,83 @@ export const createOrder = catchAsync(async (req: AuthRequest, res: Response, ne
 
 export const getStats = catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
   const query: any = {};
+  const branchId = req.user?.role === 'manager' ? req.user.branch_id : req.query.branch_id;
 
-  // Branch filtering for managers
-  if (req.user?.role === 'manager' && req.user.branch_id) {
-    query.branch_id = req.user.branch_id;
+  if (branchId) {
+    query.branch_id = branchId;
   }
 
-  // Basic stats for dashboard
+  // 1. Basic counts
   const totalOrders = await Order.countDocuments(query);
 
-  const revenueMatch: any = { status: 'completed' };
-  if (query.branch_id) revenueMatch.branch_id = query.branch_id;
-
-  const totalRevenue = await Order.aggregate([
+  // 2. Revenue calculation
+  const revenueMatch: any = { status: 'completed', ...query };
+  const totalRevenueData = await Order.aggregate([
     { $match: revenueMatch },
     { $group: { _id: null, total: { $sum: '$total_amount' } } },
   ]);
+  const totalRevenue = totalRevenueData[0]?.total || 0;
+
+  // 3. Revenue per day (last 30 days)
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+  const revenuePerDay = await Order.aggregate([
+    {
+      $match: {
+        status: 'completed',
+        created_at: { $gte: thirtyDaysAgo },
+        ...query
+      }
+    },
+    {
+      $group: {
+        _id: { $dateToString: { format: "%Y-%m-%d", date: "$created_at" } },
+        total: { $sum: "$total_amount" }
+      }
+    },
+    { $sort: { _id: 1 } }
+  ]);
+
+  // 4. Orders per Branch
+  let topBranches = [];
+  if (!branchId) {
+    const branchStats = await Order.aggregate([
+      {
+        $group: {
+          _id: "$branch_id",
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { count: -1 } },
+      { $limit: 5 }
+    ]);
+
+    // Populate branch names
+    topBranches = await Promise.all(branchStats.map(async (stat) => {
+      const branch = await Branch.findById(stat._id);
+      return {
+        name: branch?.branch_name || 'Unknown Branch',
+        count: stat.count
+      };
+    }));
+  }
+
+  // 5. Average Rating
+  const reviewMatch: any = { is_approved: true };
+  if (branchId) reviewMatch.branch_id = branchId;
+
+  const ratingData = await Review.aggregate([
+    { $match: reviewMatch },
+    { $group: { _id: null, avg: { $avg: "$rating" } } }
+  ]);
+  const avgRating = ratingData[0]?.avg || 0;
 
   res.json({
     totalOrders,
-    totalRevenue: totalRevenue[0]?.total || 0,
-    // Mocking other fields for frontend compatibility if needed
-    avgRating: 4.5,
-    topBranches: [],
-    revenuePerDay: []
+    totalRevenue,
+    avgRating,
+    topBranches,
+    revenuePerDay
   });
 });

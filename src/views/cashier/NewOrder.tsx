@@ -56,6 +56,10 @@ const NewOrder: React.FC = () => {
         setTables(tbls);
         setUsers(usrs);
         setBranches(brnchs);
+
+        if (orderId) {
+          fetchOrderDetails(orderId, items);
+        }
       } catch (error: any) {
         console.error('Failed to fetch data:', error);
         showNotification(error.message || 'Failed to fetch data', 'error');
@@ -64,12 +68,9 @@ const NewOrder: React.FC = () => {
       }
     };
     fetchData();
-    if (orderId) {
-      fetchOrderDetails(orderId);
-    }
   }, [orderId]);
 
-  const fetchOrderDetails = async (id: string) => {
+  const fetchOrderDetails = async (id: string, allMenuItems: MenuItem[]) => {
     try {
       setOrderLoading(true);
       const order = await api.orders.getOne(id);
@@ -88,17 +89,16 @@ const NewOrder: React.FC = () => {
       setOrderNotes(order.notes || '');
 
       const cartItems: CartItem[] = order.items.map((item: any) => {
-        // We need to find the original menu item to get all details like image/description
-        // or we just use what we have in order items.
-        // For editing, having the ID and basic info is enough to render the cart.
+        const originalItem = allMenuItems.find(mi => mi.id === item.menu_item_id || (mi as any)._id === item.menu_item_id);
+
         return {
           id: item.menu_item_id,
           name: item.menu_item_name,
           base_price: item.unit_price,
           quantity: item.quantity,
-          description: '', // Fallback
-          image_url: '', // Fallback
-          category_id: '' // Fallback
+          description: originalItem?.description || '',
+          image_url: originalItem?.image_url || '',
+          category_id: originalItem?.category_id || ''
         } as CartItem;
       });
       setCart(cartItems);
@@ -239,7 +239,13 @@ const NewOrder: React.FC = () => {
                 className="p-3 cursor-pointer hover:border-orange-500 transition-colors flex flex-col"
                 onClick={() => addToCart(item)}
               >
-                <img src={item.image_url} alt={item.name} className="w-full h-32 object-cover rounded-lg mb-3" />
+                {item.image_url ? (
+                  <img src={item.image_url} alt={item.name} className="w-full h-32 object-cover rounded-lg mb-3" />
+                ) : (
+                  <div className="w-full h-32 bg-gray-100 rounded-lg mb-3 flex items-center justify-center text-gray-400">
+                    <Grid size={32} />
+                  </div>
+                )}
                 <div className="flex-1">
                   <h4 className="font-bold text-gray-900 mb-1">{item.name}</h4>
                   <p className="text-xs text-gray-500 line-clamp-1 mb-2">{item.description}</p>

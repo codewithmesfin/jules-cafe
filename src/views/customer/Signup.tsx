@@ -29,7 +29,6 @@ const Signup: React.FC = () => {
       showNotification('Account created successfully! Please log in.', 'success');
       router.push('/login');
     } catch (error: any) {
-      console.log(error)
       showNotification(error.message, 'error');
     } finally {
       setLoading(false);
