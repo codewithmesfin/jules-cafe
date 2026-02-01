@@ -19,6 +19,7 @@ export interface IOrder extends Document {
   type: 'walk-in' | 'self-service';
   total_amount: number;
   discount_amount?: number;
+  notes?: string;
   cancel_reason?: string;
   items: IOrderItem[];
   client_request_id?: string;
@@ -54,6 +55,7 @@ const OrderSchema: Schema = new Schema({
   },
   total_amount: { type: Number, required: true },
   discount_amount: { type: Number, default: 0 },
+  notes: { type: String },
   cancel_reason: { type: String },
   items: [OrderItemSchema],
   client_request_id: { type: String, unique: true, sparse: true },

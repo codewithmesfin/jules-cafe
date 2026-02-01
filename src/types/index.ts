@@ -92,8 +92,10 @@ export interface Order {
   type: OrderType;
   total_amount: number;
   discount_amount?: number;
+  notes?: string;
   created_at: string;
   cancel_reason?: string;
+  client_request_id?: string;
 }
 
 export interface OrderItem {
@@ -122,6 +124,7 @@ export interface Reservation {
   guests_count: number;
   status: ReservationStatus;
   note: string;
+  client_request_id?: string;
   created_at: string;
 }
 
@@ -135,6 +138,7 @@ export interface Review {
   rating: number;
   comment: string;
   is_approved: boolean;
+  client_request_id?: string;
   created_at: string;
 }
 

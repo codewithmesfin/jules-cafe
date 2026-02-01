@@ -21,6 +21,8 @@ const Reviews: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [clientRequestId, setClientRequestId] = useState(() => Math.random().toString(36).substring(2, 15));
 
   useEffect(() => {
     fetchData();
@@ -56,19 +58,24 @@ const Reviews: React.FC = () => {
     }
 
     try {
+      setSaving(true);
       await api.reviews.create({
         customer_id: user.id,
         branch_id: selectedBranchId,
         rating,
         comment,
-        is_approved: false // Needs moderation
+        is_approved: false, // Needs moderation
+        client_request_id: clientRequestId
       });
       showNotification('Thank you! Your review has been submitted for approval.');
       setRating(0);
       setComment('');
+      setClientRequestId(Math.random().toString(36).substring(2, 15));
       fetchData();
-    } catch (error) {
-      showNotification('Failed to submit review', 'error');
+    } catch (error: any) {
+      showNotification(error.message || 'Failed to submit review', 'error');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -144,7 +151,9 @@ const Reviews: React.FC = () => {
                   onChange={(e) => setComment(e.target.value)}
                 />
               </div>
-              <Button className="w-full" size="lg" onClick={handleSubmit}>Submit Review</Button>
+              <Button className="w-full" size="lg" onClick={handleSubmit} disabled={saving}>
+                {saving ? 'Submitting...' : 'Submit Review'}
+              </Button>
             </div>
           </Card>
         </div>

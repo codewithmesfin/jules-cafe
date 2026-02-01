@@ -10,6 +10,7 @@ export interface IReservation extends Document {
   guests_count: number;
   status: 'requested' | 'confirmed' | 'seated' | 'cancelled' | 'no_show';
   note: string;
+  client_request_id?: string;
   created_by?: mongoose.Types.ObjectId;
   created_at: Date;
   updated_at: Date;
@@ -29,6 +30,7 @@ const ReservationSchema: Schema = new Schema({
     default: 'requested'
   },
   note: { type: String },
+  client_request_id: { type: String, unique: true, sparse: true },
   created_by: { type: Schema.Types.ObjectId, ref: 'User' },
 }, { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } });
 

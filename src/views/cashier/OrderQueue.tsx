@@ -138,14 +138,16 @@ const OrderQueue: React.FC = () => {
                     {order.status}
                   </Badge>
                   <div className="flex gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      title="Edit Order"
-                      onClick={() => router.push(`/cashier/new-order?id=${order.id}`)}
-                    >
-                      <Edit2 size={14} />
-                    </Button>
+                    {['pending', 'accepted', 'preparing'].includes(order.status) && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        title="Edit Order"
+                        onClick={() => router.push(`/cashier/new-order?id=${order.id}`)}
+                      >
+                        <Edit2 size={14} />
+                      </Button>
+                    )}
                     <Button variant="ghost" size="sm"><MoreVertical size={14} /></Button>
                   </div>
                 </div>

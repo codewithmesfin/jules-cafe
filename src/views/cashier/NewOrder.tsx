@@ -26,6 +26,7 @@ const NewOrder: React.FC = () => {
   const [selectedTable, setSelectedTable] = useState('');
   const [selectedWaiter, setSelectedWaiter] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState('');
+  const [orderNotes, setOrderNotes] = useState('');
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
   const [newCustomer, setNewCustomer] = useState({ name: '', email: '', phone: '', type: 'regular' as 'regular' | 'vip' | 'member', discount: 0 });
 
@@ -35,6 +36,7 @@ const NewOrder: React.FC = () => {
   const [users, setUsers] = useState<UserType[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [orderLoading, setOrderLoading] = useState(false);
   const [clientRequestId, setClientRequestId] = useState(() => Math.random().toString(36).substring(2, 15));
 
@@ -72,9 +74,18 @@ const NewOrder: React.FC = () => {
       setOrderLoading(true);
       const order = await api.orders.getOne(id);
 
+      // Check if editable
+      const editableStatuses = ['pending', 'accepted', 'preparing'];
+      if (!editableStatuses.includes(order.status)) {
+        showNotification(`Orders in ${order.status} status cannot be edited.`, 'warning');
+        router.push('/cashier/queue');
+        return;
+      }
+
       setSelectedCustomer(typeof order.customer_id === 'string' ? order.customer_id : order.customer_id.id);
       setSelectedTable(order.table_id ? (typeof order.table_id === 'string' ? order.table_id : order.table_id.id) : '');
       setSelectedWaiter(order.waiter_id ? (typeof order.waiter_id === 'string' ? order.waiter_id : order.waiter_id.id) : '');
+      setOrderNotes(order.notes || '');
 
       const cartItems: CartItem[] = order.items.map((item: any) => {
         // We need to find the original menu item to get all details like image/description
@@ -133,11 +144,13 @@ const NewOrder: React.FC = () => {
 
   const handlePlaceOrder = async () => {
     try {
+      setSaving(true);
       const orderData = {
         customer_id: selectedCustomer,
         branch_id: user?.branch_id || (branches.length > 0 ? branches[0].id : ''), // Fallback if user branch not set
         table_id: selectedTable || undefined,
         waiter_id: selectedWaiter || undefined,
+        notes: orderNotes,
         status: 'pending',
         type: 'walk-in',
         total_amount: total,
@@ -164,10 +177,13 @@ const NewOrder: React.FC = () => {
         setSelectedCustomer('');
         setSelectedTable('');
         setSelectedWaiter('');
+        setOrderNotes('');
         setClientRequestId(Math.random().toString(36).substring(2, 15));
       }
     } catch (error: any) {
       showNotification(error.message || `Failed to ${orderId ? 'update' : 'place'} order`, "error");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -309,6 +325,16 @@ const NewOrder: React.FC = () => {
               <UserPlus size={18} />
             </button>
           </div>
+
+          <div className="pt-2">
+            <textarea
+              className="w-full text-xs border border-gray-200 rounded-md p-2 focus:ring-orange-500 focus:border-orange-500"
+              placeholder="Order notes (customizations, allergies...)"
+              rows={2}
+              value={orderNotes}
+              onChange={(e) => setOrderNotes(e.target.value)}
+            />
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -352,10 +378,10 @@ const NewOrder: React.FC = () => {
           <Button
             className="w-full"
             size="lg"
-            disabled={cart.length === 0 || !selectedCustomer}
+            disabled={cart.length === 0 || !selectedCustomer || saving}
             onClick={handlePlaceOrder}
           >
-            {orderId ? 'Update Order' : 'Place Order'}
+            {saving ? 'Processing...' : orderId ? 'Update Order' : 'Place Order'}
           </Button>
         </div>
       </Card>
