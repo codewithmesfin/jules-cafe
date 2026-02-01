@@ -118,7 +118,11 @@ export const api = {
     delete: (id: string) => fetcher(`/api/branch-menu-items/${id}`, { method: 'DELETE' }),
   },
   stats: {
-    getDashboard: () => fetcher('/api/stats'),
+    getDashboard: (params?: string) => fetcher(`/api/stats${params ? `?${params}` : ''}`),
+    getSales: (params?: string) => fetcher(`/api/analytics/sales${params ? `?${params}` : ''}`),
+    getStock: (params?: string) => fetcher(`/api/analytics/stock${params ? `?${params}` : ''}`),
+    getProducts: (params?: string) => fetcher(`/api/analytics/products${params ? `?${params}` : ''}`),
+    getBranches: (params?: string) => fetcher(`/api/analytics/branches${params ? `?${params}` : ''}`),
   },
   items: {
     getAll: () => fetcher('/api/items'),

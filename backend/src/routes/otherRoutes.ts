@@ -7,6 +7,12 @@ import Recipe from '../models/Recipe';
 import * as factory from '../utils/controllerFactory';
 import { protect, authorize } from '../middleware/auth';
 import { getStats } from '../controllers/orderController';
+import {
+  getSalesAnalytics,
+  getStockAnalytics,
+  getProductAnalytics,
+  getBranchPerformance
+} from '../controllers/analyticsController';
 import { 
   getAllInventory, 
   getOneInventory, 
@@ -18,6 +24,12 @@ import {
 const router = express.Router();
 
 router.get('/stats', protect, authorize('admin', 'manager'), getStats);
+
+// Analytics
+router.get('/analytics/sales', protect, authorize('admin', 'manager'), getSalesAnalytics);
+router.get('/analytics/stock', protect, authorize('admin', 'manager'), getStockAnalytics);
+router.get('/analytics/products', protect, authorize('admin', 'manager'), getProductAnalytics);
+router.get('/analytics/branches', protect, authorize('admin'), getBranchPerformance);
 
 // MenuVariant
 router.route('/menu-variants')
