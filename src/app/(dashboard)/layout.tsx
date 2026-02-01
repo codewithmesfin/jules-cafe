@@ -73,6 +73,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           { icon: Star, label: 'Reviews', path: '/manager/reviews' },
         ];
       case 'cashier':
+      case 'staff':
         return [
           { icon: LayoutDashboard, label: 'Dashboard', path: '/cashier' },
           { icon: PlusSquare, label: 'New Order', path: '/cashier/new-order' },

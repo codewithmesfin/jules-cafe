@@ -56,6 +56,20 @@ const OrderQueue: React.FC = () => {
     return order.status === filter;
   });
 
+  if (!user?.branch_id) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 space-y-4">
+        <div className="p-4 bg-orange-100 text-orange-600 rounded-full">
+          <Clock size={48} />
+        </div>
+        <h2 className="text-xl font-bold text-gray-900">No Branch Associated</h2>
+        <p className="text-gray-500 text-center max-w-md">
+          Please associate this account with a branch to view the order queue.
+        </p>
+      </div>
+    );
+  }
+
   if (loading) return <div className="text-center py-20">Loading queue...</div>;
 
   return (

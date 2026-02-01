@@ -121,6 +121,20 @@ const NewOrder: React.FC = () => {
     }
   };
 
+  if (!user?.branch_id) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 space-y-4">
+        <div className="p-4 bg-orange-100 text-orange-600 rounded-full">
+          <ShoppingCart size={48} />
+        </div>
+        <h2 className="text-xl font-bold text-gray-900">No Branch Associated</h2>
+        <p className="text-gray-500 text-center max-w-md">
+          Please associate this account with a branch to create orders.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col lg:flex-row h-full lg:h-[calc(100vh-120px)] gap-6 overflow-auto lg:overflow-hidden">
       {/* Menu Selection */}
