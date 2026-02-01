@@ -172,13 +172,13 @@ const MenuItems: React.FC = () => {
   const openEditModal = (item: MenuItem) => {
     setEditingItem(item);
     setFormItemId(item.item_id || '');
-    setFormName(item.name);
+    setFormName(item.name || '');
     const catId = typeof item.category_id === 'string' ? item.category_id : (item.category_id as any)?.id;
     setFormCategoryId(catId || '');
-    setFormBasePrice(item.base_price);
-    setFormImageUrl(item.image_url);
-    setFormDescription(item.description);
-    setFormIsActive(item.is_active);
+    setFormBasePrice(item.base_price || 0);
+    setFormImageUrl(item.image_url || '');
+    setFormDescription(item.description || '');
+    setFormIsActive(!!item.is_active);
     setIsModalOpen(true);
   };
 

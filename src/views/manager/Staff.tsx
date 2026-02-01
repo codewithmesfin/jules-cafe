@@ -190,11 +190,11 @@ const Staff: React.FC = () => {
                     onClick={() => {
                       setEditingUser(user);
                       setFormFullName(user.full_name || '');
-                      setFormEmail(user.email);
+                      setFormEmail(user.email || '');
                       setFormPhone(user.phone || '');
                       setFormPassword('');
-                      setFormRole(user.role);
-                      setFormStatus(user.status);
+                      setFormRole(user.role || 'staff');
+                      setFormStatus(user.status || 'active');
                       setIsModalOpen(true);
                     }}
                   >

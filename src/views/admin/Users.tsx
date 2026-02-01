@@ -224,13 +224,13 @@ const Users: React.FC = () => {
                     onClick={() => {
                       setEditingUser(user);
                       setFormFullName(user.full_name || '');
-                      setFormEmail(user.email);
+                      setFormEmail(user.email || '');
                       setFormPhone(user.phone || '');
                       setFormPassword('');
-                      setFormRole(user.role);
+                      setFormRole(user.role || 'customer');
                       const branchId = typeof user.branch_id === 'string' ? user.branch_id : (user.branch_id as any)?.id;
                       setFormBranchId(branchId || '');
-                      setFormStatus(user.status);
+                      setFormStatus(user.status || 'active');
                       setFormCustomerType(user.customer_type || 'regular');
                       setFormDiscountRate(user.discount_rate || 0);
                       setIsModalOpen(true);

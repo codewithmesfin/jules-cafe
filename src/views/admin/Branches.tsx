@@ -61,7 +61,7 @@ const Branches: React.FC = () => {
       setOpenTime(branch.opening_time || '09:00');
       setCloseTime(branch.closing_time || '22:00');
       setCapacity(branch.capacity || 50);
-      setIsActive(branch.is_active);
+      setIsActive(!!branch.is_active);
     } else {
       setName('');
       setLocation('');

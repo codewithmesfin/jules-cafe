@@ -205,8 +205,8 @@ const Items = () => {
                     size="sm"
                     onClick={() => {
                       setEditingItem(item);
-                      setFormItemName(item.item_name);
-                      setFormItemType(item.item_type);
+                      setFormItemName(item.item_name || "");
+                      setFormItemType(item.item_type || "ingredient");
                       setFormCategory(item.category || "");
                       setFormUnit(item.unit || "");
                       setFormDefaultPrice(item.default_price || 0);

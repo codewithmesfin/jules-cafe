@@ -148,9 +148,9 @@ const Categories: React.FC = () => {
                     size="sm"
                     onClick={() => {
                       setEditingCategory(cat);
-                      setFormName(cat.name);
-                      setFormDescription(cat.description);
-                      setFormIsActive(cat.is_active);
+                      setFormName(cat.name || '');
+                      setFormDescription(cat.description || '');
+                      setFormIsActive(!!cat.is_active);
                       setIsModalOpen(true);
                     }}
                   >

@@ -66,9 +66,9 @@ const Tables: React.FC = () => {
   const handleOpenModal = (table: Table | null = null) => {
     setSelectedTable(table);
     if (table) {
-      setFormTableNumber(table.table_number);
-      setFormCapacity(table.capacity);
-      setFormStatus(table.status);
+      setFormTableNumber(table.table_number || '');
+      setFormCapacity(table.capacity || 2);
+      setFormStatus(table.status || 'available');
     } else {
       setFormTableNumber('');
       setFormCapacity(2);
