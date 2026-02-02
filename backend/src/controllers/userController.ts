@@ -9,27 +9,20 @@ import AppError from '../utils/appError';
 export const getAllUsers = catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
   let query: any = {};
 
-  // Tenant isolation for non-customer users
-  // Note: Customers are returned regardless of company_id (for multi-tenant customer lists)
+  // Tenant isolation - only show users belonging to the admin's company
   if (req.user && req.user.role !== 'customer' && req.user.company_id) {
-    // For admin/manager/cashier, show users in their company OR customers without company_id
-    query = {
-      $or: [
-        { company_id: req.user.company_id },
-        { role: 'customer' } // Include customers even without company_id
-      ]
-    };
+    query.company_id = req.user.company_id;
+  } else if (req.user && req.user.role !== 'customer' && !req.user.company_id) {
+    // If user has no company_id, return empty results (they shouldn't see any users)
+    res.status(200).json([]);
+    return;
   }
 
+  // Branch isolation for manager/staff/cashier
   if (req.user.role === 'manager' || req.user.role === 'staff' || req.user.role === 'cashier') {
-    // Managers/Staff/Cashiers can see users in their branch OR any customer
-    query = {
-      ...query,
-      $or: [
-        { branch_id: req.user.branch_id },
-        { role: 'customer' }
-      ]
-    };
+    if (req.user.branch_id) {
+      query.branch_id = req.user.branch_id;
+    }
   }
 
   const docs = await User.find(query).populate(req.query.populate as string || '');
