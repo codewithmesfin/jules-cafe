@@ -1,0 +1,43 @@
+services:
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    restart: always
+
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - MONGO_URI=mongodb://mongodb:27017/abc_cafe
+      - JWT_SECRET=supersafesecret
+      - BASE_URL=http://localhost:8000
+      - FRONTEND_URL=http://localhost:3000
+      - EMAIL_HOST=smtp.mailtrap.io
+      - EMAIL_PORT=2525
+      - EMAIL_USER=test@example.com
+      - EMAIL_PASS=password
+    depends_on:
+      - mongodb
+    restart: always
+
+  frontend:
+    build:
+      context: .
+      args:
+        - NEXT_PUBLIC_API_URL=http://localhost:8000
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+    restart: always
+
+volumes:
+  mongodb_data:

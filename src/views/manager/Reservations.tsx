@@ -10,7 +10,7 @@ import { Modal } from '../../components/ui/Modal';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { getSocket, joinManagerRoom } from '../../utils/socket';
-import type { Reservation, User as UserType } from '../../types';
+import type { Reservation, User as UserType, ReservationStatus } from '../../types';
 
 const Reservations: React.FC = () => {
   const { user } = useAuth();
@@ -55,7 +55,7 @@ const Reservations: React.FC = () => {
     // Listen for reservation status updates
     socket.on('reservation-status-update', (data: { reservationId: string; status: string }) => {
       setReservations(prev => prev.map(res => 
-        res.id === data.reservationId ? { ...res, status: data.status } : res
+        res.id === data.reservationId ? { ...res, status: data.status as ReservationStatus } : res
       ));
     });
     

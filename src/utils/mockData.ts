@@ -21,7 +21,7 @@ export const MOCK_BRANCHES: Branch[] = [
     opening_time: '08:00',
     closing_time: '22:00',
     capacity: 50,
-    company: 'c1'
+    company_id: 'c1'
   },
   {
     id: 'b2',
@@ -31,7 +31,7 @@ export const MOCK_BRANCHES: Branch[] = [
     opening_time: '10:00',
     closing_time: '23:00',
     capacity: 30,
-    company: 'c1'
+    company_id: 'c1'
   },
 ];
 
