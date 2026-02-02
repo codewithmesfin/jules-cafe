@@ -83,7 +83,6 @@ const Branches: React.FC = () => {
         closing_time: closeTime,
         capacity,
         is_active: isActive,
-        company: user?.company || ''
       };
 
       if (selectedBranch) {

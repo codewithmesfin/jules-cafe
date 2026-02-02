@@ -9,9 +9,22 @@ import AppError from '../utils/appError';
 export const getAllUsers = catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
   let query: any = {};
 
+  // Tenant isolation for non-customer users
+  // Note: Customers are returned regardless of company_id (for multi-tenant customer lists)
+  if (req.user && req.user.role !== 'customer' && req.user.company_id) {
+    // For admin/manager/cashier, show users in their company OR customers without company_id
+    query = {
+      $or: [
+        { company_id: req.user.company_id },
+        { role: 'customer' } // Include customers even without company_id
+      ]
+    };
+  }
+
   if (req.user.role === 'manager' || req.user.role === 'staff' || req.user.role === 'cashier') {
     // Managers/Staff/Cashiers can see users in their branch OR any customer
     query = {
+      ...query,
       $or: [
         { branch_id: req.user.branch_id },
         { role: 'customer' }
@@ -79,8 +92,11 @@ export const createUser = catchAsync(async (req: AuthRequest, res: Response, nex
     data.branch_id = req.user.branch_id;
   }
 
-  // Automatically set created_by to the authenticated user's ID
+  // Automatically set created_by and company_id
   data.created_by = req.user?._id || req.user?.id;
+  if (req.user && req.user.company_id) {
+    data.company_id = req.user.company_id;
+  }
 
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(password || 'password123', salt);

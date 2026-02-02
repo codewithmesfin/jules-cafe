@@ -16,6 +16,18 @@ export const createMenuItem = catchAsync(async (req: AuthRequest, res: Response,
   // Automatically set created_by to the authenticated user's ID
   data.created_by = req.user?._id || req.user?.id;
 
+  // Auto-set company_id from user
+  if (req.user?.company_id) {
+    data.company_id = req.user.company_id;
+  }
+
+  // Auto-set branch_id from user (for manager/staff/cashier) or from request
+  if (!data.branch_id) {
+    if (['manager', 'staff', 'cashier'].includes(req.user?.role) && req.user?.branch_id) {
+      data.branch_id = req.user.branch_id;
+    }
+  }
+
   // Validate item_id is required and references Items table
   if (!data.item_id || data.item_id === '') {
     return next(new AppError('item_id is required. Please select an item from the Items catalog.', 400));

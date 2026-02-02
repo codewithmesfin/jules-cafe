@@ -45,15 +45,16 @@ const MenuView: React.FC = () => {
       try {
         setLoading(true);
         const [items, cats, brnchs, bmItems] = await Promise.all([
-          api.menuItems.getAll(),
-          api.categories.getAll(),
-          api.branches.getAll(),
-          api.branchMenuItems.getAll(),
+          api.public.menuItems.getAll(),
+          api.public.categories.getAll(),
+          api.public.branches.getAll(),
+          api.public.branchMenuItems.getAll(),
         ]);
-        setMenuItems(items);
-        setCategories(cats);
-        setBranches(brnchs);
-        setBranchMenuItems(bmItems);
+        // API returns data in standard format with id transformation
+        setMenuItems(items?.data || items);
+        setCategories(cats?.data || cats);
+        setBranches(brnchs?.data || brnchs);
+        setBranchMenuItems(bmItems?.data || bmItems);
       } catch (error) {
         console.error('Failed to fetch data:', error);
       } finally {

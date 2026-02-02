@@ -25,7 +25,7 @@ const BranchProfile: React.FC = () => {
   const [closeTime, setCloseTime] = useState('');
 
   // Company is automatically set from the logged-in user's company
-  const userCompany = user?.company || '';
+  const userCompanyId = user?.company_id || '';
 
   useEffect(() => {
     if (user?.branch_id) {
@@ -64,7 +64,6 @@ const BranchProfile: React.FC = () => {
         capacity,
         opening_time: openTime,
         closing_time: closeTime,
-        company: userCompany
       });
       showNotification('Branch profile updated successfully');
     } catch (error) {
@@ -97,14 +96,6 @@ const BranchProfile: React.FC = () => {
       <form onSubmit={handleSave} className="space-y-6">
         <Card title="General Information">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4">
-            <div className="md:col-span-2">
-              <Input
-                label="Company"
-                value={userCompany}
-                disabled
-                className="bg-gray-50"
-              />
-            </div>
             <div className="md:col-span-2">
               <Input
                 label="Branch Name"

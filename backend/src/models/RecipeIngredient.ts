@@ -6,6 +6,7 @@ import mongoose, { Schema, Document } from 'mongoose';
  */
 export interface IRecipeIngredient extends Document {
   recipe_id: mongoose.Types.ObjectId;
+  company_id?: mongoose.Types.ObjectId;
   item_id: mongoose.Types.ObjectId;
   quantity: number;
   unit: string;
@@ -20,6 +21,7 @@ export interface IRecipeIngredient extends Document {
 
 const RecipeIngredientSchema: Schema = new Schema({
   recipe_id: { type: Schema.Types.ObjectId, ref: 'Recipe', required: true },
+  company_id: { type: Schema.Types.ObjectId, ref: 'Company' },
   item_id: { type: Schema.Types.ObjectId, ref: 'Item', required: true },
   quantity: { type: Number, required: true },
   unit: { type: String, required: true },

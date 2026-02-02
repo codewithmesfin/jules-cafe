@@ -3,6 +3,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 export interface IReservation extends Document {
   customer_id: mongoose.Types.ObjectId;
   branch_id: mongoose.Types.ObjectId;
+  company_id?: mongoose.Types.ObjectId;
   table_id?: mongoose.Types.ObjectId;
   waiter_id?: mongoose.Types.ObjectId;
   reservation_date: string;
@@ -11,6 +12,8 @@ export interface IReservation extends Document {
   status: 'requested' | 'confirmed' | 'seated' | 'cancelled' | 'no_show';
   note: string;
   client_request_id?: string;
+  email?: string;
+  phone?: string;
   created_by?: mongoose.Types.ObjectId;
   created_at: Date;
   updated_at: Date;
@@ -19,6 +22,7 @@ export interface IReservation extends Document {
 const ReservationSchema: Schema = new Schema({
   customer_id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   branch_id: { type: Schema.Types.ObjectId, ref: 'Branch', required: true },
+  company_id: { type: Schema.Types.ObjectId, ref: 'Company' },
   table_id: { type: Schema.Types.ObjectId, ref: 'Table' },
   waiter_id: { type: Schema.Types.ObjectId, ref: 'User' },
   reservation_date: { type: String, required: true },
@@ -31,6 +35,8 @@ const ReservationSchema: Schema = new Schema({
   },
   note: { type: String },
   client_request_id: { type: String, unique: true, sparse: true },
+  email: { type: String },
+  phone: { type: String },
   created_by: { type: Schema.Types.ObjectId, ref: 'User' },
 }, { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } });
 

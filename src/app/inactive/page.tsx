@@ -3,13 +3,13 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/Button';
-import { AlertTriangle, Mail, Shield, User, Clock, CheckCircle } from 'lucide-react';
+import { AlertTriangle, Mail, User, Clock, CheckCircle, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 export default function InactivePage() {
     const { user, logout } = useAuth();
-    const router = useRouter()
+    const router = useRouter();
 
     const getStatusMessage = () => {
         switch (user?.status) {
@@ -17,42 +17,84 @@ export default function InactivePage() {
                 return {
                     title: 'Account Deactivated',
                     description: 'Your account has been deactivated. Please contact the Administrator to reactivate your account.',
-                    color: 'red'
+                    color: 'red',
+                    action: 'Contact Administrator'
                 };
             case 'pending':
                 return {
                     title: 'Account Pending Approval',
                     description: 'Your account is still pending approval from the Administrator. Please wait for activation.',
-                    color: 'yellow'
+                    color: 'yellow',
+                    action: 'Wait for Approval'
                 };
             case 'suspended':
                 return {
                     title: 'Account Suspended',
                     description: 'Your account has been suspended due to a policy violation. Please contact the Administrator for more information.',
-                    color: 'orange'
+                    color: 'orange',
+                    action: 'Contact Administrator'
+                };
+            case 'onboarding':
+                return {
+                    title: 'Complete Your Setup',
+                    description: 'Please complete your company setup to activate your account and access all features.',
+                    color: 'blue',
+                    action: 'Go to Setup',
+                    actionLink: '/company-setup'
                 };
             default:
                 return {
                     title: 'Account Inactive',
                     description: 'Your account is not active. Please contact the Administrator to activate your account.',
-                    color: 'orange'
+                    color: 'orange',
+                    action: 'Contact Administrator'
                 };
         }
     };
 
-    const [statusInfo, setUserStatus] = useState<any>({ title: "", description: "", color: "" })
+    const [statusInfo, setStatusInfo] = useState<any>({ 
+        title: '', 
+        description: '', 
+        color: '',
+        action: '',
+        actionLink: null
+    });
+
     useEffect(() => {
-        if (user?.status == 'active')
-            router.back()
-        const statusDetail = getStatusMessage();
-        setUserStatus(statusDetail)
-    }, [])
+        if (user?.status === 'active') {
+            // Redirect to dashboard if already active
+            const dashboardPath = user.role === 'admin' ? '/admin' : 
+                                 user.role === 'manager' ? '/manager' : 
+                                 user.role === 'cashier' ? '/cashier' : '/';
+            router.push(dashboardPath);
+            return;
+        }
+        const status = getStatusMessage();
+        setStatusInfo(status);
+    }, [user, router]);
+
+    const getColorClasses = (color: string) => {
+        switch (color) {
+            case 'red':
+                return { bg: 'bg-red-100', text: 'text-red-700', icon: 'bg-red-200' };
+            case 'yellow':
+                return { bg: 'bg-yellow-100', text: 'text-yellow-700', icon: 'bg-yellow-200' };
+            case 'orange':
+                return { bg: 'bg-orange-100', text: 'text-orange-700', icon: 'bg-orange-200' };
+            case 'blue':
+                return { bg: 'bg-blue-100', text: 'text-blue-700', icon: 'bg-blue-200' };
+            default:
+                return { bg: 'bg-gray-100', text: 'text-gray-700', icon: 'bg-gray-200' };
+        }
+    };
+
+    const colors = getColorClasses(statusInfo.color);
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
             <div className="max-w-xl w-full bg-white rounded-2xl shadow-xl overflow-hidden">
                 {/* Header Section */}
-                <div className={`bg-gradient-to-r from-orange-500 to-orange-600 p-8 text-center relative overflow-hidden`}>
+                <div className="bg-gradient-to-r from-orange-500 to-orange-600 p-8 text-center relative overflow-hidden">
                     <div className="absolute inset-0 bg-black/10"></div>
                     <div className="relative z-10">
                         <div className="inline-flex items-center justify-center w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full mb-6">
@@ -77,10 +119,7 @@ export default function InactivePage() {
                                 <p className="text-xs text-gray-500 capitalize">{user?.role} Account</p>
                             </div>
                             <div className="text-right">
-                                <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium ${statusInfo.color === 'red' ? 'bg-red-100 text-red-700' :
-                                    statusInfo.color === 'yellow' ? 'bg-yellow-100 text-yellow-700' :
-                                        'bg-orange-100 text-orange-700'
-                                    }`}>
+                                <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium ${colors.text} ${colors.bg}`}>
                                     <Clock size={14} />
                                     {user?.status ? user.status.charAt(0).toUpperCase() + user.status.slice(1) : 'Unknown'}
                                 </span>
@@ -95,18 +134,37 @@ export default function InactivePage() {
                             What You Need To Do
                         </h3>
                         <div className="space-y-3 pl-7">
-                            <p className="text-gray-600 text-sm">
-                                1. Contact the System Administrator to activate your account
-                            </p>
-                            <p className="text-gray-600 text-sm">
-                                2. Provide your account email: <strong className="text-gray-900">{user?.email}</strong>
-                            </p>
-                            <p className="text-gray-600 text-sm">
-                                3. Wait for the Administrator to review and activate your account
-                            </p>
-                            <p className="text-gray-600 text-sm">
-                                4. Once activated, you will be able to access all dashboard features
-                            </p>
+                            {user?.status === 'onboarding' ? (
+                                <>
+                                    <p className="text-gray-600 text-sm">
+                                        1. Click "Go to Setup" to complete your company configuration
+                                    </p>
+                                    <p className="text-gray-600 text-sm">
+                                        2. Fill in your company and branch details
+                                    </p>
+                                    <p className="text-gray-600 text-sm">
+                                        3. Once completed, your account will be activated automatically
+                                    </p>
+                                    <p className="text-gray-600 text-sm">
+                                        4. After activation, you will have full access to all dashboard features
+                                    </p>
+                                </>
+                            ) : (
+                                <>
+                                    <p className="text-gray-600 text-sm">
+                                        1. Contact the System Administrator to activate your account
+                                    </p>
+                                    <p className="text-gray-600 text-sm">
+                                        2. Provide your account email: <strong className="text-gray-900">{user?.email}</strong>
+                                    </p>
+                                    <p className="text-gray-600 text-sm">
+                                        3. Wait for the Administrator to review and activate your account
+                                    </p>
+                                    <p className="text-gray-600 text-sm">
+                                        4. Once activated, you will be able to access all dashboard features
+                                    </p>
+                                </>
+                            )}
                         </div>
                     </div>
 
@@ -134,11 +192,19 @@ export default function InactivePage() {
                         >
                             Logout
                         </Button>
-                        <Link href="/" className="flex-1">
-                            <Button className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700">
-                                Go to Homepage
+                        {statusInfo.actionLink ? (
+                            <Link href={statusInfo.actionLink} className="flex-1">
+                                <Button className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700">
+                                    <span className="flex items-center justify-center gap-2">
+                                        {statusInfo.action} <ArrowRight size={16} />
+                                    </span>
+                                </Button>
+                            </Link>
+                        ) : (
+                            <Button className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700">
+                                {statusInfo.action}
                             </Button>
-                        </Link>
+                        )}
                     </div>
                 </div>
 

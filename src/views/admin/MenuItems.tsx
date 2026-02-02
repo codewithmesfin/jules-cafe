@@ -9,10 +9,14 @@ import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
 import { ConfirmationDialog } from '../../components/ui/ConfirmationDialog';
 import { useNotification } from '../../context/NotificationContext';
+import { useAuth } from '../../context/AuthContext';
 import type { MenuItem, MenuCategory, Recipe, InventoryItem, Branch, Item } from '../../types';
 
 const MenuItems: React.FC = () => {
   const { showNotification } = useNotification();
+  const { user } = useAuth();
+  const isManager = user?.role === 'manager';
+  const userBranchId = user?.branch_id;
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [items, setItems] = useState<Item[]>([]); // Items from master Items table
   const [categories, setCategories] = useState<MenuCategory[]>([]);
@@ -32,6 +36,7 @@ const MenuItems: React.FC = () => {
   const [formItemId, setFormItemId] = useState(''); // Selected from Items table
   const [formName, setFormName] = useState('');
   const [formCategoryId, setFormCategoryId] = useState('');
+  const [formBranchId, setFormBranchId] = useState(''); // Branch for this menu item
   const [formBasePrice, setFormBasePrice] = useState(0);
   const [formImageUrl, setFormImageUrl] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -112,6 +117,7 @@ const MenuItems: React.FC = () => {
       formData.append('item_id', formItemId);
       formData.append('name', formName);
       formData.append('category_id', formCategoryId);
+      formData.append('branch_id', formBranchId);
       formData.append('base_price', formBasePrice.toString());
       formData.append('description', formDescription);
       formData.append('is_active', formIsActive.toString());
@@ -161,6 +167,8 @@ const MenuItems: React.FC = () => {
     setFormItemId('');
     setFormName('');
     setFormCategoryId(categories[0]?.id || categories[0]?._id || '');
+    // Manager: auto-set to user's branch, Admin: leave empty
+    setFormBranchId(isManager && userBranchId ? userBranchId : '');
     setFormBasePrice(0);
     setFormImageUrl('');
     setImageFile(null);
@@ -175,6 +183,8 @@ const MenuItems: React.FC = () => {
     setFormName(item.name);
     const catId = typeof item.category_id === 'string' ? item.category_id : (item.category_id as any)?.id;
     setFormCategoryId(catId || '');
+    const branchId = typeof item.branch_id === 'string' ? item.branch_id : (item.branch_id as any)?.id;
+    setFormBranchId(branchId || '');
     setFormBasePrice(item.base_price);
     setFormImageUrl(item?.image_url);
     setFormDescription(item.description || '');
@@ -349,6 +359,24 @@ const MenuItems: React.FC = () => {
             value={formBasePrice}
             onChange={(e) => setFormBasePrice(parseFloat(e.target.value) || 0)}
           />
+          {/* Branch Selector: Only show for admins, managers auto-set to their branch */}
+          {!isManager && (
+            <div className="w-full">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Branch</label>
+              <select
+                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                value={formBranchId}
+                onChange={(e) => setFormBranchId(e.target.value)}
+              >
+                <option value="">Select Branch</option>
+                {branches.map(branch => (
+                  <option key={branch.id || branch._id} value={branch.id || branch._id}>
+                    {branch.name || branch.branch_name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className="space-y-4">
             <Input
               label="Image URL (fallback)"

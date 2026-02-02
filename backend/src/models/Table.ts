@@ -2,6 +2,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 
 export interface ITable extends Document {
   branch_id: mongoose.Types.ObjectId;
+  company_id?: mongoose.Types.ObjectId;
   table_number: string;
   capacity: number;
   status: 'available' | 'occupied' | 'reserved';
@@ -12,6 +13,7 @@ export interface ITable extends Document {
 
 const TableSchema: Schema = new Schema({
   branch_id: { type: Schema.Types.ObjectId, ref: 'Branch', required: true },
+  company_id: { type: Schema.Types.ObjectId, ref: 'Company' },
   table_number: { type: String, required: true },
   capacity: { type: Number, required: true },
   status: {

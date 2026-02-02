@@ -28,6 +28,7 @@ export const deductInventoryForOrder = async (order: IOrder, userId: string) => 
 
           await StockEntry.create({
             branch_id: order.branch_id,
+            company_id: order.company_id,
             item_id: ingredient.item_id,
             entry_type: 'sale',
             quantity: deductionQuantity,
@@ -67,6 +68,7 @@ export const revertInventoryForOrder = async (order: IOrder, userId: string) => 
 
           await StockEntry.create({
             branch_id: order.branch_id,
+            company_id: order.company_id,
             item_id: ingredient.item_id,
             entry_type: 'return',
             quantity: revertQuantity,

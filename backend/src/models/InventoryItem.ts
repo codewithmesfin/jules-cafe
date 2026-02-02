@@ -6,6 +6,7 @@ import mongoose, { Schema, Document } from 'mongoose';
  */
 export interface IInventoryItem extends Document {
   branch_id: mongoose.Types.ObjectId;
+  company_id?: mongoose.Types.ObjectId;
   item_id: mongoose.Types.ObjectId;
   current_quantity: number;
   reserved_quantity: number;
@@ -25,6 +26,7 @@ export interface IInventoryItem extends Document {
 
 const InventoryItemSchema: Schema = new Schema({
   branch_id: { type: Schema.Types.ObjectId, ref: 'Branch', required: true },
+  company_id: { type: Schema.Types.ObjectId, ref: 'Company' },
   item_id: { type: Schema.Types.ObjectId, ref: 'Item', required: true },
   current_quantity: { type: Number, required: true, default: 0 },
   reserved_quantity: { type: Number, default: 0 },

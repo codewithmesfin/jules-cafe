@@ -1,8 +1,8 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 /**
- * User - Handles all user types including:
- * - admin: System administrator
+ * User Model - Handles all user types including:
+ * - admin: System administrator (tenant owner)
  * - manager: Branch manager (can manage their branch)
  * - staff: Restaurant staff (chefs, waiters, etc.)
  * - cashier: Cashier for processing payments
@@ -14,9 +14,14 @@ export interface IUser extends Document {
   full_name?: string;
   phone?: string;
   role: 'admin' | 'manager' | 'staff' | 'cashier' | 'customer';
-  status: 'active' | 'inactive' | 'pending' | 'suspended';
+  status: 'active' | 'inactive' | 'pending' | 'suspended' | 'onboarding';
+  
+  // Multi-tenancy - User belongs to a company (tenant)
+  company_id?: mongoose.Types.ObjectId;
+  
+  // Branch assignment (for staff/cashier/manager)
   branch_id?: mongoose.Types.ObjectId;
-  company?: string;
+  managed_branches?: mongoose.Types.ObjectId[];
   
   // Customer-specific fields
   customer_type?: 'regular' | 'vip' | 'member';
@@ -30,9 +35,6 @@ export interface IUser extends Document {
   hire_date?: Date;
   position?: string;
   salary?: number;
-  
-  // Manager-specific fields
-  managed_branches?: mongoose.Types.ObjectId[];
   
   // Security
   passwordResetToken?: string;
@@ -60,11 +62,16 @@ const UserSchema: Schema = new Schema({
   },
   status: {
     type: String,
-    enum: ['active', 'inactive', 'pending', 'suspended'],
+    enum: ['active', 'inactive', 'pending', 'suspended', 'onboarding'],
     default: 'pending'
   },
-  branch_id: { type: Schema.Types.ObjectId, ref: 'Branch' },
-  company: { type: String },
+  
+  // Multi-tenancy - User belongs to a company (tenant)
+  company_id: { type: Schema.Types.ObjectId, ref: 'Company', index: true },
+  
+  // Branch assignment
+  branch_id: { type: Schema.Types.ObjectId, ref: 'Branch', index: true },
+  managed_branches: [{ type: Schema.Types.ObjectId, ref: 'Branch' }],
   
   // Customer-specific
   customer_type: {
@@ -83,9 +90,6 @@ const UserSchema: Schema = new Schema({
   position: { type: String },
   salary: { type: Number },
   
-  // Manager-specific
-  managed_branches: [{ type: Schema.Types.ObjectId, ref: 'Branch' }],
-  
   // Security
   passwordResetToken: String,
   passwordResetExpires: Date,
@@ -96,10 +100,14 @@ const UserSchema: Schema = new Schema({
   
   // Audit
   created_by: { type: Schema.Types.ObjectId, ref: 'User' },
-}, { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } });
+}, { 
+  timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },
+  collection: 'users'
+});
 
 // Indexes
 UserSchema.index({ email: 1 });
+UserSchema.index({ company_id: 1, role: 1 });
 UserSchema.index({ branch_id: 1, role: 1 });
 UserSchema.index({ role: 1, status: 1 });
 UserSchema.index({ customer_type: 1 });

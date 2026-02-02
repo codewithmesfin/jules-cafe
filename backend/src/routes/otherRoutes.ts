@@ -4,7 +4,7 @@ import BranchMenuItem from '../models/BranchMenuItem';
 import InventoryItem from '../models/InventoryItem';
 import Recipe from '../models/Recipe';
 import * as factory from '../utils/controllerFactory';
-import { protect, authorize } from '../middleware/auth';
+import { protect, authorize, requireOnboardingComplete } from '../middleware/auth';
 import { getStats } from '../controllers/orderController';
 import {
   getSalesAnalytics,
@@ -19,35 +19,6 @@ import {
   updateInventory, 
   deleteInventory 
 } from '../controllers/inventoryController';
-
-const router = express.Router();
-
-router.get('/stats', protect, authorize('admin', 'manager'), getStats);
-
-// Analytics
-router.get('/analytics/sales', protect, authorize('admin', 'manager'), getSalesAnalytics);
-router.get('/analytics/stock', protect, authorize('admin', 'manager'), getStockAnalytics);
-router.get('/analytics/products', protect, authorize('admin', 'manager'), getProductAnalytics);
-router.get('/analytics/branches', protect, authorize('admin'), getBranchPerformance);
-
-// MenuVariant
-router.route('/menu-variants')
-  .get(factory.getAll(MenuVariant))
-  .post(protect, authorize('admin', 'manager'), factory.createOne(MenuVariant));
-router.route('/menu-variants/:id')
-  .get(factory.getOne(MenuVariant))
-  .put(protect, authorize('admin', 'manager'), factory.updateOne(MenuVariant))
-  .delete(protect, authorize('admin', 'manager'), factory.deleteOne(MenuVariant));
-
-// BranchMenuItem
-router.route('/branch-menu-items')
-  .get(factory.getAll(BranchMenuItem))
-  .post(protect, authorize('admin', 'manager'), factory.createOne(BranchMenuItem));
-router.route('/branch-menu-items/:id')
-  .get(factory.getOne(BranchMenuItem))
-  .put(protect, authorize('admin', 'manager'), factory.updateOne(BranchMenuItem))
-  .delete(protect, authorize('admin', 'manager'), factory.deleteOne(BranchMenuItem));
-
 import { 
   getAllReservations, 
   getReservation, 
@@ -56,31 +27,63 @@ import {
   deleteReservation 
 } from '../controllers/reservationController';
 
+const router = express.Router();
+
+// Apply protect and onboarding check to all routes that need authentication
+router.use(protect);
+router.use(requireOnboardingComplete);
+
+router.get('/stats', authorize('admin', 'manager'), getStats);
+
+// Analytics
+router.get('/analytics/sales', authorize('admin', 'manager'), getSalesAnalytics);
+router.get('/analytics/stock', authorize('admin', 'manager'), getStockAnalytics);
+router.get('/analytics/products', authorize('admin', 'manager'), getProductAnalytics);
+router.get('/analytics/branches', authorize('admin'), getBranchPerformance);
+
+// MenuVariant
+router.route('/menu-variants')
+  .get(factory.getAll(MenuVariant))
+  .post(authorize('admin', 'manager'), factory.createOne(MenuVariant));
+router.route('/menu-variants/:id')
+  .get(factory.getOne(MenuVariant))
+  .put(authorize('admin', 'manager'), factory.updateOne(MenuVariant))
+  .delete(authorize('admin', 'manager'), factory.deleteOne(MenuVariant));
+
+// BranchMenuItem
+router.route('/branch-menu-items')
+  .get(factory.getAll(BranchMenuItem))
+  .post(authorize('admin', 'manager'), factory.createOne(BranchMenuItem));
+router.route('/branch-menu-items/:id')
+  .get(factory.getOne(BranchMenuItem))
+  .put(authorize('admin', 'manager'), factory.updateOne(BranchMenuItem))
+  .delete(authorize('admin', 'manager'), factory.deleteOne(BranchMenuItem));
+
 // Reservation
 router.route('/reservations')
-  .get(protect, getAllReservations)
-  .post(protect, createReservation);
+  .get(getAllReservations)
+  .post(createReservation);
 router.route('/reservations/:id')
-  .get(protect, getReservation)
-  .put(protect, updateReservation)
-  .delete(protect, deleteReservation);
+  .get(getReservation)
+  .put(updateReservation)
+  .delete(authorize('admin', 'manager'), deleteReservation);
 
 // InventoryItem (using custom controller for item_id reference)
 router.route('/inventory')
-  .get(protect, authorize('admin', 'manager', 'staff'), getAllInventory)
-  .post(protect, authorize('admin', 'manager'), createInventory);
+  .get(authorize('admin', 'manager', 'staff'), getAllInventory)
+  .post(authorize('admin', 'manager'), createInventory);
 router.route('/inventory/:id')
-  .get(protect, authorize('admin', 'manager', 'staff'), getOneInventory)
-  .put(protect, authorize('admin', 'manager', 'staff'), updateInventory)
-  .delete(protect, authorize('admin', 'manager'), deleteInventory);
+  .get(authorize('admin', 'manager', 'staff'), getOneInventory)
+  .put(authorize('admin', 'manager', 'staff'), updateInventory)
+  .delete(authorize('admin', 'manager'), deleteInventory);
 
 // Recipe
 router.route('/recipes')
-  .get(protect, authorize('admin', 'manager', 'staff'), factory.getAll(Recipe))
-  .post(protect, authorize('admin', 'manager'), factory.createOne(Recipe));
+  .get(authorize('admin', 'manager', 'staff'), factory.getAll(Recipe))
+  .post(authorize('admin', 'manager'), factory.createOne(Recipe));
 router.route('/recipes/:id')
-  .get(protect, authorize('admin', 'manager', 'staff'), factory.getOne(Recipe))
-  .put(protect, authorize('admin', 'manager'), factory.updateOne(Recipe))
-  .delete(protect, authorize('admin', 'manager'), factory.deleteOne(Recipe));
+  .get(authorize('admin', 'manager', 'staff'), factory.getOne(Recipe))
+  .put(authorize('admin', 'manager'), factory.updateOne(Recipe))
+  .delete(authorize('admin', 'manager'), factory.deleteOne(Recipe));
 
 export default router;

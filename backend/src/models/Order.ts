@@ -13,6 +13,7 @@ export interface IOrder extends Document {
   order_number: string;
   customer_id: mongoose.Types.ObjectId;
   branch_id: mongoose.Types.ObjectId;
+  company_id?: mongoose.Types.ObjectId;
   table_id?: mongoose.Types.ObjectId;
   waiter_id?: mongoose.Types.ObjectId;
   status: 'pending' | 'accepted' | 'preparing' | 'ready' | 'completed' | 'cancelled';
@@ -41,6 +42,7 @@ const OrderSchema: Schema = new Schema({
   order_number: { type: String, unique: true },
   customer_id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   branch_id: { type: Schema.Types.ObjectId, ref: 'Branch', required: true },
+  company_id: { type: Schema.Types.ObjectId, ref: 'Company' },
   table_id: { type: Schema.Types.ObjectId, ref: 'Table' },
   waiter_id: { type: Schema.Types.ObjectId, ref: 'User' },
   status: {
