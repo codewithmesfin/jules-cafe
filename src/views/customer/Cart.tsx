@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft, Grid } from 'lucide-react';
 import { api } from '../../utils/api';
 import { Button } from '../../components/ui/Button';
@@ -16,6 +16,8 @@ const Cart: React.FC = () => {
   const { user } = useAuth();
   const { showNotification } = useNotification();
   const router = useRouter();
+  const params = useParams();
+  const tenantId = params?.tenant_id as string;
   const [branches, setBranches] = useState<Branch[]>([]);
   const [selectedBranchId, setSelectedBranchId] = useState('');
   const [loading, setLoading] = useState(false);
@@ -48,7 +50,7 @@ const Cart: React.FC = () => {
   const handlePlaceOrder = async () => {
     if (!user) {
       showNotification('Please login to place an order', 'error');
-      router.push('/login');
+      router.push(tenantId ? `/${tenantId}/login` : '/login');
       return;
     }
 
@@ -73,7 +75,7 @@ const Cart: React.FC = () => {
       await api.orders.create(orderData);
       showNotification('Order placed successfully!');
       clearCart();
-      router.push('/orders');
+      router.push(tenantId ? `/${tenantId}/orders` : '/orders');
     } catch (error) {
       showNotification('Failed to place order', 'error');
     } finally {
@@ -92,7 +94,7 @@ const Cart: React.FC = () => {
           Looks like you haven't added anything to your cart yet.
           Go ahead and explore our menu!
         </p>
-        <Link href="/menu">
+        <Link href={tenantId ? `/${tenantId}/menu` : "/menu"}>
           <Button size="lg">Browse Menu</Button>
         </Link>
       </div>
