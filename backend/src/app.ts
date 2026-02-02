@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import authRoutes from './routes/authRoutes';
+import companyRoutes from './routes/companyRoutes';
 import branchRoutes from './routes/branchRoutes';
 import tableRoutes from './routes/tableRoutes';
 import categoryRoutes from './routes/categoryRoutes';
@@ -23,6 +24,7 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/companies', companyRoutes);
 app.use('/api/branches', branchRoutes);
 app.use('/api/tables', tableRoutes);
 app.use('/api/categories', categoryRoutes);

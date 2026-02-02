@@ -1,5 +1,5 @@
 export type UserRole = 'admin' | 'manager' | 'cashier' | 'customer' | 'staff';
-export type UserStatus = 'active' | 'inactive' | 'pending' | 'suspended';
+export type UserStatus = 'active' | 'inactive' | 'pending' | 'suspended' | 'onboarding';
 
 export interface User {
   id: string;
@@ -11,7 +11,7 @@ export interface User {
   role: UserRole;
   status: UserStatus;
   branch_id?: string;
-  company?: string;
+  company_id?: string;
   customer_type?: 'regular' | 'vip' | 'member';
   discount_rate?: number;
   created_at: string;
@@ -27,7 +27,7 @@ export interface Branch {
   opening_time: string;
   closing_time: string;
   capacity: number;
-  company: string;
+  company_id?: string;
 }
 
 export interface Table {

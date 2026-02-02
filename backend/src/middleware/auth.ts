@@ -28,6 +28,7 @@ export const protect = catchAsync(async (req: AuthRequest, res: Response, next: 
 
   // Check if user is active (except for customers who can access their own routes)
   // Only block if status is explicitly set to inactive, pending, or suspended
+  // 'onboarding' status is allowed but restricted by other logic/frontend
   const inactiveStatuses = ['inactive', 'pending', 'suspended'];
   if (req.user.role !== 'customer' && inactiveStatuses.includes(req.user.status)) {
     return next(new AppError('Your account is not active. Please contact the Administrator to activate your account.', 423));

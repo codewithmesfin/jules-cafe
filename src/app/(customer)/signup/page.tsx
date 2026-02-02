@@ -1,5 +1,10 @@
 import Signup from '@/views/customer/Signup';
+import { Suspense } from 'react';
 
 export default function SignupPage() {
-  return <Signup />;
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <Signup />
+    </Suspense>
+  );
 }

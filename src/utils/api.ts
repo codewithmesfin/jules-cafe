@@ -140,6 +140,10 @@ export const api = {
     update: (id: string, data: any) => fetcher(`/api/items/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id: string) => fetcher(`/api/items/${id}`, { method: 'DELETE' }),
   },
+  companies: {
+    setup: (data: any) => fetcher('/api/companies/setup', { method: 'POST', body: JSON.stringify(data) }),
+    getMe: () => fetcher('/api/companies/me'),
+  },
   auth: {
     signup: (data: any) => fetcher('/api/auth/signup', { method: 'POST', body: JSON.stringify(data) }),
     forgotPassword: (email: string) => fetcher('/api/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) }),

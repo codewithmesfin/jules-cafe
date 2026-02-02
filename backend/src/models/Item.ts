@@ -16,6 +16,7 @@ export interface IItem extends Document {
   image_url?: string;
   is_active: boolean;
   expiry_tracking: boolean;
+  company_id?: mongoose.Types.ObjectId;
   created_by?: mongoose.Types.ObjectId;
   created_at: Date;
   updated_at: Date;
@@ -37,6 +38,7 @@ const ItemSchema: Schema = new Schema({
   image_url: { type: String, default: '' },
   is_active: { type: Boolean, default: true, index: true },
   expiry_tracking: { type: Boolean, default: false },
+  company_id: { type: Schema.Types.ObjectId, ref: 'Company' },
   created_by: { type: Schema.Types.ObjectId, ref: 'User' },
 }, { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } });
 

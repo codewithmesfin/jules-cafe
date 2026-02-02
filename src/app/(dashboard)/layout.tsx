@@ -65,6 +65,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return storedUser.status === 'inactive' || storedUser.status === 'pending' || storedUser.status === 'suspended';
   };
 
+  const isStoredUserOnboarding = () => {
+    if (!storedUser) return false;
+    return storedUser.status === 'onboarding';
+  };
+
   // Get user's default dashboard path based on role
   const getDefaultPath = () => {
     const activeUser = user || storedUser;
@@ -85,6 +90,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return user.status === 'inactive' || user.status === 'pending' || user.status === 'suspended';
   };
 
+  const isUserOnboarding = () => {
+    if (!user) return false;
+    return user.status === 'onboarding';
+  };
+
   // Immediate redirect for inactive users - runs before any rendering
   useLayoutEffect(() => {
     // Check stored user first
@@ -93,10 +103,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       return;
     }
 
+    if (storedUser && isStoredUserOnboarding()) {
+      router.replace('/company-setup');
+      return;
+    }
+
     // Check if no user in storage but auth context has user
     if (!loading && user) {
       if (isUserInactive()) {
         router.replace('/inactive');
+        return;
+      }
+      if (isUserOnboarding()) {
+        router.replace('/company-setup');
         return;
       }
     } else if (!loading && !user && checkedStorage) {
@@ -118,6 +137,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     // If user is inactive, redirect to /inactive page
     if (isUserInactive()) {
       router.push('/inactive');
+      return;
+    }
+
+    // If user is onboarding, redirect to company setup
+    if (isUserOnboarding()) {
+      router.push('/company-setup');
       return;
     }
   }, [user, pathname, router, loading]);

@@ -10,6 +10,11 @@ import AppError from '../utils/appError';
 export const getAllInventory = catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
   const query: any = { is_active: true };
 
+  // Tenant isolation
+  if (req.user && req.user.role !== 'customer' && req.user.company_id) {
+    query.company_id = req.user.company_id;
+  }
+
   // Branch security for manager/staff/cashier
   const filterRoles = ['manager', 'staff', 'cashier'];
   if (req.user && filterRoles.includes(req.user.role) && req.user.branch_id) {
@@ -47,6 +52,13 @@ export const getOneInventory = catchAsync(async (req: AuthRequest, res: Response
     return next(new AppError('Document not found', 404));
   }
 
+  // Tenant security check
+  if (req.user && req.user.role !== 'customer' && doc.company_id) {
+    if (doc.company_id.toString() !== req.user.company_id?.toString()) {
+      return next(new AppError('You do not have permission to access this inventory item', 403));
+    }
+  }
+
   // Branch security check
   const filterRoles = ['manager', 'staff', 'cashier'];
   if (req.user && filterRoles.includes(req.user.role) && doc.branch_id) {
@@ -74,6 +86,11 @@ export const createInventory = catchAsync(async (req: AuthRequest, res: Response
 
   // Automatically set created_by to the authenticated user's ID
   data.created_by = req.user?._id || req.user?.id;
+
+  // Auto-set company_id
+  if (req.user && req.user.company_id) {
+    data.company_id = req.user.company_id;
+  }
 
   // Auto-set/Force branch_id for non-admins
   const filterRoles = ['manager', 'staff', 'cashier'];
@@ -138,6 +155,7 @@ export const createInventory = catchAsync(async (req: AuthRequest, res: Response
   // Create with properly mapped field names
   const doc = await InventoryItem.create([{
     branch_id: data.branch_id,
+    company_id: data.company_id,
     item_id: data.item_id,
     current_quantity: data.current_quantity,
     min_stock_level: data.min_stock_level,
@@ -191,6 +209,13 @@ export const updateInventory = catchAsync(async (req: AuthRequest, res: Response
   const existingDoc = await InventoryItem.findById(req.params.id);
   if (!existingDoc) {
     return next(new AppError('Document not found', 404));
+  }
+
+  // Tenant security check
+  if (req.user && req.user.role !== 'customer' && existingDoc.company_id) {
+    if (existingDoc.company_id.toString() !== req.user.company_id?.toString()) {
+      return next(new AppError('You do not have permission to update this inventory item', 403));
+    }
   }
 
   // Branch security check
@@ -262,6 +287,13 @@ export const deleteInventory = catchAsync(async (req: AuthRequest, res: Response
   const existingDoc = await InventoryItem.findById(req.params.id);
   if (!existingDoc) {
     return next(new AppError('Document not found', 404));
+  }
+
+  // Tenant security check
+  if (req.user && req.user.role !== 'customer' && existingDoc.company_id) {
+    if (existingDoc.company_id.toString() !== req.user.company_id?.toString()) {
+      return next(new AppError('You do not have permission to delete this inventory item', 403));
+    }
   }
 
   // Branch security check

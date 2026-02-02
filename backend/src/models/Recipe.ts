@@ -6,6 +6,7 @@ import mongoose, { Schema, Document } from 'mongoose';
  */
 export interface IRecipe extends Document {
   menu_item_id: mongoose.Types.ObjectId;
+  company_id?: mongoose.Types.ObjectId;
   recipe_name?: string;
   version: number;
   is_default: boolean;
@@ -22,6 +23,7 @@ export interface IRecipe extends Document {
 
 const RecipeSchema: Schema = new Schema({
   menu_item_id: { type: Schema.Types.ObjectId, ref: 'MenuItem', required: true },
+  company_id: { type: Schema.Types.ObjectId, ref: 'Company' },
   recipe_name: { type: String },
   version: { type: Number, required: true, default: 1 },
   is_default: { type: Boolean, default: false },

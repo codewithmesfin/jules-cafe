@@ -24,12 +24,15 @@ export const register = catchAsync(async (req: any, res: Response, next: NextFun
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(password, salt);
 
-  // Self-registration should always be as 'customer' and not require password reset
-  // Only admins can create non-customer users via the user management dashboard
+  // If role is admin, it's a new tenant signup
+  const userRole = role === 'admin' ? 'admin' : 'customer';
+  const status = userRole === 'admin' ? 'onboarding' : 'active';
+
   const user = await User.create({
     email,
     password: hashedPassword,
-    role: 'customer',
+    role: userRole,
+    status: status,
     branch_id,
     full_name,
     phone,
@@ -44,7 +47,7 @@ export const register = catchAsync(async (req: any, res: Response, next: NextFun
       role: user.role,
       status: user.status,
       branch_id: user.branch_id,
-      company: user.company,
+      company_id: user.company_id,
       full_name: user.full_name,
       phone: user.phone,
       passwordResetRequired: user.passwordResetRequired,
@@ -69,7 +72,7 @@ export const login = catchAsync(async (req: Request, res: Response, next: NextFu
       role: user.role,
       status: user.status,
       branch_id: user.branch_id,
-      company: user.company,
+      company_id: user.company_id,
       full_name: user.full_name,
       phone: user.phone,
       passwordResetRequired: user.passwordResetRequired,

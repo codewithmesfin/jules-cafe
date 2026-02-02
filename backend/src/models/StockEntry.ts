@@ -6,6 +6,7 @@ import mongoose, { Schema, Document } from 'mongoose';
  */
 export interface IStockEntry extends Document {
   branch_id: mongoose.Types.ObjectId;
+  company_id?: mongoose.Types.ObjectId;
   item_id: mongoose.Types.ObjectId;
   entry_type: 'purchase' | 'sale' | 'waste' | 'transfer_in' | 'transfer_out' | 'adjustment' | 'return' | 'purchase_return';
   quantity: number;
@@ -22,6 +23,7 @@ export interface IStockEntry extends Document {
 
 const StockEntrySchema: Schema = new Schema({
   branch_id: { type: Schema.Types.ObjectId, ref: 'Branch', required: true },
+  company_id: { type: Schema.Types.ObjectId, ref: 'Company' },
   item_id: { type: Schema.Types.ObjectId, ref: 'Item', required: true },
   entry_type: {
     type: String,

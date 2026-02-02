@@ -43,16 +43,18 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
 
             {user ? (
               <div className="hidden md:flex items-center gap-2">
-                <Link href="/profile">
-                  <Button variant="ghost" size="sm" className="gap-2">
-                    <User className="w-5 h-5" />
-                    <span>{(user.full_name || user.username || 'User').split(' ')[0]}</span>
-                  </Button>
-                </Link>
+                {user.status !== 'onboarding' && (
+                  <Link href="/profile">
+                    <Button variant="ghost" size="sm" className="gap-2">
+                      <User className="w-5 h-5" />
+                      <span>{(user.full_name || user.username || 'User').split(' ')[0]}</span>
+                    </Button>
+                  </Link>
+                )}
                 {user.role !== 'customer' && (
-                  <Link href={user.role === 'admin' ? '/admin' : user.role === 'manager' ? '/manager' : '/cashier'}>
+                  <Link href={user.status === 'onboarding' ? '/company-setup' : (user.role === 'admin' ? '/admin' : user.role === 'manager' ? '/manager' : '/cashier')}>
                     <Button variant="outline" size="sm" className="capitalize">
-                      {user.role} Panel
+                      {user.status === 'onboarding' ? 'Complete Setup' : `${user.role} Panel`}
                     </Button>
                   </Link>
                 )}
@@ -85,14 +87,16 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
               <hr />
               {user ? (
                 <>
-                  <Link href="/profile" onClick={() => setIsMenuOpen(false)}>Profile</Link>
+                  {user.status !== 'onboarding' && (
+                    <Link href="/profile" onClick={() => setIsMenuOpen(false)}>Profile</Link>
+                  )}
                   {user.role !== 'customer' && (
                     <Link
-                      href={user.role === 'admin' ? '/admin' : user.role === 'manager' ? '/manager' : '/cashier'}
+                      href={user.status === 'onboarding' ? '/company-setup' : (user.role === 'admin' ? '/admin' : user.role === 'manager' ? '/manager' : '/cashier')}
                       onClick={() => setIsMenuOpen(false)}
                       className="capitalize"
                     >
-                      {user.role} Panel
+                      {user.status === 'onboarding' ? 'Complete Setup' : `${user.role} Panel`}
                     </Link>
                   )}
                   <button className="text-left text-red-600" onClick={() => { logout(); setIsMenuOpen(false); }}>Logout</button>
@@ -126,7 +130,7 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
             <ul className="space-y-2 text-sm">
               <li><Link href="/menu">Our Menu</Link></li>
               <li><Link href="/reservations">Book a Table</Link></li>
-              <li><Link href="/reviews">Customer Reviews</Link></li>
+              <li><Link href="/signup?role=admin" className="text-orange-500 font-semibold">Register Business</Link></li>
             </ul>
           </div>
           <div>

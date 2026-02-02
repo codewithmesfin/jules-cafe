@@ -17,6 +17,13 @@ export const updateOrder = catchAsync(async (req: AuthRequest, res: Response, ne
     return next(new AppError('Order not found', 404));
   }
 
+  // Tenant security check
+  if (req.user && req.user.role !== 'customer' && existingOrder.company_id) {
+    if (existingOrder.company_id.toString() !== req.user.company_id?.toString()) {
+      return next(new AppError('You do not have permission to update this order', 403));
+    }
+  }
+
   // Branch security check
   const filterRoles = ['manager', 'staff', 'cashier'];
   if (req.user && filterRoles.includes(req.user.role) && existingOrder.branch_id) {
@@ -82,6 +89,13 @@ export const deleteOrder = catchAsync(async (req: AuthRequest, res: Response, ne
     return next(new AppError('Order not found', 404));
   }
 
+  // Tenant security check
+  if (req.user && req.user.role !== 'customer' && order.company_id) {
+    if (order.company_id.toString() !== req.user.company_id?.toString()) {
+      return next(new AppError('You do not have permission to delete this order', 403));
+    }
+  }
+
   // Branch security check
   const filterRoles = ['manager', 'staff', 'cashier'];
   if (req.user && filterRoles.includes(req.user.role) && order.branch_id) {
@@ -109,6 +123,18 @@ export const createOrder = catchAsync(async (req: AuthRequest, res: Response, ne
 
   // Automatically set created_by to the authenticated user's ID
   data.created_by = req.user?._id || req.user?.id;
+
+  // Auto-set company_id
+  if (req.user && req.user.company_id) {
+    data.company_id = req.user.company_id;
+  }
+
+  if (!data.company_id && data.branch_id) {
+    const branch = await Branch.findById(data.branch_id);
+    if (branch) {
+      data.company_id = branch.company_id;
+    }
+  }
 
   // Force branch_id for non-admins
   const filterRoles = ['manager', 'staff', 'cashier'];
@@ -207,6 +233,12 @@ export const createOrder = catchAsync(async (req: AuthRequest, res: Response, ne
 
 export const getStats = catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
   const query: any = {};
+
+  // Tenant isolation
+  if (req.user && req.user.role !== 'customer' && req.user.company_id) {
+    query.company_id = req.user.company_id;
+  }
+
   const branchId = req.user?.role === 'manager' ? req.user.branch_id : req.query.branch_id;
 
   if (branchId) {

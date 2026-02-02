@@ -61,7 +61,7 @@ class UserManagementService {
 
     // Get creator's company to inherit
     const creator = await User.findById(created_by);
-    const creatorCompany = creator?.company || undefined;
+    const creatorCompanyId = creator?.company_id || undefined;
 
     // Hash password
     const salt = await bcrypt.genSalt(10);
@@ -75,7 +75,7 @@ class UserManagementService {
       phone,
       role,
       branch_id: branch_id || undefined,
-      company: creatorCompany,
+      company_id: creatorCompanyId,
       created_by,
       status: status || 'pending',
       

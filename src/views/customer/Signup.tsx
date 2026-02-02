@@ -1,32 +1,60 @@
 "use client";
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { UtensilsCrossed, User, Mail, Phone, Lock } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { UtensilsCrossed, User, Mail, Phone, Lock, Building2 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Card } from '../../components/ui/Card';
 import { api } from '../../utils/api';
 import Link from 'next/link';
 import { useNotification } from '../../context/NotificationContext';
+import { useAuth } from '../../context/AuthContext';
 
 const Signup: React.FC = () => {
   const { showNotification } = useNotification();
+  const { login } = useAuth();
+  const searchParams = useSearchParams();
+  const initialRole = searchParams.get('role') === 'admin' ? 'admin' : 'customer';
+
   const [formData, setFormData] = useState({
     full_name: '',
     email: '',
     phone: '',
     password: '',
+    role: initialRole,
   });
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    const role = searchParams.get('role');
+    if (role === 'admin') {
+      setFormData(prev => ({ ...prev, role: 'admin' }));
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       setLoading(true);
-      await api.auth.signup(formData);
-      showNotification('Account created successfully! Please log in.', 'success');
-      router.push('/login');
+      const data = await api.auth.signup(formData);
+
+      // Auto-login
+      if (data.jwt && data.user) {
+        localStorage.setItem('user', JSON.stringify(data.user));
+        localStorage.setItem('jwt', data.jwt);
+        // Force refresh context or redirect
+        showNotification('Account created successfully!', 'success');
+
+        if (data.user.status === 'onboarding') {
+          window.location.href = '/company-setup';
+        } else {
+          window.location.href = '/';
+        }
+      } else {
+        showNotification('Account created successfully! Please log in.', 'success');
+        router.push('/login');
+      }
     } catch (error: any) {
       showNotification(error.message, 'error');
     } finally {
@@ -41,8 +69,14 @@ const Signup: React.FC = () => {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-orange-100 text-orange-600 mb-4">
             <UtensilsCrossed size={32} />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Create Account</h1>
-          <p className="text-gray-500 mt-2">Join us and start ordering your favorites</p>
+          <h1 className="text-3xl font-bold text-gray-900">
+            {formData.role === 'admin' ? 'Business Registration' : 'Create Account'}
+          </h1>
+          <p className="text-gray-500 mt-2">
+            {formData.role === 'admin'
+              ? 'Register your restaurant and start growing your business'
+              : 'Join us and start ordering your favorites'}
+          </p>
         </div>
 
         <Card>

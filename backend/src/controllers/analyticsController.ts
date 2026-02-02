@@ -13,6 +13,13 @@ export const getSalesAnalytics = catchAsync(async (req: AuthRequest, res: Respon
   const query: any = { status: 'completed' };
   if (branch_id) query.branch_id = new mongoose.Types.ObjectId(branch_id as string);
 
+  // Tenant isolation
+  if (req.user && req.user.role !== 'customer') {
+    if (req.user.company_id) {
+      query.company_id = req.user.company_id;
+    }
+  }
+
   if (req.user?.role === 'manager') {
     query.branch_id = req.user.branch_id;
   }
@@ -50,6 +57,13 @@ export const getStockAnalytics = catchAsync(async (req: AuthRequest, res: Respon
   const query: any = {};
   if (branch_id) query.branch_id = new mongoose.Types.ObjectId(branch_id as string);
 
+  // Tenant isolation
+  if (req.user && req.user.role !== 'customer') {
+    if (req.user.company_id) {
+      query.company_id = req.user.company_id;
+    }
+  }
+
   if (req.user?.role === 'manager') {
     query.branch_id = req.user.branch_id;
   }
@@ -80,6 +94,13 @@ export const getProductAnalytics = catchAsync(async (req: AuthRequest, res: Resp
 
   const query: any = { status: 'completed' };
   if (branch_id) query.branch_id = new mongoose.Types.ObjectId(branch_id as string);
+
+  // Tenant isolation
+  if (req.user && req.user.role !== 'customer') {
+    if (req.user.company_id) {
+      query.company_id = req.user.company_id;
+    }
+  }
 
   if (req.user?.role === 'manager') {
     query.branch_id = req.user.branch_id;
@@ -113,6 +134,13 @@ export const getBranchPerformance = catchAsync(async (req: AuthRequest, res: Res
   const { start_date, end_date } = req.query;
 
   const query: any = { status: 'completed' };
+
+  // Tenant isolation
+  if (req.user && req.user.role !== 'customer') {
+    if (req.user.company_id) {
+      query.company_id = req.user.company_id;
+    }
+  }
   if (start_date || end_date) {
     query.created_at = {};
     if (start_date) query.created_at.$gte = new Date(start_date as string);

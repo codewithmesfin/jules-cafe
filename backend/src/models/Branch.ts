@@ -7,7 +7,7 @@ export interface IBranch extends Document {
   opening_time?: string;
   closing_time?: string;
   capacity: number;
-  company?: string;
+  company_id?: mongoose.Types.ObjectId;
   created_by?: mongoose.Types.ObjectId;
   created_at: Date;
   updated_at: Date;
@@ -20,7 +20,7 @@ const BranchSchema: Schema = new Schema({
   opening_time: { type: String, default: '09:00' },
   closing_time: { type: String, default: '22:00' },
   capacity: { type: Number, default: 50 },
-  company: { type: String, default: 'Default Company' },
+  company_id: { type: Schema.Types.ObjectId, ref: 'Company' },
   created_by: { type: Schema.Types.ObjectId, ref: 'User' },
 }, { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } });
 

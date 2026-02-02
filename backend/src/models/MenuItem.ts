@@ -17,6 +17,7 @@ export interface IMenuItem extends Document {
   prep_time_minutes?: number;
   calories?: number;
   allergens?: string[];
+  company_id?: mongoose.Types.ObjectId;
   created_by?: mongoose.Types.ObjectId;
   created_at: Date;
   updated_at: Date;
@@ -35,6 +36,7 @@ const MenuItemSchema: Schema = new Schema({
   prep_time_minutes: { type: Number },
   calories: { type: Number },
   allergens: [{ type: String }],
+  company_id: { type: Schema.Types.ObjectId, ref: 'Company' },
   created_by: { type: Schema.Types.ObjectId, ref: 'User' },
 }, { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } });
 

@@ -3,6 +3,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 export interface IReservation extends Document {
   customer_id: mongoose.Types.ObjectId;
   branch_id: mongoose.Types.ObjectId;
+  company_id?: mongoose.Types.ObjectId;
   table_id?: mongoose.Types.ObjectId;
   waiter_id?: mongoose.Types.ObjectId;
   reservation_date: string;
@@ -19,6 +20,7 @@ export interface IReservation extends Document {
 const ReservationSchema: Schema = new Schema({
   customer_id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   branch_id: { type: Schema.Types.ObjectId, ref: 'Branch', required: true },
+  company_id: { type: Schema.Types.ObjectId, ref: 'Company' },
   table_id: { type: Schema.Types.ObjectId, ref: 'Table' },
   waiter_id: { type: Schema.Types.ObjectId, ref: 'User' },
   reservation_date: { type: String, required: true },

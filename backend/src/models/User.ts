@@ -14,9 +14,9 @@ export interface IUser extends Document {
   full_name?: string;
   phone?: string;
   role: 'admin' | 'manager' | 'staff' | 'cashier' | 'customer';
-  status: 'active' | 'inactive' | 'pending' | 'suspended';
+  status: 'active' | 'inactive' | 'pending' | 'suspended' | 'onboarding';
   branch_id?: mongoose.Types.ObjectId;
-  company?: string;
+  company_id?: mongoose.Types.ObjectId;
   
   // Customer-specific fields
   customer_type?: 'regular' | 'vip' | 'member';
@@ -60,11 +60,11 @@ const UserSchema: Schema = new Schema({
   },
   status: {
     type: String,
-    enum: ['active', 'inactive', 'pending', 'suspended'],
+    enum: ['active', 'inactive', 'pending', 'suspended', 'onboarding'],
     default: 'pending'
   },
   branch_id: { type: Schema.Types.ObjectId, ref: 'Branch' },
-  company: { type: String },
+  company_id: { type: Schema.Types.ObjectId, ref: 'Company' },
   
   // Customer-specific
   customer_type: {
