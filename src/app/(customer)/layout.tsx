@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import { MenuIcon, ShoppingCart, User, UtensilsCrossed, X } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
@@ -12,6 +13,18 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { cartItems } = useCart();
   const { user, logout } = useAuth();
+  const params = useParams();
+  const tenantId = params?.tenant_id as string;
+
+  const getBaseLink = (path: string) => {
+    if (tenantId) {
+      // Handle the 'card' vs 'cart' requirement
+      const actualPath = path === '/cart' ? '/card' : path;
+      if (actualPath === '/') return `/${tenantId}`;
+      return `/${tenantId}${actualPath}`;
+    }
+    return path;
+  };
 
   const totalItems = cartItems.reduce((acc, item) => acc + item.quantity, 0);
 
@@ -21,23 +34,23 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
       <nav className="sticky top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm px-4 md:px-6 lg:px-8 py-4">
         <div className='flex items-center justify-between w-full max-w-7xl mx-auto'>
           <div className="flex items-center gap-2 md:gap-4 lg:gap-8">
-           <Link href="/" className="flex items-center gap-2 text-[#e60023] font-bold text-xl">
+           <Link href={getBaseLink('/')} className="flex items-center gap-2 text-[#e60023] font-bold text-xl">
             <UtensilsCrossed className="w-8 h-8" />
             <span className="hidden sm:inline">QuickServe</span>
           </Link>
           <div className="hidden lg:flex items-center gap-8 font-semibold text-black">
-            <a href="/menu" className="hover:text-gray-600 transition-colors">Explore</a>
+            <Link href={getBaseLink('/menu')} className="hover:text-gray-600 transition-colors">Explore</Link>
           </div>
         </div>
 
         <div className="flex items-center gap-3 md:gap-6 lg:gap-8 font-semibold text-black">
           <div className="hidden md:flex items-center gap-4 lg:gap-8">
-            <Link href="/menu" className="hover:text-gray-600 transition-colors">Menu</Link>
-            <Link href="/reservations" className="hover:text-gray-600 transition-colors">reservations</Link>
-            <Link href="/orders" className="hover:text-gray-600 transition-colors">Orders</Link>
+            <Link href={getBaseLink('/menu')} className="hover:text-gray-600 transition-colors">Menu</Link>
+            <Link href={getBaseLink('/reservations')} className="hover:text-gray-600 transition-colors">Reservations</Link>
+            <Link href={getBaseLink('/orders')} className="hover:text-gray-600 transition-colors">Orders</Link>
           </div>
           <div className="flex items-center gap-2">
-            <Link href="/cart">
+            <Link href={getBaseLink('/cart')}>
               <Button variant="ghost" size="sm" className="relative">
                 <ShoppingCart className="w-5 h-5" />
                 {totalItems > 0 && (
@@ -51,7 +64,7 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
             {user ? (
               <div className="hidden md:flex items-center gap-2">
                 {user.status !== 'onboarding' && (
-                  <Link href="/profile">
+                  <Link href={getBaseLink('/profile')}>
                     <Button variant="ghost" size="sm" className="gap-2">
                       <User className="w-5 h-5" />
                       <span>{(user.full_name || user.username || 'User').split(' ')[0]}</span>
@@ -69,10 +82,10 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
               </div>
             ) : (
               <div className="flex items-center gap-2 lg:gap-3 ml-3">
-                <Link href={"/login"} className="bg-[#e60023] text-white px-4 md:px-5 py-2.5 rounded-full hover:bg-[#ad081b] transition-colors text-sm md:text-base font-bold">
+                <Link href={getBaseLink("/login")} className="bg-[#e60023] text-white px-4 md:px-5 py-2.5 rounded-full hover:bg-[#ad081b] transition-colors text-sm md:text-base font-bold">
                   Log in
                 </Link>
-                <Link href={"/signup"} className="bg-[#efefef] text-black px-4 md:px-5 py-2.5 rounded-full hover:bg-[#e2e2e2] transition-colors text-sm md:text-base font-bold whitespace-nowrap">
+                <Link href={getBaseLink("/signup")} className="bg-[#efefef] text-black px-4 md:px-5 py-2.5 rounded-full hover:bg-[#e2e2e2] transition-colors text-sm md:text-base font-bold whitespace-nowrap">
                   Sign up
                 </Link>
               </div>
@@ -110,9 +123,9 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
           <div>
             <h4 className="text-white font-semibold mb-4">Quick Links</h4>
             <ul className="space-y-2 text-sm">
-              <li><Link href="/menu">Our Menu</Link></li>
-              <li><Link href="/reservations">Book a Table</Link></li>
-              <li><Link href="/signup?role=admin" className="text-[#e60023] font-semibold">Register Business</Link></li>
+              <li><Link href={getBaseLink("/menu")}>Our Menu</Link></li>
+              <li><Link href={getBaseLink("/reservations")}>Book a Table</Link></li>
+              {!tenantId && <li><Link href="/signup?role=admin" className="text-[#e60023] font-semibold">Register Business</Link></li>}
             </ul>
           </div>
           <div>

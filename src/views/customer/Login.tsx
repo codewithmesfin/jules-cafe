@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { UtensilsCrossed } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -14,6 +14,8 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const { login } = useAuth();
   const router = useRouter();
+  const params = useParams();
+  const tenantId = params?.tenant_id as string;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,6 +43,7 @@ const Login: React.FC = () => {
       if (user.role === 'admin') router.push('/admin');
       else if (user.role === 'manager') router.push('/manager');
       else if (user.role === 'cashier') router.push('/cashier');
+      else if (tenantId) router.push(`/${tenantId}`);
       else router.push('/');
     } catch (error: any) {
       showNotification(error.message, 'error');
@@ -87,9 +90,13 @@ const Login: React.FC = () => {
           <div className="mt-8 pt-6 border-t border-gray-100">
             <p className="text-center text-sm text-gray-500">
               Don't have an account?{' '}
-              <Link href="/signup" className="text-[#e60023] font-medium hover:underline">Create an account</Link>
-              {' '}as a customer or{' '}
-              <Link href="/signup?role=admin" className="text-[#e60023] font-medium hover:underline">register your business</Link>
+              {tenantId ? (
+                <Link href={`/${tenantId}/signup`} className="text-[#e60023] font-medium hover:underline">Create an account</Link>
+              ) : (
+                <>
+                  <Link href="/signup" className="text-[#e60023] font-medium hover:underline">register your business</Link>
+                </>
+              )}
             </p>
           </div>
         </Card>
