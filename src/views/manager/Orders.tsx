@@ -176,8 +176,8 @@ const Orders: React.FC = () => {
             <div>
               <h4 className="font-bold text-gray-900 mb-4">Order Items</h4>
               <div className="space-y-3">
-                {selectedOrder.items?.map((item: any) => (
-                  <div key={item.id} className="flex justify-between text-sm">
+                {selectedOrder.items?.map((item: any,index:number) => (
+                  <div key={`${item.id}${index}`} className="flex justify-between text-sm">
                     <span>{item.menu_item_name} x {item.quantity}</span>
                     <span className="font-medium">ETB {(item.unit_price * item.quantity).toFixed(2)}</span>
                   </div>

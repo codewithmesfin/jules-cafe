@@ -10,7 +10,7 @@ import { Badge } from "../../components/ui/Badge";
 import { Modal } from "../../components/ui/Modal";
 import { ConfirmationDialog } from "../../components/ui/ConfirmationDialog";
 import { useNotification } from "../../context/NotificationContext";
-import type { Item, ItemType } from "../../types";
+import type { Item, ItemType, MenuCategory } from "../../types";
 
 const Items = () => {
   const { showNotification } = useNotification();
@@ -29,10 +29,23 @@ const Items = () => {
   const [formUnit, setFormUnit] = useState("");
   const [formDefaultPrice, setFormDefaultPrice] = useState(0);
   const [formDescription, setFormDescription] = useState("");
+  const [categories, setCategories] = useState<MenuCategory[]>([]);
+  const [isNewCategory, setIsNewCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
 
   useEffect(() => {
     fetchItems();
+    fetchCategories();
   }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const data = await api.categories.getAll();
+      setCategories(data);
+    } catch (error) {
+      console.error("Failed to fetch categories:", error);
+    }
+  };
 
   const fetchItems = async () => {
     try {
@@ -161,6 +174,8 @@ const Items = () => {
             setFormUnit("");
             setFormDefaultPrice(0);
             setFormDescription("");
+            setIsNewCategory(false);
+            setNewCategoryName("");
             setIsModalOpen(true);
           }}
         >
@@ -211,6 +226,8 @@ const Items = () => {
                       setFormUnit(item.unit || "");
                       setFormDefaultPrice(item.default_price || 0);
                       setFormDescription(item.description || "");
+                      setIsNewCategory(false);
+                      setNewCategoryName("");
                       setIsModalOpen(true);
                     }}
                   >
@@ -264,7 +281,51 @@ const Items = () => {
               <option value="packaging">Packaging</option>
             </select>
           </div>
-          <Input label="Category" placeholder="e.g. Canned Goods, Dairy, Spices" value={formCategory} onChange={(e) => setFormCategory(e.target.value)} />
+          <div className="w-full">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+            {isNewCategory ? (
+              <div className="flex gap-2">
+                <Input
+                  placeholder="New category name"
+                  value={newCategoryName}
+                  onChange={(e) => {
+                    setNewCategoryName(e.target.value);
+                    setFormCategory(e.target.value);
+                  }}
+                  className="flex-1"
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsNewCategory(false)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <select
+                  className="flex-1 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e60023]"
+                  value={formCategory}
+                  onChange={(e) => setFormCategory(e.target.value)}
+                >
+                  <option value="">Select a Category</option>
+                  {categories.map((cat) => (
+                    <option key={cat.id || cat._id} value={cat.name}>
+                      {cat.name}
+                    </option>
+                  ))}
+                </select>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsNewCategory(true)}
+                >
+                  + New
+                </Button>
+              </div>
+            )}
+          </div>
           <div className="grid grid-cols-2 gap-4">
             <Input label="Unit" placeholder="e.g. kg, liters, pieces" value={formUnit} onChange={(e) => setFormUnit(e.target.value)} />
             <Input label="Default Price" type="number" step="0.01" placeholder="0.00" value={formDefaultPrice} onChange={(e) => setFormDefaultPrice(parseFloat(e.target.value) || 0)} />

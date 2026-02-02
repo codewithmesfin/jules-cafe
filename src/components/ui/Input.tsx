@@ -1,7 +1,5 @@
-import React, { useState } from 'react';
+import React, { useId } from 'react';
 import { cn } from '../../utils/cn';
-
-let idCounter = 0;
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -15,14 +13,8 @@ export const Input: React.FC<InputProps> = ({
   className,
   ...props
 }) => {
-  const [localId] = useState(() => {
-    // Use a deterministic approach for ID generation
-    if (typeof window === 'undefined') {
-      return `input-${++idCounter}`;
-    }
-    return id || `input-${++idCounter}`;
-  });
-  const inputId = id || localId;
+  const generatedId = useId();
+  const inputId = id || generatedId;
   return (
     <div className="w-full">
       {label && (

@@ -186,12 +186,14 @@ export const createOrder = catchAsync(async (req: AuthRequest, res: Response, ne
   const order = await Order.create(data);
 
   // Deduct Inventory based on Recipes
+  // If inventory deduction fails, cancel the order and throw error
   try {
     const userId = req.user?._id || req.user?.id || (order.created_by as any);
     await deductInventoryForOrder(order, userId);
-  } catch (inventoryError) {
-    console.error('Failed to deduct inventory:', inventoryError);
-    // We continue even if inventory deduction fails to not block the order
+  } catch (inventoryError: any) {
+    // Order was created but inventory failed - delete the order
+    await Order.findByIdAndDelete(order._id);
+    return next(new AppError(`Insufficient stock: ${inventoryError.message}`, 400));
   }
 
   // Attempt to send email to customer if email is provided

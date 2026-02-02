@@ -7,8 +7,11 @@ import { IOrder } from '../models/Order';
 
 /**
  * Deducts stock from inventory based on order items and their recipes.
+ * Throws error if insufficient stock is available.
  */
 export const deductInventoryForOrder = async (order: IOrder, userId: string) => {
+  const insufficientItems: string[] = [];
+  
   for (const item of order.items) {
     const recipe = await Recipe.findOne({ menu_item_id: item.menu_item_id, is_default: true, is_active: true });
     if (recipe) {
@@ -22,6 +25,15 @@ export const deductInventoryForOrder = async (order: IOrder, userId: string) => 
         });
 
         if (inventoryItem) {
+          // Check if there's enough stock
+          if (inventoryItem.current_quantity < deductionQuantity) {
+            // Try to get item name for better error message
+            const itemDoc = await import('../models/Item').then(m => m.default.findById(ingredient.item_id));
+            const itemName = itemDoc?.item_name || 'Unknown item';
+            insufficientItems.push(`${itemName} (need ${deductionQuantity.toFixed(2)}, have ${inventoryItem.current_quantity.toFixed(2)})`);
+            continue;
+          }
+          
           const previousQuantity = inventoryItem.current_quantity;
           inventoryItem.current_quantity -= deductionQuantity;
           await inventoryItem.save();
@@ -42,6 +54,10 @@ export const deductInventoryForOrder = async (order: IOrder, userId: string) => 
         }
       }
     }
+  }
+  
+  if (insufficientItems.length > 0) {
+    throw new Error(`Insufficient stock for: ${insufficientItems.join(', ')}`);
   }
 };
 

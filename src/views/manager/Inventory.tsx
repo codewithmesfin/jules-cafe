@@ -107,10 +107,9 @@ const Inventory: React.FC = () => {
       }
 
       if (selectedItem) {
-        // Update: quantity in form is DELTA
-        const newQuantity = selectedItem.quantity + formQuantity;
+        // Update: quantity in form is DELTA (positive to add, negative to remove)
         await api.inventory.update(selectedItem.id, {
-          quantity: Math.max(0, newQuantity),
+          quantity: formQuantity,
           min_stock: formMinStock
         });
         showNotification('Inventory updated');
