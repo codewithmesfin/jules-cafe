@@ -54,7 +54,7 @@ const MenuItems: React.FC = () => {
         api.menuItems.getAll(),
         api.items.getAll(), // Fetch from Items table
         api.categories.getAll(),
-        api.recipes.getAll(),
+        api.recipes.getAllWithIngredients(), // Use new endpoint with ingredients
         api.inventory.getAll(),
         api.branches.getAll(),
       ]);

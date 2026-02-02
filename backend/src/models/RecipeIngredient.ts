@@ -23,6 +23,7 @@ const RecipeIngredientSchema: Schema = new Schema({
   recipe_id: { type: Schema.Types.ObjectId, ref: 'Recipe', required: true },
   company_id: { type: Schema.Types.ObjectId, ref: 'Company' },
   item_id: { type: Schema.Types.ObjectId, ref: 'Item', required: true },
+  item_name: { type: String, required: true }, // Denormalized for easier frontend access
   quantity: { type: Number, required: true },
   unit: { type: String, required: true },
   wastage_percentage: { type: Number, default: 0 },

@@ -179,6 +179,7 @@ export interface InventoryItem {
 }
 
 export interface RecipeIngredient {
+  item_id: string;
   item_name: string;
   quantity: number;
   unit: string;

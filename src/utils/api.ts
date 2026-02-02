@@ -121,6 +121,7 @@ export const api = {
   },
   recipes: {
     getAll: () => fetcher('/api/recipes'),
+    getAllWithIngredients: () => fetcher('/api/recipes-with-ingredients'),
     getOne: (id: string) => fetcher(`/api/recipes/${id}`),
     create: (data: any) => fetcher('/api/recipes', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: string, data: any) => fetcher(`/api/recipes/${id}`, { method: 'PUT', body: JSON.stringify(data) }),

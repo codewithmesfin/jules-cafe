@@ -33,7 +33,7 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
         <div className="flex items-center gap-3 md:gap-6 lg:gap-8 font-semibold text-black">
           <div className="hidden md:flex items-center gap-4 lg:gap-8">
             <Link href="/menu" className="hover:text-gray-600 transition-colors">Menu</Link>
-            <Link href="/reservations" className="hover:text-gray-600 transition-colors">reservations</Link>
+            <Link href="/reservations" className="hover:text-gray-600 transition-colors">Reservations</Link>
             <Link href="/orders" className="hover:text-gray-600 transition-colors">Orders</Link>
           </div>
           <div className="flex items-center gap-2">
