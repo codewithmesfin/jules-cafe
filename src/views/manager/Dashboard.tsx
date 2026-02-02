@@ -79,7 +79,7 @@ const Dashboard: React.FC = () => {
   if (!user?.branch_id) {
     return (
       <div className="flex flex-col items-center justify-center py-20 space-y-4">
-        <div className="p-4 bg-orange-100 text-orange-600 rounded-full">
+        <div className="p-4 bg-orange-100 text-[#e60023] rounded-full">
           <ShoppingBag size={48} />
         </div>
         <h2 className="text-xl font-bold text-gray-900">No Branch Assigned</h2>
@@ -93,7 +93,7 @@ const Dashboard: React.FC = () => {
 
   if (loading) return (
     <div className="flex flex-col items-center justify-center h-[60vh] space-y-4">
-      <div className="w-12 h-12 border-4 border-orange-200 border-t-orange-600 rounded-full animate-spin"></div>
+      <div className="w-12 h-12 border-4 border-orange-200 border-t-[#e60023] rounded-full animate-spin"></div>
       <p className="text-gray-500 font-black uppercase tracking-widest text-xs">Analytics loading...</p>
     </div>
   );
@@ -124,7 +124,7 @@ const Dashboard: React.FC = () => {
       {/* KPI Ribbons */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
-          { label: 'Revenue', value: `ETB ${totalRevenue.toLocaleString()}`, icon: DollarSign, color: 'text-orange-600', bg: 'bg-orange-50' },
+          { label: 'Revenue', value: `ETB ${totalRevenue.toLocaleString()}`, icon: DollarSign, color: 'text-[#e60023]', bg: 'bg-orange-50' },
           { label: 'Total Orders', value: orders.length, icon: ShoppingBag, color: 'text-blue-600', bg: 'bg-blue-50' },
           { label: 'Pending Bookings', value: reservations.filter(r => r.status === 'requested').length, icon: Calendar, color: 'text-green-600', bg: 'bg-green-50' },
           { label: 'Active Staff', value: staff.length, icon: Users, color: 'text-purple-600', bg: 'bg-purple-50' },
@@ -215,7 +215,7 @@ const Dashboard: React.FC = () => {
               <div key={i} className="flex flex-col gap-3">
                 <div className="flex justify-between items-end">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center font-black text-orange-600">
+                    <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center font-black text-[#e60023]">
                       #{i + 1}
                     </div>
                     <div>
@@ -223,14 +223,14 @@ const Dashboard: React.FC = () => {
                       <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{item.total_sold} Sold</p>
                     </div>
                   </div>
-                  <span className="font-black text-orange-600">ETB {item.total_revenue.toFixed(2)}</span>
+                  <span className="font-black text-[#e60023]">ETB {item.total_revenue.toFixed(2)}</span>
                 </div>
                 <div className="w-full h-2 bg-gray-50 rounded-full overflow-hidden">
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${(item.total_sold / (topItems[0]?.total_sold || 1)) * 100}%` }}
                     transition={{ duration: 1, delay: i * 0.1 }}
-                    className="h-full bg-orange-500 rounded-full shadow-[0_0_8px_rgba(234,88,12,0.3)]"
+                    className="h-full bg-[#e60023] rounded-full shadow-[0_0_8px_rgba(234,88,12,0.3)]"
                   />
                 </div>
               </div>
@@ -238,7 +238,7 @@ const Dashboard: React.FC = () => {
             {topItems.length === 0 && <p className="text-center text-gray-400 italic py-10 font-medium">No sales data recorded yet.</p>}
           </div>
 
-          <div className="mt-12 p-6 bg-orange-600 rounded-3xl text-white relative overflow-hidden group">
+          <div className="mt-12 p-6 bg-[#e60023] rounded-3xl text-white relative overflow-hidden group">
             <div className="relative z-10">
               <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-2 opacity-80">Shift Goal</p>
               <h4 className="text-2xl font-black mb-4">Target: ETB 500,000</h4>
@@ -282,7 +282,7 @@ const Dashboard: React.FC = () => {
         <Card title="Reservation Status Map" className="border-none shadow-sm rounded-[2.5rem] bg-white p-8">
           <div className="flex items-center justify-center h-48 gap-12">
             <div className="flex flex-col items-center">
-              <div className="w-20 h-20 rounded-3xl bg-orange-50 flex items-center justify-center text-3xl font-black text-orange-600 mb-3 shadow-inner">
+              <div className="w-20 h-20 rounded-3xl bg-orange-50 flex items-center justify-center text-3xl font-black text-[#e60023] mb-3 shadow-inner">
                 {reservations.filter(r => r.status === 'confirmed').length}
               </div>
               <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Confirmed</div>
@@ -308,7 +308,7 @@ const Dashboard: React.FC = () => {
                 <p className="text-xs text-gray-400 font-bold uppercase tracking-[0.2em] mb-1">Upcoming Capacity</p>
                 <p className="text-xl font-black text-white">85% Occupied</p>
              </div>
-             <Calendar className="text-orange-600 w-8 h-8" />
+             <Calendar className="text-[#e60023] w-8 h-8" />
           </div>
         </Card>
       </div>

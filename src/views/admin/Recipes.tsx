@@ -172,7 +172,7 @@ const Recipes: React.FC = () => {
             />
           </div>
           <select
-            className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+            className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e60023]"
             value={selectedBranchId}
             onChange={(e) => setSelectedBranchId(e.target.value)}
           >
@@ -195,11 +195,11 @@ const Recipes: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="bg-orange-50 border-orange-100">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-orange-100 text-orange-600 rounded-full">
+            <div className="p-3 bg-orange-100 text-[#e60023] rounded-full">
               <UtensilsCrossed size={24} />
             </div>
             <div>
-              <p className="text-xs text-orange-600 font-bold uppercase">Total Recipes</p>
+              <p className="text-xs text-[#e60023] font-bold uppercase">Total Recipes</p>
               <h3 className="text-2xl font-bold text-orange-900">{recipes.length}</h3>
             </div>
           </div>
@@ -349,7 +349,7 @@ const Recipes: React.FC = () => {
             <div className="w-full">
               <label className="block text-sm font-medium text-gray-700 mb-1">Select Menu Item</label>
               <select
-                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e60023]"
                 value={formMenuItemId}
                 onChange={(e) => setFormMenuItemId(e.target.value)}
               >
@@ -367,7 +367,7 @@ const Recipes: React.FC = () => {
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-orange-600 h-8"
+                className="text-[#e60023] h-8"
                 onClick={addIngredient}
               >
                 <Plus size={14} className="mr-1" /> Add Ingredient
@@ -379,7 +379,7 @@ const Recipes: React.FC = () => {
                   <div className="flex-1">
                     <label className="block text-xs font-medium text-gray-500 mb-1">Ingredient</label>
                     <select
-                      className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e60023]"
                       value={ing.item_id}
                       onChange={(e) => updateIngredient(idx, 'item_id', e.target.value)}
                     >
@@ -428,7 +428,7 @@ const Recipes: React.FC = () => {
           <div className="w-full">
             <label className="block text-sm font-medium text-gray-700 mb-1">Preparation Instructions</label>
             <textarea
-              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 min-h-[100px]"
+              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e60023] min-h-[100px]"
               value={formInstructions}
               onChange={(e) => setFormInstructions(e.target.value)}
               placeholder="Step by step instructions..."

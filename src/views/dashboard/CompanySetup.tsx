@@ -77,7 +77,7 @@ const CompanySetup: React.FC = () => {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 py-12">
       <div className="w-full max-w-2xl">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-orange-100 text-orange-600 mb-6 shadow-xl shadow-orange-100">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-orange-100 text-[#e60023] mb-6 shadow-xl shadow-orange-100">
             <Building2 size={40} />
           </div>
           <h1 className="text-4xl font-black text-gray-900 tracking-tight uppercase">
@@ -95,12 +95,12 @@ const CompanySetup: React.FC = () => {
           <div className="flex items-center gap-4">
             <div className={`
               w-10 h-10 rounded-full flex items-center justify-center font-bold text-white
-              ${step >= 1 ? 'bg-orange-600' : 'bg-gray-300'}
+              ${step >= 1 ? 'bg-[#e60023]' : 'bg-gray-300'}
             `}>1</div>
-            <div className={`w-16 h-1 ${step >= 2 ? 'bg-orange-600' : 'bg-gray-300'}`} />
+            <div className={`w-16 h-1 ${step >= 2 ? 'bg-[#e60023]' : 'bg-gray-300'}`} />
             <div className={`
               w-10 h-10 rounded-full flex items-center justify-center font-bold text-white
-              ${step >= 2 ? 'bg-orange-600' : 'bg-gray-300'}
+              ${step >= 2 ? 'bg-[#e60023]' : 'bg-gray-300'}
             `}>2</div>
           </div>
         </div>
@@ -165,7 +165,7 @@ const CompanySetup: React.FC = () => {
 
               <Button 
                 type="submit" 
-                className="w-full mt-8 py-6 text-lg font-bold rounded-2xl bg-orange-600 hover:bg-orange-500 shadow-xl shadow-orange-200 transition-all active:scale-[0.98]"
+                className="w-full mt-8 py-6 text-lg font-bold rounded-2xl bg-[#e60023] hover:bg-[#e60023] shadow-xl shadow-orange-200 transition-all active:scale-[0.98]"
               >
                 <span className="flex items-center justify-center gap-2">
                   Continue to Branch Setup <ArrowRight size={20} />
@@ -252,7 +252,7 @@ const CompanySetup: React.FC = () => {
                 </Button>
                 <Button 
                   type="submit" 
-                  className="flex-1 py-6 text-lg font-bold rounded-2xl bg-orange-600 hover:bg-orange-500 shadow-xl shadow-orange-200 transition-all active:scale-[0.98]"
+                  className="flex-1 py-6 text-lg font-bold rounded-2xl bg-[#e60023] hover:bg-[#e60023] shadow-xl shadow-orange-200 transition-all active:scale-[0.98]"
                   disabled={loading}
                 >
                   {loading ? 'Setting up...' : (

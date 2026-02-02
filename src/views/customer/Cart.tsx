@@ -85,7 +85,7 @@ const Cart: React.FC = () => {
     return (
       <div className="container mx-auto px-4 py-20 text-center">
         <div className="bg-orange-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
-          <ShoppingBag className="text-orange-500 w-12 h-12" />
+          <ShoppingBag className="text-[#e60023] w-12 h-12" />
         </div>
         <h1 className="text-3xl font-bold mb-4">Your cart is empty</h1>
         <p className="text-gray-500 mb-8 max-w-md mx-auto">
@@ -159,7 +159,7 @@ const Cart: React.FC = () => {
               <div className="w-full">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Select Branch</label>
                 <select
-                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:bg-gray-50 disabled:text-gray-500"
+                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e60023] disabled:bg-gray-50 disabled:text-gray-500"
                   value={selectedBranchId}
                   onChange={(e) => setSelectedBranchId(e.target.value)}
                   disabled={!!branchId}
@@ -172,7 +172,7 @@ const Cart: React.FC = () => {
 
               {tableNo && (
                 <div className="p-3 bg-orange-50 rounded-lg flex items-center gap-3 text-orange-800">
-                  <Grid className="text-orange-500" size={18} />
+                  <Grid className="text-[#e60023]" size={18} />
                   <div>
                     <p className="text-xs font-bold uppercase tracking-wider">Assigned Table</p>
                     <p className="font-bold">Table {tableNo}</p>
@@ -205,7 +205,7 @@ const Cart: React.FC = () => {
               <hr className="border-gray-100" />
               <div className="flex justify-between text-xl font-bold text-gray-900">
                 <span>Total</span>
-                <span className="text-orange-600">ETB {finalTotal.toFixed(2)}</span>
+                <span className="text-[#e60023]">ETB {finalTotal.toFixed(2)}</span>
               </div>
               <Button
                 className="w-full"

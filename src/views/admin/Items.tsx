@@ -73,7 +73,7 @@ const Items = () => {
       case "inventory":
         return "bg-green-100 text-green-700";
       case "ingredient":
-        return "bg-orange-100 text-orange-700";
+        return "bg-orange-100 text-[#ad081b]";
       default:
         return "bg-gray-100 text-gray-700";
     }
@@ -139,7 +139,7 @@ const Items = () => {
             />
           </div>
           <select
-            className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+            className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e60023]"
             value={selectedType}
             onChange={(e) => setSelectedType(e.target.value as ItemType | "all")}
           >
@@ -253,7 +253,7 @@ const Items = () => {
           <div className="w-full">
             <label className="block text-sm font-medium text-gray-700 mb-1">Item Type</label>
             <select
-              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e60023]"
               value={formItemType}
               onChange={(e) => setFormItemType(e.target.value as ItemType)}
             >
@@ -272,7 +272,7 @@ const Items = () => {
           <div className="w-full">
             <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
             <textarea
-              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 min-h-[80px]"
+              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e60023] min-h-[80px]"
               value={formDescription}
               onChange={(e) => setFormDescription(e.target.value)}
               placeholder="Optional description..."

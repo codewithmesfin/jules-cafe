@@ -51,7 +51,7 @@ const Login: React.FC = () => {
     <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-orange-100 text-orange-600 mb-4">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-orange-100 text-[#e60023] mb-4">
             <UtensilsCrossed size={32} />
           </div>
           <h1 className="text-3xl font-bold text-gray-900">Welcome Back</h1>
@@ -71,7 +71,7 @@ const Login: React.FC = () => {
             <div>
               <div className="flex justify-between mb-1">
                 <label className="block text-sm font-medium text-gray-700">Password</label>
-                <Link href="/forgot-password" className="text-sm text-orange-600 hover:underline">Forgot password?</Link>
+                <Link href="/forgot-password" className="text-sm text-[#e60023] hover:underline">Forgot password?</Link>
               </div>
               <Input
                 type="password"
@@ -87,9 +87,9 @@ const Login: React.FC = () => {
           <div className="mt-8 pt-6 border-t border-gray-100">
             <p className="text-center text-sm text-gray-500">
               Don't have an account?{' '}
-              <Link href="/signup" className="text-orange-600 font-medium hover:underline">Create an account</Link>
+              <Link href="/signup" className="text-[#e60023] font-medium hover:underline">Create an account</Link>
               {' '}as a customer or{' '}
-              <Link href="/signup?role=admin" className="text-orange-600 font-medium hover:underline">register your business</Link>
+              <Link href="/signup?role=admin" className="text-[#e60023] font-medium hover:underline">register your business</Link>
             </p>
           </div>
         </Card>

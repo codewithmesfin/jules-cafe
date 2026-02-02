@@ -49,7 +49,7 @@ const ForgotPassword = () => {
         </form>
 
         <div className="mt-8 pt-6 border-t border-gray-100 text-center">
-          <Link href="/login" className="inline-flex items-center text-orange-600 hover:text-orange-700 font-medium">
+          <Link href="/login" className="inline-flex items-center text-[#e60023] hover:text-[#ad081b] font-medium">
             <ArrowLeft size={16} className="mr-2" />
             Back to Login
           </Link>

@@ -80,7 +80,7 @@ export default function InactivePage() {
             case 'yellow':
                 return { bg: 'bg-yellow-100', text: 'text-yellow-700', icon: 'bg-yellow-200' };
             case 'orange':
-                return { bg: 'bg-orange-100', text: 'text-orange-700', icon: 'bg-orange-200' };
+                return { bg: 'bg-orange-100', text: 'text-[#ad081b]', icon: 'bg-orange-200' };
             case 'blue':
                 return { bg: 'bg-blue-100', text: 'text-blue-700', icon: 'bg-blue-200' };
             default:
@@ -94,7 +94,7 @@ export default function InactivePage() {
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
             <div className="max-w-xl w-full bg-white rounded-2xl shadow-xl overflow-hidden">
                 {/* Header Section */}
-                <div className="bg-gradient-to-r from-orange-500 to-orange-600 p-8 text-center relative overflow-hidden">
+                <div className="bg-gradient-to-r from-[#e60023] to-[#e60023] p-8 text-center relative overflow-hidden">
                     <div className="absolute inset-0 bg-black/10"></div>
                     <div className="relative z-10">
                         <div className="inline-flex items-center justify-center w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full mb-6">
@@ -111,7 +111,7 @@ export default function InactivePage() {
                     <div className="bg-gray-50 rounded-xl p-4 mb-6">
                         <div className="flex items-center gap-4">
                             <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
-                                <User size={24} className="text-orange-600" />
+                                <User size={24} className="text-[#e60023]" />
                             </div>
                             <div className="flex-1">
                                 <p className="text-sm text-gray-500">Logged in as</p>
@@ -194,14 +194,14 @@ export default function InactivePage() {
                         </Button>
                         {statusInfo.actionLink ? (
                             <Link href={statusInfo.actionLink} className="flex-1">
-                                <Button className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700">
+                                <Button className="w-full bg-gradient-to-r from-[#e60023] to-[#e60023] hover:from-[#e60023] hover:to-[#ad081b]">
                                     <span className="flex items-center justify-center gap-2">
                                         {statusInfo.action} <ArrowRight size={16} />
                                     </span>
                                 </Button>
                             </Link>
                         ) : (
-                            <Button className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700">
+                            <Button className="flex-1 bg-gradient-to-r from-[#e60023] to-[#e60023] hover:from-[#e60023] hover:to-[#ad081b]">
                                 {statusInfo.action}
                             </Button>
                         )}

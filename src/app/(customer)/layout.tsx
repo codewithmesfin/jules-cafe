@@ -2,10 +2,11 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { ShoppingCart, User, Menu as MenuIcon, X, UtensilsCrossed } from 'lucide-react';
-import { Button } from '../../components/ui/Button';
+import { MenuIcon, ShoppingCart, User, UtensilsCrossed, X } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
+import { PINTEREST_RED } from '@/utils/hero-teams';
+import { Button } from '@/components/ui/Button';
 
 export default function CustomerLayout({ children }: { children: React.ReactNode }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -16,25 +17,31 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
 
   return (
     <div className="flex flex-col min-h-screen">
-      <header className="sticky top-0 z-40 w-full bg-white border-b border-gray-200">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 text-orange-600 font-bold text-xl">
+
+      <nav className="sticky top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm px-4 md:px-6 lg:px-8 py-4">
+        <div className='flex items-center justify-between w-full max-w-7xl mx-auto'>
+          <div className="flex items-center gap-2 md:gap-4 lg:gap-8">
+           <Link href="/" className="flex items-center gap-2 text-[#e60023] font-bold text-xl">
             <UtensilsCrossed className="w-8 h-8" />
             <span className="hidden sm:inline">QuickServe</span>
           </Link>
+          <div className="hidden lg:flex items-center gap-8 font-semibold text-black">
+            <a href="/menu" className="hover:text-gray-600 transition-colors">Explore</a>
+          </div>
+        </div>
 
-          <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-600">
-            <Link href="/menu" className="hover:text-orange-600 transition-colors">Menu</Link>
-            <Link href="/reservations" className="hover:text-orange-600 transition-colors">Reservations</Link>
-            <Link href="/orders" className="hover:text-orange-600 transition-colors">My Orders</Link>
-          </nav>
-
+        <div className="flex items-center gap-3 md:gap-6 lg:gap-8 font-semibold text-black">
+          <div className="hidden md:flex items-center gap-4 lg:gap-8">
+            <Link href="/menu" className="hover:text-gray-600 transition-colors">Menu</Link>
+            <Link href="/reservations" className="hover:text-gray-600 transition-colors">reservations</Link>
+            <Link href="/orders" className="hover:text-gray-600 transition-colors">Orders</Link>
+          </div>
           <div className="flex items-center gap-2">
             <Link href="/cart">
               <Button variant="ghost" size="sm" className="relative">
                 <ShoppingCart className="w-5 h-5" />
                 {totalItems > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-orange-600 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1 bg-[#e60023] text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center">
                     {totalItems}
                   </span>
                 )}
@@ -61,9 +68,14 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
                 <Button variant="ghost" size="sm" onClick={logout}>Logout</Button>
               </div>
             ) : (
-              <Link href="/login" className="hidden md:block">
-                <Button size="sm">Login</Button>
-              </Link>
+              <div className="flex items-center gap-2 lg:gap-3 ml-3">
+                <Link href={"/login"} className="bg-[#e60023] text-white px-4 md:px-5 py-2.5 rounded-full hover:bg-[#ad081b] transition-colors text-sm md:text-base font-bold">
+                  Log in
+                </Link>
+                <Link href={"/signup"} className="bg-[#efefef] text-black px-4 md:px-5 py-2.5 rounded-full hover:bg-[#e2e2e2] transition-colors text-sm md:text-base font-bold whitespace-nowrap">
+                  Sign up
+                </Link>
+              </div>
             )}
 
             <Button
@@ -76,48 +88,18 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
             </Button>
           </div>
         </div>
+        </div>
+      </nav>
 
-        {/* Mobile Menu */}
-        {isMenuOpen && (
-          <div className="md:hidden bg-white border-t border-gray-100 py-4 px-4 animate-in slide-in-from-top duration-200">
-            <nav className="flex flex-col gap-4 text-base font-medium">
-              <Link href="/menu" onClick={() => setIsMenuOpen(false)}>Menu</Link>
-              <Link href="/reservations" onClick={() => setIsMenuOpen(false)}>Reservations</Link>
-              <Link href="/orders" onClick={() => setIsMenuOpen(false)}>My Orders</Link>
-              <hr />
-              {user ? (
-                <>
-                  {user.status !== 'onboarding' && (
-                    <Link href="/profile" onClick={() => setIsMenuOpen(false)}>Profile</Link>
-                  )}
-                  {user.role !== 'customer' && (
-                    <Link
-                      href={user.status === 'onboarding' ? '/company-setup' : (user.role === 'admin' ? '/admin' : user.role === 'manager' ? '/manager' : '/cashier')}
-                      onClick={() => setIsMenuOpen(false)}
-                      className="capitalize"
-                    >
-                      {user.status === 'onboarding' ? 'Complete Setup' : `${user.role} Panel`}
-                    </Link>
-                  )}
-                  <button className="text-left text-red-600" onClick={() => { logout(); setIsMenuOpen(false); }}>Logout</button>
-                </>
-              ) : (
-                <Link href="/login" onClick={() => setIsMenuOpen(false)}>Login</Link>
-              )}
-            </nav>
-          </div>
-        )}
-      </header>
-
-      <main className="flex-1">
+      <div className="flex-1">
         {children}
-      </main>
+      </div>
 
       <footer className="bg-gray-900 text-gray-400 py-12">
         <div className="container mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>
             <div className="flex items-center gap-2 text-white font-bold text-xl mb-4">
-              <UtensilsCrossed className="w-6 h-6 text-orange-500" />
+              <UtensilsCrossed className="w-6 h-6 text-[#e60023]" />
               <span>QuickServe</span>
             </div>
             <p className="text-sm">
@@ -130,7 +112,7 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
             <ul className="space-y-2 text-sm">
               <li><Link href="/menu">Our Menu</Link></li>
               <li><Link href="/reservations">Book a Table</Link></li>
-              <li><Link href="/signup?role=admin" className="text-orange-500 font-semibold">Register Business</Link></li>
+              <li><Link href="/signup?role=admin" className="text-[#e60023] font-semibold">Register Business</Link></li>
             </ul>
           </div>
           <div>

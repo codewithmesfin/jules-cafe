@@ -77,7 +77,7 @@ const ItemDetail: React.FC = () => {
           <p className="text-lg text-gray-600 mb-8 leading-relaxed">
             {item.description}
           </p>
-          <div className="text-3xl font-bold text-orange-600 mb-8">
+          <div className="text-3xl font-bold text-[#e60023] mb-8">
             ETB {item.base_price.toFixed(2)}
           </div>
 

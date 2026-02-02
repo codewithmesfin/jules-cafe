@@ -98,7 +98,7 @@ const MenuView: React.FC = () => {
     <div className="container mx-auto px-4 py-8">
       {tableNo && (
         <div className="mb-6 p-4 bg-orange-50 border border-orange-100 rounded-xl flex items-center gap-3 text-orange-800">
-          <Info className="text-orange-500" size={20} />
+          <Info className="text-[#e60023]" size={20} />
           <p className="font-bold">Ordering for Table {tableNo} {selectedBranch && `at ${selectedBranch.branch_name}`}</p>
         </div>
       )}
@@ -112,7 +112,7 @@ const MenuView: React.FC = () => {
           <div className="relative w-full sm:w-64">
             <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
             <select
-              className="w-full pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 appearance-none"
+              className="w-full pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#e60023] appearance-none"
               value={selectedBranchId}
               onChange={(e) => {
                 setSelectedBranchId(e.target.value);
@@ -183,7 +183,7 @@ const MenuView: React.FC = () => {
               <div className="p-4">
                 <div className="flex justify-between items-start mb-2">
                   <h3 className="font-bold text-gray-900">{item.name}</h3>
-                  <span className="text-orange-600 font-bold">ETB {item.base_price.toFixed(2)}</span>
+                  <span className="text-[#e60023] font-bold">ETB {item.base_price.toFixed(2)}</span>
                 </div>
                 <p className="text-sm text-gray-500 line-clamp-2 mb-4 h-10">{item.description}</p>
                 <Button

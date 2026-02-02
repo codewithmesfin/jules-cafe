@@ -121,14 +121,14 @@ const Dashboard: React.FC = () => {
       target: '',
       time: new Date(user.created_at).toLocaleString(),
       icon: UserPlus,
-      iconColor: 'text-orange-600',
+      iconColor: 'text-[#e60023]',
       bgColor: 'bg-orange-100'
     }))
   ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 5);
 
   if (loading) return (
     <div className="flex flex-col items-center justify-center h-[60vh] space-y-4">
-      <div className="w-12 h-12 border-4 border-orange-200 border-t-orange-600 rounded-full animate-spin"></div>
+      <div className="w-12 h-12 border-4 border-orange-200 border-t-[#e60023] rounded-full animate-spin"></div>
       <p className="text-gray-500 font-black uppercase tracking-widest text-xs">Analytics loading...</p>
     </div>
   );
@@ -138,7 +138,7 @@ const Dashboard: React.FC = () => {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
-          { label: 'Total Revenue', value: `ETB ${totalRevenue.toLocaleString()}`, icon: DollarSign, trend: '+15.2%', trendType: 'up', color: 'text-orange-600', bg: 'bg-orange-50' },
+          { label: 'Total Revenue', value: `ETB ${totalRevenue.toLocaleString()}`, icon: DollarSign, trend: '+15.2%', trendType: 'up', color: 'text-[#e60023]', bg: 'bg-orange-50' },
           { label: 'Total Orders', value: todayOrders.toString(), icon: ShoppingBag, trend: '+12.5%', trendType: 'up', color: 'text-blue-600', bg: 'bg-blue-50' },
           { label: 'Total Customers', value: totalCustomers.toString(), icon: Users, trend: '+5.2%', trendType: 'up', color: 'text-green-600', bg: 'bg-green-50' },
           { label: 'Avg Rating', value: avgRating.toFixed(1), icon: Activity, trend: '+2.4%', trendType: 'up', color: 'text-purple-600', bg: 'bg-purple-50' },
@@ -242,7 +242,7 @@ const Dashboard: React.FC = () => {
                 <div key={i} className="flex flex-col gap-3">
                   <div className="flex justify-between items-end">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-orange-50 rounded-xl flex items-center justify-center font-black text-orange-600 text-sm">
+                      <div className="w-8 h-8 bg-orange-50 rounded-xl flex items-center justify-center font-black text-[#e60023] text-sm">
                         #{i + 1}
                       </div>
                       <div>
@@ -250,11 +250,11 @@ const Dashboard: React.FC = () => {
                         <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{item.total_sold} sold</p>
                       </div>
                     </div>
-                    <span className="font-black text-orange-600 text-sm">ETB {item.total_revenue?.toFixed(0)}</span>
+                    <span className="font-black text-[#e60023] text-sm">ETB {item.total_revenue?.toFixed(0)}</span>
                   </div>
                   <div className="w-full h-2 bg-gray-50 rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-orange-500 rounded-full shadow-[0_0_8px_rgba(234,88,12,0.3)] transition-all duration-1000"
+                      className="h-full bg-[#e60023] rounded-full shadow-[0_0_8px_rgba(234,88,12,0.3)] transition-all duration-1000"
                       style={{ width: `${(item.total_sold / (topItems[0]?.total_sold || 1)) * 100}%` }}
                     />
                   </div>
@@ -315,7 +315,7 @@ const Dashboard: React.FC = () => {
                       <p className="text-sm font-medium text-gray-900">
                         <span className="font-black">{activity.user}</span>{' '}
                         <span className="font-normal text-gray-500">{activity.action}</span>{' '}
-                        <span className="font-bold text-orange-600 truncate">{activity.target}</span>
+                        <span className="font-bold text-[#e60023] truncate">{activity.target}</span>
                       </p>
                       <div className="flex items-center gap-1 mt-1">
                         <Clock size={12} className="text-gray-300" />
@@ -333,7 +333,7 @@ const Dashboard: React.FC = () => {
             </div>
 
             {/* Performance Summary */}
-            <div className="mt-8 p-5 bg-gradient-to-br from-orange-600 to-orange-500 rounded-2xl text-white relative overflow-hidden">
+            <div className="mt-8 p-5 bg-gradient-to-br from-[#e60023] to-[#e60023] rounded-2xl text-white relative overflow-hidden">
               <div className="relative z-10">
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">Today's Progress</p>
