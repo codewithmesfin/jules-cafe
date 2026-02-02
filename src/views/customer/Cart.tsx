@@ -24,8 +24,7 @@ const Cart: React.FC = () => {
     const fetchBranches = async () => {
       try {
         const data = await api.public.branches.getAll();
-        // Handle response format for public API
-        const branchesData = Array.isArray(data) ? data : (data?.data || []);
+        const branchesData = data?.data || data;
         setBranches(branchesData);
         if (branchId) {
           setSelectedBranchId(branchId);

@@ -21,7 +21,7 @@ const ItemDetail: React.FC = () => {
       try {
         setLoading(true);
         const data = await api.public.menuItems.getOne(id);
-        // Handle response format
+        // API returns data in standard format with id transformation
         setItem(data?.data || data);
       } catch (error) {
         console.error('Failed to fetch item:', error);

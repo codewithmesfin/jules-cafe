@@ -50,11 +50,11 @@ const MenuView: React.FC = () => {
           api.public.branches.getAll(),
           api.public.branchMenuItems.getAll(),
         ]);
-        // Extract data from response
-        setMenuItems(Array.isArray(items) ? items : (items?.data || []));
-        setCategories(Array.isArray(cats) ? cats : (cats?.data || []));
-        setBranches(Array.isArray(brnchs) ? brnchs : (brnchs?.data || []));
-        setBranchMenuItems(Array.isArray(bmItems) ? bmItems : (bmItems?.data || []));
+        // API returns data in standard format with id transformation
+        setMenuItems(items?.data || items);
+        setCategories(cats?.data || cats);
+        setBranches(brnchs?.data || brnchs);
+        setBranchMenuItems(bmItems?.data || bmItems);
       } catch (error) {
         console.error('Failed to fetch data:', error);
       } finally {

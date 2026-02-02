@@ -40,8 +40,8 @@ const Reservations: React.FC = () => {
         user ? api.reservations.getAll() : Promise.resolve([]),
         api.public.branches.getAll(),
       ]);
-      // Handle response format for public API
-      const branchesData = Array.isArray(brData) ? brData : (brData?.data || []);
+      // API returns data in standard format with id transformation
+      const branchesData = brData?.data || brData;
       if (user) {
         setReservations(resData.filter((r: Reservation) => {
           const customerId = typeof r.customer_id === 'string' ? r.customer_id : (r.customer_id as any)?.id;
