@@ -206,7 +206,7 @@ const MenuItems: React.FC = () => {
             />
           </div>
           <select
-            className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+            className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e60023]"
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
           >
@@ -259,7 +259,7 @@ const MenuItems: React.FC = () => {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-orange-600"
+                    className="text-[#e60023]"
                     onClick={() => setViewingRecipe(item)}
                     title="View Recipe"
                   >
@@ -316,7 +316,7 @@ const MenuItems: React.FC = () => {
               Select Item from Catalog *
             </label>
             <select
-              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e60023]"
               value={formItemId}
               onChange={(e) => handleItemSelect(e.target.value)}
             >
@@ -341,7 +341,7 @@ const MenuItems: React.FC = () => {
           <div className="w-full">
             <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
             <select
-              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e60023]"
               value={formCategoryId}
               onChange={(e) => setFormCategoryId(e.target.value)}
             >
@@ -364,7 +364,7 @@ const MenuItems: React.FC = () => {
             <div className="w-full">
               <label className="block text-sm font-medium text-gray-700 mb-1">Branch</label>
               <select
-                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e60023]"
                 value={formBranchId}
                 onChange={(e) => setFormBranchId(e.target.value)}
               >
@@ -392,7 +392,7 @@ const MenuItems: React.FC = () => {
               <input
                 type="file"
                 accept="image/*"
-                className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100"
+                className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-[#ad081b] hover:file:bg-orange-100"
                 onChange={(e) => {
                   if (e.target.files?.[0]) {
                     setImageFile(e.target.files[0]);
@@ -405,7 +405,7 @@ const MenuItems: React.FC = () => {
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
             <textarea
-              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 min-h-[80px]"
+              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e60023] min-h-[80px]"
               value={formDescription}
               onChange={(e) => setFormDescription(e.target.value)}
             />
@@ -414,7 +414,7 @@ const MenuItems: React.FC = () => {
             <input
               type="checkbox"
               id="is_active_item"
-              className="rounded text-orange-600 focus:ring-orange-500"
+              className="rounded text-[#e60023] focus:ring-[#e60023]"
               checked={formIsActive}
               onChange={(e) => setFormIsActive(e.target.checked)}
             />
@@ -462,7 +462,7 @@ const MenuItems: React.FC = () => {
 
             <div>
               <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                <UtensilsCrossed size={16} className="text-orange-500" />
+                <UtensilsCrossed size={16} className="text-[#e60023]" />
                 Ingredients (per serving)
               </h4>
               <div className="bg-gray-50 rounded-lg overflow-hidden border border-gray-200">

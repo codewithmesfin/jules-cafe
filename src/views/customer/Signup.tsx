@@ -77,7 +77,7 @@ const Signup: React.FC = () => {
     <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-orange-100 text-orange-600 mb-4">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-orange-100 text-[#e60023] mb-4">
             <UtensilsCrossed size={32} />
           </div>
           <h1 className="text-3xl font-bold text-gray-900">
@@ -101,17 +101,17 @@ const Signup: React.FC = () => {
               onClick={() => handleRoleChange('customer')}
               className={`p-4 rounded-xl border-2 transition-all text-left ${
                 selectedRole === 'customer'
-                  ? 'border-orange-600 bg-orange-50'
+                  ? 'border-[#e60023] bg-orange-50'
                   : 'border-gray-200 hover:border-gray-300'
               }`}
             >
               <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 ${
-                selectedRole === 'customer' ? 'bg-orange-600 text-white' : 'bg-gray-100 text-gray-600'
+                selectedRole === 'customer' ? 'bg-[#e60023] text-white' : 'bg-gray-100 text-gray-600'
               }`}>
                 <Users size={20} />
               </div>
               <h3 className={`font-semibold ${
-                selectedRole === 'customer' ? 'text-orange-600' : 'text-gray-900'
+                selectedRole === 'customer' ? 'text-[#e60023]' : 'text-gray-900'
               }`}>
                 Customer
               </h3>
@@ -124,17 +124,17 @@ const Signup: React.FC = () => {
               onClick={() => handleRoleChange('admin')}
               className={`p-4 rounded-xl border-2 transition-all text-left ${
                 selectedRole === 'admin'
-                  ? 'border-orange-600 bg-orange-50'
+                  ? 'border-[#e60023] bg-orange-50'
                   : 'border-gray-200 hover:border-gray-300'
               }`}
             >
               <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 ${
-                selectedRole === 'admin' ? 'bg-orange-600 text-white' : 'bg-gray-100 text-gray-600'
+                selectedRole === 'admin' ? 'bg-[#e60023] text-white' : 'bg-gray-100 text-gray-600'
               }`}>
                 <Store size={20} />
               </div>
               <h3 className={`font-semibold ${
-                selectedRole === 'admin' ? 'text-orange-600' : 'text-gray-900'
+                selectedRole === 'admin' ? 'text-[#e60023]' : 'text-gray-900'
               }`}>
                 Business Owner
               </h3>
@@ -184,7 +184,7 @@ const Signup: React.FC = () => {
 
           <div className="mt-8 pt-6 border-t border-gray-100">
             <p className="text-center text-sm text-gray-500">
-              Already have an account? <Link href="/login" className="text-orange-600 font-medium hover:underline">Sign In</Link>
+              Already have an account? <Link href="/login" className="text-[#e60023] font-medium hover:underline">Sign In</Link>
             </p>
           </div>
         </Card>

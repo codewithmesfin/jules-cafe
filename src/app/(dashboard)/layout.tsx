@@ -123,7 +123,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   if (!checkedStorage || (loading && !storedUser)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#e60023]"></div>
       </div>
     );
   }
@@ -237,7 +237,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               className={cn(
                 'flex items-center gap-3 px-3 py-2 rounded-lg transition-colors',
                 pathname === item.path
-                  ? 'bg-orange-600 text-white'
+                  ? 'bg-[#e60023] text-white'
                   : 'hover:bg-gray-800 hover:text-white'
               )}
             >
@@ -302,7 +302,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               className={cn(
                 'flex items-center gap-3 px-3 py-2 rounded-lg transition-colors',
                 pathname === item.path
-                  ? 'bg-orange-600 text-white'
+                  ? 'bg-[#e60023] text-white'
                   : 'hover:bg-gray-800 hover:text-white'
               )}
             >

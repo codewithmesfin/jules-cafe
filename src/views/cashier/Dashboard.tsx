@@ -47,7 +47,7 @@ const Dashboard: React.FC = () => {
 
   if (loading) return (
     <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
-      <div className="w-10 h-10 border-4 border-orange-200 border-t-orange-600 rounded-full animate-spin"></div>
+      <div className="w-10 h-10 border-4 border-orange-200 border-t-[#e60023] rounded-full animate-spin"></div>
       <p className="text-gray-500 font-bold uppercase tracking-widest text-xs">Initializing Terminal...</p>
     </div>
   );
@@ -58,10 +58,10 @@ const Dashboard: React.FC = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
           <h1 className="text-4xl font-black text-gray-900 tracking-tight">Terminal Dashboard</h1>
-          <p className="text-gray-500 font-medium">Welcome back, <span className="text-orange-600 font-bold">{user?.full_name || user?.username}</span></p>
+          <p className="text-gray-500 font-medium">Welcome back, <span className="text-[#e60023] font-bold">{user?.full_name || user?.username}</span></p>
         </div>
         <div className="flex gap-3 w-full md:w-auto">
-          <Button onClick={() => router.push('/cashier/new-order')} className="flex-1 md:flex-none gap-2 h-12 rounded-2xl bg-orange-600 hover:bg-orange-700 shadow-xl shadow-orange-100 font-black">
+          <Button onClick={() => router.push('/cashier/new-order')} className="flex-1 md:flex-none gap-2 h-12 rounded-2xl bg-[#e60023] hover:bg-[#ad081b] shadow-xl shadow-orange-100 font-black">
             <UserPlus size={18} /> New Order
           </Button>
           <Button variant="outline" onClick={() => router.push('/cashier/queue')} className="flex-1 md:flex-none gap-2 h-12 rounded-2xl border-gray-200 hover:border-orange-200 hover:bg-orange-50 font-black">
@@ -75,7 +75,7 @@ const Dashboard: React.FC = () => {
         {[
           { label: 'Active Orders', value: activeOrders.length, icon: ShoppingBag, color: 'text-blue-600', bg: 'bg-blue-50' },
           { label: 'Completed Today', value: completedToday.length, icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-50' },
-          { label: 'Total Revenue', value: `ETB ${totalRevenue.toLocaleString()}`, icon: DollarSign, color: 'text-orange-600', bg: 'bg-orange-50' },
+          { label: 'Total Revenue', value: `ETB ${totalRevenue.toLocaleString()}`, icon: DollarSign, color: 'text-[#e60023]', bg: 'bg-orange-50' },
           { label: 'Avg Ticket Size', value: `ETB ${orders.length > 0 ? (totalRevenue / (orders.filter(o => o.status === 'completed').length || 1)).toFixed(2) : '0.00'}`, icon: TrendingUp, color: 'text-purple-600', bg: 'bg-purple-50' },
         ].map((stat, i) => (
           <Card key={i} className="border-none shadow-sm bg-white p-6 rounded-[2rem] flex items-center gap-5 hover:shadow-xl transition-shadow group">
@@ -95,7 +95,7 @@ const Dashboard: React.FC = () => {
         <Card className="lg:col-span-2 border-none shadow-sm rounded-[2rem] p-0 overflow-hidden bg-white">
           <div className="p-6 border-b border-gray-50 flex justify-between items-center bg-white">
             <h3 className="text-xl font-black text-gray-900">Recent Orders</h3>
-            <button onClick={() => router.push('/cashier/queue')} className="text-orange-600 text-sm font-bold flex items-center gap-1 hover:underline">
+            <button onClick={() => router.push('/cashier/queue')} className="text-[#e60023] text-sm font-bold flex items-center gap-1 hover:underline">
               View all <ArrowRight size={16} />
             </button>
           </div>
@@ -138,7 +138,7 @@ const Dashboard: React.FC = () => {
                       <td className="px-6 py-4 text-right">
                         <button
                           onClick={() => router.push(`/cashier/new-order?id=${order.id}`)}
-                          className="p-2 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded-xl transition-all"
+                          className="p-2 text-gray-400 hover:text-[#e60023] hover:bg-orange-50 rounded-xl transition-all"
                         >
                           <ArrowRight size={18} />
                         </button>
@@ -157,7 +157,7 @@ const Dashboard: React.FC = () => {
             <h3 className="text-xl font-black text-gray-900 mb-6">Order Channels</h3>
             <div className="space-y-6">
               {[
-                { type: 'Walk-in Orders', count: orders.filter(o => o.type === 'walk-in').length, color: 'bg-orange-600', icon: UserPlus },
+                { type: 'Walk-in Orders', count: orders.filter(o => o.type === 'walk-in').length, color: 'bg-[#e60023]', icon: UserPlus },
                 { type: 'Self-service', count: orders.filter(o => o.type === 'self-service').length, color: 'bg-blue-600', icon: Clock },
               ].map((stat) => (
                 <div key={stat.type} className="space-y-3">
@@ -179,7 +179,7 @@ const Dashboard: React.FC = () => {
             </div>
           </Card>
 
-          <div className="border-none shadow-sm rounded-[2rem] p-6 bg-gradient-to-br from-orange-600 to-orange-500 text-white relative overflow-hidden">
+          <div className="border-none shadow-sm rounded-[2rem] p-6 bg-gradient-to-br from-[#e60023] to-[#e60023] text-white relative overflow-hidden">
             <div className="relative z-10">
               <h3 className="text-xl font-black mb-2">Shift Performance</h3>
               <p className="text-orange-100 text-sm font-medium mb-6">You're doing great today!</p>

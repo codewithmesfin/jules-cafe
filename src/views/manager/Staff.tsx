@@ -110,7 +110,7 @@ const Staff: React.FC = () => {
   if (!currentUser?.branch_id) {
     return (
       <div className="flex flex-col items-center justify-center py-20 space-y-4">
-        <div className="p-4 bg-orange-100 text-orange-600 rounded-full">
+        <div className="p-4 bg-orange-100 text-[#e60023] rounded-full">
           <Users size={48} />
         </div>
         <h2 className="text-xl font-bold text-gray-900">No Branch Associated</h2>
@@ -135,7 +135,7 @@ const Staff: React.FC = () => {
             />
           </div>
           <select
-            className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+            className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e60023]"
             value={selectedRole}
             onChange={(e) => setSelectedRole(e.target.value)}
           >
@@ -266,7 +266,7 @@ const Staff: React.FC = () => {
           <div className="w-full">
             <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
             <select
-              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e60023]"
               value={formRole}
               onChange={(e) => setFormRole(e.target.value as UserRole)}
             >
@@ -278,7 +278,7 @@ const Staff: React.FC = () => {
           <div className="w-full">
             <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
             <select
-              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e60023]"
               value={formStatus}
               onChange={(e) => setFormStatus(e.target.value as UserStatus)}
             >

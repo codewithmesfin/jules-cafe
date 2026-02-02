@@ -149,7 +149,7 @@ const CompanyManagement: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#e60023]"></div>
       </div>
     );
   }
@@ -183,7 +183,7 @@ const CompanyManagement: React.FC = () => {
             <div className="flex items-start justify-between mb-6">
               <div className="flex items-center gap-4">
                 <div className="w-16 h-16 bg-orange-100 rounded-xl flex items-center justify-center">
-                  <Building2 size={32} className="text-orange-600" />
+                  <Building2 size={32} className="text-[#e60023]" />
                 </div>
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900">{company.name || 'Company'}</h2>
@@ -275,7 +275,7 @@ const CompanyManagement: React.FC = () => {
                 {company.website && (
                   <div className="flex items-center gap-2 text-gray-600">
                     <Globe size={18} className="text-gray-400" />
-                    <a href={company.website} target="_blank" rel="noopener noreferrer" className="text-orange-600 hover:underline">
+                    <a href={company.website} target="_blank" rel="noopener noreferrer" className="text-[#e60023] hover:underline">
                       {company.website}
                     </a>
                   </div>
@@ -301,7 +301,7 @@ const CompanyManagement: React.FC = () => {
             <div className="space-y-4">
               <div>
                 <p className="text-sm text-gray-500">Plan</p>
-                <p className="text-xl font-bold text-orange-600 capitalize">
+                <p className="text-xl font-bold text-[#e60023] capitalize">
                   {company.subscription?.plan || 'Trial'}
                 </p>
               </div>
@@ -324,7 +324,7 @@ const CompanyManagement: React.FC = () => {
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div 
-                      className="bg-orange-600 h-2 rounded-full" 
+                      className="bg-[#e60023] h-2 rounded-full" 
                       style={{ width: `${Math.min((branches.length / (company.subscription?.max_branches || 1)) * 100, 100)}%` }}
                     ></div>
                   </div>

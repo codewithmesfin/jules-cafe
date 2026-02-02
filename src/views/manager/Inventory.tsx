@@ -141,7 +141,7 @@ const Inventory: React.FC = () => {
   if (!user?.branch_id) {
     return (
       <div className="flex flex-col items-center justify-center py-20 space-y-4">
-        <div className="p-4 bg-orange-100 text-orange-600 rounded-full">
+        <div className="p-4 bg-orange-100 text-[#e60023] rounded-full">
           <Package size={48} />
         </div>
         <h2 className="text-xl font-bold text-gray-900">No Branch Associated</h2>
@@ -180,7 +180,7 @@ const Inventory: React.FC = () => {
           </div>
         </Card>
         <Card className="flex items-center gap-4 border-orange-200 bg-orange-50">
-          <div className="p-3 bg-orange-100 text-orange-600 rounded-full">
+          <div className="p-3 bg-orange-100 text-[#e60023] rounded-full">
             <AlertTriangle size={24} />
           </div>
           <div>
@@ -270,7 +270,7 @@ const Inventory: React.FC = () => {
                   Select Item from Catalog *
                 </label>
                 <select
-                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e60023]"
                   value={formItemId}
                   onChange={(e) => handleItemSelect(e.target.value)}
                 >

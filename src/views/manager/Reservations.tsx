@@ -167,7 +167,7 @@ const Reservations: React.FC = () => {
   if (!user?.branch_id) {
     return (
       <div className="flex flex-col items-center justify-center py-20 space-y-4">
-        <div className="p-4 bg-orange-100 text-orange-600 rounded-full">
+        <div className="p-4 bg-orange-100 text-[#e60023] rounded-full">
           <Calendar size={48} />
         </div>
         <h2 className="text-xl font-bold text-gray-900">No Branch Associated</h2>
@@ -293,7 +293,7 @@ const Reservations: React.FC = () => {
           <div className="w-full">
             <label className="block text-sm font-medium text-gray-700 mb-1">Customer</label>
             <select
-              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e60023]"
               value={formCustomerId}
               onChange={(e) => setFormCustomerId(e.target.value)}
             >
@@ -326,7 +326,7 @@ const Reservations: React.FC = () => {
             <div className="w-full">
               <label className="block text-sm font-medium text-gray-700 mb-1">Assigned Waiter</label>
               <select
-                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e60023]"
                 value={formWaiterId}
                 onChange={(e) => setFormWaiterId(e.target.value)}
               >
@@ -344,7 +344,7 @@ const Reservations: React.FC = () => {
           <div className="w-full">
             <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
             <select
-              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e60023]"
               value={formStatus}
               onChange={(e) => setFormStatus(e.target.value as any)}
             >
@@ -358,7 +358,7 @@ const Reservations: React.FC = () => {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Note</label>
             <textarea
-              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 min-h-[80px]"
+              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e60023] min-h-[80px]"
               value={formNote}
               onChange={(e) => setFormNote(e.target.value)}
               placeholder="Any special requests..."

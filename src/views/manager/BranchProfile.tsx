@@ -76,7 +76,7 @@ const BranchProfile: React.FC = () => {
   if (!user?.branch_id) {
     return (
       <div className="flex flex-col items-center justify-center py-20 space-y-4">
-        <div className="p-4 bg-orange-100 text-orange-600 rounded-full">
+        <div className="p-4 bg-orange-100 text-[#e60023] rounded-full">
           <MapPin size={48} />
         </div>
         <h2 className="text-xl font-bold text-gray-900">No Branch Associated</h2>

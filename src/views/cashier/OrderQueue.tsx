@@ -145,7 +145,7 @@ const OrderQueue: React.FC = () => {
   if (!user?.branch_id) {
     return (
       <div className="flex flex-col items-center justify-center py-20 space-y-4">
-        <div className="p-6 bg-orange-100 text-orange-600 rounded-3xl shadow-inner">
+        <div className="p-6 bg-orange-100 text-[#e60023] rounded-3xl shadow-inner">
           <Clock size={48} strokeWidth={1.5} />
         </div>
         <div className="text-center space-y-2">
@@ -174,7 +174,7 @@ const OrderQueue: React.FC = () => {
               className={cn(
                 "px-6 py-2 text-sm font-black rounded-xl transition-all whitespace-nowrap shrink-0",
                 filter === f
-                  ? "bg-white text-orange-600 shadow-sm"
+                  ? "bg-white text-[#e60023] shadow-sm"
                   : "text-gray-500 hover:text-gray-700 hover:bg-white/50"
               )}
             >
@@ -215,7 +215,7 @@ const OrderQueue: React.FC = () => {
                 <div className="p-5 border-b border-gray-50">
                   <div className="flex justify-between items-start mb-3">
                     <div className="flex flex-col min-w-0">
-                      <span className="text-[10px] font-black text-orange-600 uppercase tracking-widest mb-1">
+                      <span className="text-[10px] font-black text-[#e60023] uppercase tracking-widest mb-1">
                         Order #{order.order_number.split('-').pop()}
                       </span>
                       <h3 className="font-black text-gray-900 truncate">
@@ -246,7 +246,7 @@ const OrderQueue: React.FC = () => {
                     {(order as any).items?.slice(0, 3).map((item: any, idx: number) => (
                       <div key={idx} className="flex justify-between text-xs font-bold">
                         <span className="text-gray-600 truncate flex-1">
-                          <span className="text-orange-600 mr-1.5">{item.quantity}x</span>
+                          <span className="text-[#e60023] mr-1.5">{item.quantity}x</span>
                           {item.menu_item_name}
                         </span>
                         <span className="text-gray-400 ml-2 shrink-0">ETB {(item.unit_price * item.quantity).toFixed(2)}</span>
@@ -283,7 +283,7 @@ const OrderQueue: React.FC = () => {
                       {order.status === 'pending' && (
                         <Button
                           size="sm"
-                          className="flex-1 h-10 rounded-xl bg-orange-600 hover:bg-orange-700 shadow-lg shadow-orange-100 font-black gap-2"
+                          className="flex-1 h-10 rounded-xl bg-[#e60023] hover:bg-[#ad081b] shadow-lg shadow-orange-100 font-black gap-2"
                           onClick={() => handleUpdateStatus(order.id, 'preparing')}
                         >
                           <Play size={14} fill="currentColor" /> Accept
@@ -315,7 +315,7 @@ const OrderQueue: React.FC = () => {
                           className="h-10 w-10 p-0 rounded-xl border-gray-200 hover:bg-gray-50 hover:border-orange-200 shrink-0"
                           onClick={() => router.push(`/cashier/new-order?id=${order.id}`)}
                         >
-                          <Edit2 size={16} className="text-gray-400 group-hover:text-orange-500 transition-colors" />
+                          <Edit2 size={16} className="text-gray-400 group-hover:text-[#e60023] transition-colors" />
                         </Button>
                       )}
 
@@ -334,7 +334,7 @@ const OrderQueue: React.FC = () => {
                   {filter !== 'active' && (
                     <Button
                       variant="ghost"
-                      className="w-full h-10 rounded-xl font-black text-gray-400 group-hover:text-orange-600 transition-colors gap-2"
+                      className="w-full h-10 rounded-xl font-black text-gray-400 group-hover:text-[#e60023] transition-colors gap-2"
                       onClick={() => handleOrderClick(order)}
                     >
                       View Details <ChevronRight size={16} />
@@ -357,7 +357,7 @@ const OrderQueue: React.FC = () => {
               const customer = users.find(u => u.id === customerId);
               return (
                 <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl">
-                  <div className="w-12 h-12 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center font-black text-lg">
+                  <div className="w-12 h-12 bg-orange-100 text-[#e60023] rounded-full flex items-center justify-center font-black text-lg">
                     {customer?.full_name?.charAt(0) || customer?.username?.charAt(0) || 'G'}
                   </div>
                   <div>
@@ -399,7 +399,7 @@ const OrderQueue: React.FC = () => {
                 {(selectedOrder as any).items?.map((item: any, idx: number) => (
                   <div key={idx} className="flex justify-between items-start">
                     <div className="flex items-start gap-3">
-                      <span className="text-orange-600 font-black min-w-[24px]">{item.quantity}x</span>
+                      <span className="text-[#e60023] font-black min-w-[24px]">{item.quantity}x</span>
                       <div>
                         <p className="font-bold text-gray-900">{item.menu_item_name}</p>
                         {item.variant_name && (
@@ -430,7 +430,7 @@ const OrderQueue: React.FC = () => {
               )}
               <div className="flex justify-between items-center pt-2 border-t border-gray-100">
                 <span className="font-black text-gray-900 uppercase tracking-widest text-sm">Total</span>
-                <span className="text-2xl font-black text-orange-600">ETB {selectedOrder.total_amount.toFixed(2)}</span>
+                <span className="text-2xl font-black text-[#e60023]">ETB {selectedOrder.total_amount.toFixed(2)}</span>
               </div>
             </div>
 
@@ -463,7 +463,7 @@ const OrderQueue: React.FC = () => {
               <div className="grid grid-cols-2 gap-3">
                 {selectedOrder.status === 'pending' && (
                   <Button
-                    className="h-12 rounded-xl bg-orange-600 hover:bg-orange-700 font-black gap-2"
+                    className="h-12 rounded-xl bg-[#e60023] hover:bg-[#ad081b] font-black gap-2"
                     onClick={() => handleUpdateStatus(selectedOrder.id, 'preparing')}
                   >
                     <Play size={16} fill="currentColor" /> Accept Order

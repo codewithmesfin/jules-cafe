@@ -151,7 +151,7 @@ const Branches: React.FC = () => {
                   header: 'Branch Name',
                   accessor: (b) => (
                     <div className="flex items-center gap-2 font-bold text-gray-900">
-                      <MapPin size={16} className="text-orange-600" />
+                      <MapPin size={16} className="text-[#e60023]" />
                       {b.name || b.branch_name}
                     </div>
                   )
@@ -252,7 +252,7 @@ const Branches: React.FC = () => {
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
-                className="w-4 h-4 text-orange-600 rounded border-gray-300 focus:ring-orange-500"
+                className="w-4 h-4 text-[#e60023] rounded border-gray-300 focus:ring-[#e60023]"
                 checked={isActive}
                 onChange={(e) => setIsActive(e.target.checked)}
               />

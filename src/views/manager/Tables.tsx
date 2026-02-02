@@ -53,7 +53,7 @@ const Tables: React.FC = () => {
   if (!user?.branch_id) {
     return (
       <div className="flex flex-col items-center justify-center py-20 space-y-4">
-        <div className="p-4 bg-orange-100 text-orange-600 rounded-full">
+        <div className="p-4 bg-orange-100 text-[#e60023] rounded-full">
           <Grid size={48} />
         </div>
         <h2 className="text-xl font-bold text-gray-900">No Branch Associated</h2>
@@ -156,7 +156,7 @@ const Tables: React.FC = () => {
               header: 'Table Number',
               accessor: (t) => (
                 <div className="flex items-center gap-2 font-bold text-gray-900">
-                  <Grid size={16} className="text-orange-600" />
+                  <Grid size={16} className="text-[#e60023]" />
                   Table {t.table_number}
                 </div>
               )
@@ -221,7 +221,7 @@ const Tables: React.FC = () => {
           <div className="w-full">
             <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
             <select
-              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e60023]"
               value={formStatus}
               onChange={(e) => setFormStatus(e.target.value as any)}
             >
@@ -252,7 +252,7 @@ const Tables: React.FC = () => {
             <div className="bg-white p-6 rounded-3xl shadow-xl border border-gray-100 flex flex-col items-center space-y-4">
               <div className="text-center">
                 <h2 className="text-2xl font-black text-gray-900">TABLE {selectedTable.table_number}</h2>
-                <p className="text-orange-600 font-bold text-sm uppercase tracking-widest">Scan to Order</p>
+                <p className="text-[#e60023] font-bold text-sm uppercase tracking-widest">Scan to Order</p>
               </div>
 
               <div className="w-64 h-64 bg-gray-50 rounded-2xl flex items-center justify-center overflow-hidden border-4 border-white shadow-inner">
@@ -266,7 +266,7 @@ const Tables: React.FC = () => {
               <div className="text-center space-y-1">
                 <p className="text-xs text-gray-400 font-medium italic">Powered by</p>
                 <div className="flex items-center gap-1">
-                   <span className="text-lg font-black tracking-tighter uppercase">Coffee<span className="text-orange-600">Hub</span></span>
+                   <span className="text-lg font-black tracking-tighter uppercase">Coffee<span className="text-[#e60023]">Hub</span></span>
                 </div>
               </div>
             </div>

@@ -89,7 +89,7 @@ const OrderTracking: React.FC = () => {
   if (!user) {
     return (
       <div className="container mx-auto px-4 py-32 flex flex-col items-center justify-center text-center">
-        <div className="w-24 h-24 bg-orange-50 text-orange-600 rounded-3xl flex items-center justify-center shadow-inner mb-8">
+        <div className="w-24 h-24 bg-orange-50 text-[#e60023] rounded-3xl flex items-center justify-center shadow-inner mb-8">
           <ShoppingBagIcon className="w-12 h-12" strokeWidth={1.5} />
         </div>
         <h1 className="text-4xl font-black text-gray-900 mb-4 tracking-tight">Track Your Feast</h1>
@@ -98,7 +98,7 @@ const OrderTracking: React.FC = () => {
         </p>
         <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md">
           <Link href="/login" className="flex-1">
-            <Button className="w-full h-14 rounded-2xl bg-orange-600 hover:bg-orange-700 shadow-xl shadow-orange-100 font-black gap-2">
+            <Button className="w-full h-14 rounded-2xl bg-[#e60023] hover:bg-[#ad081b] shadow-xl shadow-orange-100 font-black gap-2">
               <LogIn size={20} /> Login Now
             </Button>
           </Link>
@@ -114,7 +114,7 @@ const OrderTracking: React.FC = () => {
 
   if (loading) return (
     <div className="flex flex-col items-center justify-center py-32 space-y-4">
-      <div className="w-10 h-10 border-4 border-orange-200 border-t-orange-600 rounded-full animate-spin"></div>
+      <div className="w-10 h-10 border-4 border-orange-200 border-t-[#e60023] rounded-full animate-spin"></div>
       <p className="text-gray-400 font-black uppercase tracking-widest text-xs">Loading your orders...</p>
     </div>
   );
@@ -129,7 +129,7 @@ const OrderTracking: React.FC = () => {
         <h1 className="text-3xl font-black text-gray-900 mb-3 tracking-tight">No orders found</h1>
         <p className="text-gray-500 mb-8 max-w-sm">Looks like you haven't placed any orders yet. Ready to try something new?</p>
         <Link href="/menu">
-          <Button className="rounded-2xl px-12 py-6 font-black bg-orange-600 shadow-xl shadow-orange-100">
+          <Button className="rounded-2xl px-12 py-6 font-black bg-[#e60023] shadow-xl shadow-orange-100">
             Browse Menu
           </Button>
         </Link>
@@ -169,7 +169,7 @@ const OrderTracking: React.FC = () => {
               <div className="p-5 border-b border-gray-50">
                 <div className="flex justify-between items-start mb-3">
                   <div className="flex flex-col min-w-0">
-                    <span className="text-[10px] font-black text-orange-600 uppercase tracking-widest mb-1">
+                    <span className="text-[10px] font-black text-[#e60023] uppercase tracking-widest mb-1">
                       Order #{order.order_number.split('-').pop()}
                     </span>
                     <h3 className="font-black text-gray-900 truncate">
@@ -203,13 +203,13 @@ const OrderTracking: React.FC = () => {
                         {index < steps.length - 1 && (
                           <div className={cn(
                             "absolute left-5 top-8 w-0.5 h-6 -ml-px transition-colors duration-500",
-                            index < currentStepIndex ? "bg-orange-600" : "bg-gray-100"
+                            index < currentStepIndex ? "bg-[#e60023]" : "bg-gray-100"
                           )} />
                         )}
 
                         <div className={cn(
                           "w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-all duration-500",
-                          isStepActive ? "bg-orange-600 text-white" : "bg-gray-50 text-gray-300 border border-gray-100"
+                          isStepActive ? "bg-[#e60023] text-white" : "bg-gray-50 text-gray-300 border border-gray-100"
                         )}>
                           {isStepCompleted ? <Check size={16} strokeWidth={3} /> : <Icon size={16} />}
                         </div>
@@ -241,7 +241,7 @@ const OrderTracking: React.FC = () => {
                 >
                   {order.status}
                 </Badge>
-                <div className="flex items-center gap-2 text-orange-600 font-black text-sm">
+                <div className="flex items-center gap-2 text-[#e60023] font-black text-sm">
                   <span>View Details</span>
                   <ChevronRight size={16} />
                 </div>
@@ -285,13 +285,13 @@ const OrderTracking: React.FC = () => {
                       {index < steps.length - 1 && (
                         <div className={cn(
                           "absolute left-5 top-8 w-0.5 h-6 -ml-px transition-colors duration-500",
-                          index < getCurrentStepIndex(selectedOrder.status) ? "bg-orange-600" : "bg-gray-100"
+                          index < getCurrentStepIndex(selectedOrder.status) ? "bg-[#e60023]" : "bg-gray-100"
                         )} />
                       )}
 
                       <div className={cn(
                         "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all duration-500",
-                        isStepActive ? "bg-orange-600 text-white" : "bg-gray-50 text-gray-300 border border-gray-100"
+                        isStepActive ? "bg-[#e60023] text-white" : "bg-gray-50 text-gray-300 border border-gray-100"
                       )}>
                         {isStepCompleted ? <Check size={20} strokeWidth={3} /> : <Icon size={20} />}
                       </div>
@@ -317,7 +317,7 @@ const OrderTracking: React.FC = () => {
                 {(selectedOrder as any).items?.map((item: any, idx: number) => (
                   <div key={idx} className="flex justify-between items-center">
                     <div className="flex items-center gap-3">
-                      <span className="text-orange-600 font-black">{item.quantity}x</span>
+                      <span className="text-[#e60023] font-black">{item.quantity}x</span>
                       <div>
                         <p className="font-bold text-gray-900">{item.menu_item_name}</p>
                         {item.variant_name && (
@@ -345,7 +345,7 @@ const OrderTracking: React.FC = () => {
               )}
               <div className="flex justify-between items-center pt-2 border-t border-gray-100">
                 <span className="font-black text-gray-900 uppercase tracking-widest text-sm">Total</span>
-                <span className="text-2xl font-black text-orange-600">ETB {selectedOrder.total_amount.toFixed(2)}</span>
+                <span className="text-2xl font-black text-[#e60023]">ETB {selectedOrder.total_amount.toFixed(2)}</span>
               </div>
             </div>
 

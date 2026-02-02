@@ -126,7 +126,7 @@ const Reports: React.FC = () => {
             ))}
           </div>
           <Button
-            className="gap-2 bg-orange-600 hover:bg-orange-700"
+            className="gap-2 bg-[#e60023] hover:bg-[#ad081b]"
             onClick={fetchAllAnalytics}
             disabled={loading}
           >
@@ -144,7 +144,7 @@ const Reports: React.FC = () => {
             <div className="relative">
               <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
               <select
-                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 appearance-none text-sm font-bold"
+                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#e60023] appearance-none text-sm font-bold"
                 value={selectedBranch}
                 onChange={(e) => setSelectedBranch(e.target.value)}
               >
@@ -179,7 +179,7 @@ const Reports: React.FC = () => {
           <div className="space-y-1.5">
             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Aggregation</label>
             <select
-              className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 appearance-none text-sm font-bold"
+              className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#e60023] appearance-none text-sm font-bold"
               value={interval}
               onChange={(e) => setInterval(e.target.value as any)}
             >
@@ -195,7 +195,7 @@ const Reports: React.FC = () => {
       {/* Top Level KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
-          { label: 'Total Revenue', value: `ETB ${totalRevenue.toLocaleString()}`, icon: DollarSign, color: 'text-orange-600', bg: 'bg-orange-50' },
+          { label: 'Total Revenue', value: `ETB ${totalRevenue.toLocaleString()}`, icon: DollarSign, color: 'text-[#e60023]', bg: 'bg-orange-50' },
           { label: 'Order Volume', value: totalOrders.toLocaleString(), icon: ShoppingBag, color: 'text-blue-600', bg: 'bg-blue-50' },
           { label: 'Avg Order Value', value: `ETB ${avgOrderValue.toFixed(2)}`, icon: TrendingUp, color: 'text-green-600', bg: 'bg-green-50' },
           { label: 'Active Items', value: productData.length, icon: Package, color: 'text-purple-600', bg: 'bg-purple-50' },
@@ -294,7 +294,7 @@ const Reports: React.FC = () => {
         <Card className="border-none shadow-sm rounded-3xl p-0 overflow-hidden bg-white" title="Top Selling Items">
           <div className="p-8 border-b border-gray-50 flex justify-between items-center">
             <h3 className="text-xl font-black text-gray-900 flex items-center gap-2">
-              <Award className="text-orange-500" size={24} />
+              <Award className="text-[#e60023]" size={24} />
               Bestsellers
             </h3>
             <Badge variant="info" className="font-black">Top {productData.length}</Badge>
@@ -319,12 +319,12 @@ const Reports: React.FC = () => {
                       <span className="font-bold text-gray-600">{item.total_sold} units</span>
                     </td>
                     <td className="px-8 py-5">
-                      <span className="font-black text-orange-600">ETB {item.total_revenue.toFixed(2)}</span>
+                      <span className="font-black text-[#e60023]">ETB {item.total_revenue.toFixed(2)}</span>
                     </td>
                     <td className="px-8 py-5 text-right">
                        <div className="w-24 h-1.5 bg-gray-100 rounded-full inline-block overflow-hidden">
                           <div
-                            className="h-full bg-orange-500 rounded-full"
+                            className="h-full bg-[#e60023] rounded-full"
                             style={{ width: `${(item.total_sold / (productData[0]?.total_sold || 1)) * 100}%` }}
                           />
                        </div>

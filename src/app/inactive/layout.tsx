@@ -63,7 +63,7 @@ export default function InactiveLayout({ children }: { children: React.ReactNode
   if (!checkedStorage || (loading && !storedUser)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#e60023]"></div>
       </div>
     );
   }
@@ -72,7 +72,7 @@ export default function InactiveLayout({ children }: { children: React.ReactNode
   if (storedUser && storedUser.status === 'active') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#e60023]"></div>
       </div>
     );
   }

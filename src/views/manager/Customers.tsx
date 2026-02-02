@@ -57,7 +57,7 @@ const Customers: React.FC = () => {
   if (!user?.branch_id) {
     return (
       <div className="flex flex-col items-center justify-center py-20 space-y-4">
-        <div className="p-4 bg-orange-100 text-orange-600 rounded-full">
+        <div className="p-4 bg-orange-100 text-[#e60023] rounded-full">
           <Users size={48} />
         </div>
         <h2 className="text-xl font-bold text-gray-900">No Branch Associated</h2>
@@ -157,7 +157,7 @@ const Customers: React.FC = () => {
               header: 'Customer',
               accessor: (customer) => (
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center font-bold">
+                  <div className="w-8 h-8 rounded-full bg-orange-100 text-[#e60023] flex items-center justify-center font-bold">
                     {(customer.full_name || customer.username || 'U').charAt(0)}
                   </div>
                   <div>
@@ -173,7 +173,7 @@ const Customers: React.FC = () => {
               accessor: (customer) => (
                 <div className="flex flex-col">
                   <Badge variant="neutral" className="capitalize w-fit">{customer.customer_type || 'regular'}</Badge>
-                  <span className="text-xs text-orange-600 font-medium mt-1">
+                  <span className="text-xs text-[#e60023] font-medium mt-1">
                     {customer.discount_rate || 0}% Discount
                   </span>
                 </div>
@@ -268,7 +268,7 @@ const Customers: React.FC = () => {
             <div className="w-full">
               <label className="block text-sm font-medium text-gray-700 mb-1">Customer Type</label>
               <select
-                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e60023]"
                 value={formCustomerType}
                 onChange={(e) => {
                   const type = e.target.value as 'regular' | 'vip' | 'member';
@@ -295,7 +295,7 @@ const Customers: React.FC = () => {
           <div className="w-full">
             <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
             <select
-              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e60023]"
               value={formStatus}
               onChange={(e) => setFormStatus(e.target.value as UserStatus)}
             >

@@ -201,7 +201,7 @@ const NewOrder: React.FC = () => {
             <Grid size={12} /> Table
           </label>
           <select
-            className="w-full text-sm border-gray-200 rounded-md bg-gray-50 px-3 py-2 focus:ring-orange-500 focus:border-orange-500"
+            className="w-full text-sm border-gray-200 rounded-md bg-gray-50 px-3 py-2 focus:ring-[#e60023] focus:border-[#e60023]"
             value={selectedTable}
             onChange={(e) => setSelectedTable(e.target.value)}
           >
@@ -221,7 +221,7 @@ const NewOrder: React.FC = () => {
             <User size={12} /> Waiter
           </label>
           <select
-            className="w-full text-sm border-gray-200 rounded-md bg-gray-50 px-3 py-2 focus:ring-orange-500 focus:border-orange-500"
+            className="w-full text-sm border-gray-200 rounded-md bg-gray-50 px-3 py-2 focus:ring-[#e60023] focus:border-[#e60023]"
             value={selectedWaiter}
             onChange={(e) => setSelectedWaiter(e.target.value)}
           >
@@ -238,11 +238,11 @@ const NewOrder: React.FC = () => {
 
         <div className="space-y-1">
           <label className="text-xs font-bold text-gray-400 uppercase flex items-center gap-1">
-            <User size={12} className="text-orange-600" /> Customer *
+            <User size={12} className="text-[#e60023]" /> Customer *
           </label>
           <div className="flex items-center gap-2">
             <select
-              className="flex-1 text-sm border-gray-200 rounded-md bg-gray-50 px-3 py-2 focus:ring-orange-500 focus:border-orange-500 font-medium"
+              className="flex-1 text-sm border-gray-200 rounded-md bg-gray-50 px-3 py-2 focus:ring-[#e60023] focus:border-[#e60023] font-medium"
               value={selectedCustomer}
               onChange={(e) => setSelectedCustomer(e.target.value)}
             >
@@ -253,7 +253,7 @@ const NewOrder: React.FC = () => {
             </select>
             <button
               onClick={() => setIsCustomerModalOpen(true)}
-              className="p-2 text-orange-600 hover:bg-orange-50 rounded-md border border-orange-200 transition-colors"
+              className="p-2 text-[#e60023] hover:bg-orange-50 rounded-md border border-orange-200 transition-colors"
               title="Add New Customer"
             >
               <UserPlus size={18} />
@@ -263,7 +263,7 @@ const NewOrder: React.FC = () => {
 
         <div className="pt-2">
           <textarea
-            className="w-full text-xs border border-gray-200 rounded-md p-2 bg-white focus:ring-orange-500 focus:border-orange-500"
+            className="w-full text-xs border border-gray-200 rounded-md p-2 bg-white focus:ring-[#e60023] focus:border-[#e60023]"
             placeholder="Order notes (customizations, allergies...)"
             rows={2}
             value={orderNotes}
@@ -284,19 +284,19 @@ const NewOrder: React.FC = () => {
             <div key={item.id} className="flex justify-between items-center gap-3 p-2 hover:bg-gray-50 rounded-lg transition-colors">
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold text-gray-900 truncate">{item.name}</p>
-                <p className="text-xs text-orange-600 font-bold">ETB {item.base_price.toFixed(2)}</p>
+                <p className="text-xs text-[#e60023] font-bold">ETB {item.base_price.toFixed(2)}</p>
               </div>
               <div className="flex items-center gap-3 bg-white border border-gray-100 rounded-full px-2 py-1 shadow-sm">
                 <button
                   onClick={() => updateQuantity(item.id, -1)}
-                  className="p-1 hover:bg-orange-50 text-orange-600 rounded-full transition-colors"
+                  className="p-1 hover:bg-orange-50 text-[#e60023] rounded-full transition-colors"
                 >
                   <Minus size={14} />
                 </button>
                 <span className="text-sm font-black w-4 text-center">{item.quantity}</span>
                 <button
                   onClick={() => updateQuantity(item.id, 1)}
-                  className="p-1 hover:bg-orange-50 text-orange-600 rounded-full transition-colors"
+                  className="p-1 hover:bg-orange-50 text-[#e60023] rounded-full transition-colors"
                 >
                   <Plus size={14} />
                 </button>
@@ -320,7 +320,7 @@ const NewOrder: React.FC = () => {
           )}
           <div className="flex justify-between text-xl font-black text-gray-900 pt-2 border-t border-gray-200">
             <span>Total</span>
-            <span className="text-orange-600">ETB {total.toFixed(2)}</span>
+            <span className="text-[#e60023]">ETB {total.toFixed(2)}</span>
           </div>
         </div>
         <Button
@@ -338,7 +338,7 @@ const NewOrder: React.FC = () => {
   if (!user?.branch_id) {
     return (
       <div className="flex flex-col items-center justify-center py-20 space-y-6">
-        <div className="w-24 h-24 bg-orange-100 text-orange-600 rounded-3xl flex items-center justify-center shadow-inner">
+        <div className="w-24 h-24 bg-orange-100 text-[#e60023] rounded-3xl flex items-center justify-center shadow-inner">
           <ShoppingCart size={48} strokeWidth={1.5} />
         </div>
         <div className="text-center space-y-2">
@@ -354,7 +354,7 @@ const NewOrder: React.FC = () => {
 
   if (orderLoading) return (
     <div className="flex flex-col items-center justify-center h-full space-y-4">
-      <div className="w-12 h-12 border-4 border-orange-200 border-t-orange-600 rounded-full animate-spin"></div>
+      <div className="w-12 h-12 border-4 border-orange-200 border-t-[#e60023] rounded-full animate-spin"></div>
       <p className="text-gray-500 font-medium">Loading order details...</p>
     </div>
   );
@@ -381,10 +381,10 @@ const NewOrder: React.FC = () => {
 
           <div className="flex flex-col md:flex-row gap-4">
             <div className="relative flex-1 group">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-orange-500 transition-colors w-4 h-4" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#e60023] transition-colors w-4 h-4" />
               <input
                 placeholder="Search by name or description..."
-                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#e60023] focus:border-transparent transition-all"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -392,7 +392,7 @@ const NewOrder: React.FC = () => {
             {/* Desktop Category Dropdown (fallback for wide screens) */}
             <div className="hidden xl:block w-64">
               <select
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all"
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#e60023] transition-all"
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
               >
@@ -411,7 +411,7 @@ const NewOrder: React.FC = () => {
               className={cn(
                 "whitespace-nowrap px-6 py-2 rounded-full text-sm font-bold transition-all border shrink-0",
                 selectedCategory === 'all'
-                  ? "bg-orange-600 border-orange-600 text-white shadow-md shadow-orange-100 scale-105"
+                  ? "bg-[#e60023] border-[#e60023] text-white shadow-md shadow-orange-100 scale-105"
                   : "bg-white border-gray-200 text-gray-600 hover:border-orange-200 hover:bg-orange-50"
               )}
             >
@@ -424,7 +424,7 @@ const NewOrder: React.FC = () => {
                 className={cn(
                   "whitespace-nowrap px-6 py-2 rounded-full text-sm font-bold transition-all border shrink-0",
                   selectedCategory === cat.id
-                    ? "bg-orange-600 border-orange-600 text-white shadow-md shadow-orange-100 scale-105"
+                    ? "bg-[#e60023] border-[#e60023] text-white shadow-md shadow-orange-100 scale-105"
                     : "bg-white border-gray-200 text-gray-600 hover:border-orange-200 hover:bg-orange-50"
                 )}
               >
@@ -471,15 +471,15 @@ const NewOrder: React.FC = () => {
                     )}
                     <div className="absolute top-2 right-2">
                       <div className="bg-white/90 backdrop-blur-md p-1.5 rounded-full shadow-sm">
-                        <Plus size={16} className="text-orange-600" />
+                        <Plus size={16} className="text-[#e60023]" />
                       </div>
                     </div>
                   </div>
                   <div className="flex-1 flex flex-col">
-                    <h4 className="font-bold text-gray-900 text-sm sm:text-base mb-1 line-clamp-1 group-hover:text-orange-600 transition-colors">{item.name}</h4>
+                    <h4 className="font-bold text-gray-900 text-sm sm:text-base mb-1 line-clamp-1 group-hover:text-[#e60023] transition-colors">{item.name}</h4>
                     <p className="text-[10px] sm:text-xs text-gray-500 line-clamp-2 mb-2 min-h-[2.5em]">{item.description}</p>
                     <div className="mt-auto pt-2 flex justify-between items-center border-t border-gray-50">
-                      <span className="font-black text-orange-600 text-base">ETB {item.base_price.toFixed(2)}</span>
+                      <span className="font-black text-[#e60023] text-base">ETB {item.base_price.toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
@@ -491,7 +491,7 @@ const NewOrder: React.FC = () => {
 
       {/* Desktop Cart Panel */}
       <aside className="hidden lg:flex w-96 shrink-0 flex-col bg-white border border-gray-100 rounded-3xl shadow-2xl shadow-gray-200/50 h-full overflow-hidden">
-        <div className="p-6 bg-orange-600 text-white flex items-center justify-between">
+        <div className="p-6 bg-[#e60023] text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-white/20 rounded-xl backdrop-blur-md">
               <ShoppingCart size={20} />
@@ -512,10 +512,10 @@ const NewOrder: React.FC = () => {
       <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4 z-40 flex items-center gap-4 shadow-[0_-8px_30px_rgb(0,0,0,0.12)]">
         <div className="flex-1">
           <p className="text-[10px] text-gray-500 font-black uppercase tracking-wider">Total Amount</p>
-          <p className="text-2xl font-black text-orange-600">ETB {total.toFixed(2)}</p>
+          <p className="text-2xl font-black text-[#e60023]">ETB {total.toFixed(2)}</p>
         </div>
         <button
-          className="bg-orange-600 text-white px-6 h-12 rounded-xl flex items-center gap-2 font-black shadow-lg shadow-orange-100 relative active:scale-95 transition-transform"
+          className="bg-[#e60023] text-white px-6 h-12 rounded-xl flex items-center gap-2 font-black shadow-lg shadow-orange-100 relative active:scale-95 transition-transform"
           onClick={() => setIsCartDrawerOpen(true)}
         >
           <ShoppingCart size={18} />
@@ -590,7 +590,7 @@ const NewOrder: React.FC = () => {
             <div className="space-y-1">
               <label className="block text-sm font-bold text-gray-700">Loyalty Status</label>
               <select
-                className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all"
+                className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#e60023] transition-all"
                 value={newCustomer.type}
                 onChange={(e) => {
                   const type = e.target.value as 'regular' | 'vip' | 'member';

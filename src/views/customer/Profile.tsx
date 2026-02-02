@@ -39,7 +39,7 @@ const Profile: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-1 space-y-8">
           <Card className="text-center py-8">
-            <div className="w-24 h-24 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white shadow-sm">
+            <div className="w-24 h-24 bg-orange-100 text-[#e60023] rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white shadow-sm">
               <User size={48} />
             </div>
             <h3 className="text-xl font-bold">{user.full_name || user.username || 'User'}</h3>
@@ -52,7 +52,7 @@ const Profile: React.FC = () => {
           <Card title="Activity Stats">
             <div className="grid grid-cols-2 gap-4">
               <div className="p-3 bg-gray-50 rounded-lg text-center">
-                <ShoppingBag size={20} className="mx-auto mb-2 text-orange-500" />
+                <ShoppingBag size={20} className="mx-auto mb-2 text-[#e60023]" />
                 <p className="text-xl font-bold">12</p>
                 <p className="text-[10px] text-gray-500 uppercase">Orders</p>
               </div>
@@ -105,7 +105,7 @@ const Profile: React.FC = () => {
               <div className="w-full">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Bio</label>
                 <textarea
-                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 min-h-[100px]"
+                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e60023] min-h-[100px]"
                   placeholder="Tell us about yourself..."
                 />
               </div>
