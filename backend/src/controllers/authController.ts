@@ -20,7 +20,7 @@ const generateToken = (id: string) => {
  * The user is created in 'onboarding' status and must complete company setup
  */
 export const register = catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
-  const { email, password, full_name, phone, role } = req.body;
+  const { email, password, full_name, phone, role, company_id } = req.body;
   console.log('Signup request body:', req.body);
   console.log('Role received:', role);
 
@@ -46,6 +46,7 @@ export const register = catchAsync(async (req: AuthRequest, res: Response, next:
     status: userStatus,
     full_name,
     phone,
+    company_id: company_id || undefined,
     passwordResetRequired: false,
   });
 

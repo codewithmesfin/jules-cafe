@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { CheckCircle2, Clock, Package, ChefHat, Check, LogIn, UserPlus, ShoppingBag as ShoppingBagIcon, ChevronRight, X } from 'lucide-react';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import { api } from '../../utils/api';
 import { Badge } from '../../components/ui/Badge';
 import { Card } from '../../components/ui/Card';
@@ -14,6 +15,8 @@ import type { Order } from '../../types';
 
 const OrderTracking: React.FC = () => {
   const { user } = useAuth();
+  const params = useParams();
+  const tenantId = params?.tenant_id as string;
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -97,12 +100,12 @@ const OrderTracking: React.FC = () => {
           Log in or create an account to view your active orders and track their status in real-time.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md">
-          <Link href="/login" className="flex-1">
+          <Link href={tenantId ? `/${tenantId}/login` : "/login"} className="flex-1">
             <Button className="w-full h-14 rounded-2xl bg-[#e60023] hover:bg-[#ad081b] shadow-xl shadow-orange-100 font-black gap-2">
               <LogIn size={20} /> Login Now
             </Button>
           </Link>
-          <Link href="/signup" className="flex-1">
+          <Link href={tenantId ? `/${tenantId}/signup` : "/signup"} className="flex-1">
             <Button variant="outline" className="w-full h-14 rounded-2xl border-gray-200 hover:bg-orange-50 hover:border-orange-200 font-black gap-2 text-gray-900">
               <UserPlus size={20} /> Sign Up
             </Button>
@@ -128,7 +131,7 @@ const OrderTracking: React.FC = () => {
         </div>
         <h1 className="text-3xl font-black text-gray-900 mb-3 tracking-tight">No orders found</h1>
         <p className="text-gray-500 mb-8 max-w-sm">Looks like you haven't placed any orders yet. Ready to try something new?</p>
-        <Link href="/menu">
+        <Link href={tenantId ? `/${tenantId}/menu` : "/menu"}>
           <Button className="rounded-2xl px-12 py-6 font-black bg-[#e60023] shadow-xl shadow-orange-100">
             Browse Menu
           </Button>

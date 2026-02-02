@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, useParams } from 'next/navigation';
 import { UtensilsCrossed, Store, Users } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -16,7 +16,10 @@ const Signup: React.FC = () => {
   const { showNotification } = useNotification();
   const { login } = useAuth();
   const searchParams = useSearchParams();
-  const initialRole = (searchParams.get('role') as SignupRole) || 'customer';
+  const params = useParams();
+  const tenantId = params?.tenant_id as string;
+
+  const initialRole = tenantId ? 'customer' : 'admin';
 
   const [selectedRole, setSelectedRole] = useState<SignupRole>(initialRole);
   const [formData, setFormData] = useState({
@@ -25,17 +28,20 @@ const Signup: React.FC = () => {
     phone: '',
     password: '',
     role: initialRole,
+    company_id: tenantId || undefined,
   });
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    const role = searchParams.get('role') as SignupRole;
-    if (role && (role === 'customer' || role === 'admin')) {
-      setSelectedRole(role);
-      setFormData(prev => ({ ...prev, role }));
+    if (tenantId) {
+      setSelectedRole('customer');
+      setFormData(prev => ({ ...prev, role: 'customer', company_id: tenantId }));
+    } else {
+      setSelectedRole('admin');
+      setFormData(prev => ({ ...prev, role: 'admin' }));
     }
-  }, [searchParams]);
+  }, [tenantId]);
 
   const handleRoleChange = (role: SignupRole) => {
     setSelectedRole(role);
@@ -59,6 +65,8 @@ const Signup: React.FC = () => {
           window.location.href = '/company-setup';
         } else if (data.user.role === 'admin') {
           window.location.href = '/admin';
+        } else if (tenantId) {
+          window.location.href = `/${tenantId}`;
         } else {
           window.location.href = '/';
         }
@@ -90,60 +98,6 @@ const Signup: React.FC = () => {
           </p>
         </div>
 
-        {/* Role Selection */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            I am registering as a...
-          </label>
-          <div className="grid grid-cols-2 gap-4">
-            <button
-              type="button"
-              onClick={() => handleRoleChange('customer')}
-              className={`p-4 rounded-xl border-2 transition-all text-left ${
-                selectedRole === 'customer'
-                  ? 'border-[#e60023] bg-orange-50'
-                  : 'border-gray-200 hover:border-gray-300'
-              }`}
-            >
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 ${
-                selectedRole === 'customer' ? 'bg-[#e60023] text-white' : 'bg-gray-100 text-gray-600'
-              }`}>
-                <Users size={20} />
-              </div>
-              <h3 className={`font-semibold ${
-                selectedRole === 'customer' ? 'text-[#e60023]' : 'text-gray-900'
-              }`}>
-                Customer
-              </h3>
-              <p className="text-xs text-gray-500 mt-1">
-                Order food & make reservations
-              </p>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleRoleChange('admin')}
-              className={`p-4 rounded-xl border-2 transition-all text-left ${
-                selectedRole === 'admin'
-                  ? 'border-[#e60023] bg-orange-50'
-                  : 'border-gray-200 hover:border-gray-300'
-              }`}
-            >
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 ${
-                selectedRole === 'admin' ? 'bg-[#e60023] text-white' : 'bg-gray-100 text-gray-600'
-              }`}>
-                <Store size={20} />
-              </div>
-              <h3 className={`font-semibold ${
-                selectedRole === 'admin' ? 'text-[#e60023]' : 'text-gray-900'
-              }`}>
-                Business Owner
-              </h3>
-              <p className="text-xs text-gray-500 mt-1">
-                Manage restaurant & staff
-              </p>
-            </button>
-          </div>
-        </div>
 
         <Card>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -184,7 +138,7 @@ const Signup: React.FC = () => {
 
           <div className="mt-8 pt-6 border-t border-gray-100">
             <p className="text-center text-sm text-gray-500">
-              Already have an account? <Link href="/login" className="text-[#e60023] font-medium hover:underline">Sign In</Link>
+              Already have an account? <Link href={tenantId ? `/${tenantId}/login` : "/login"} className="text-[#e60023] font-medium hover:underline">Sign In</Link>
             </p>
           </div>
         </Card>

@@ -4,6 +4,7 @@ import Category from '../models/Category';
 import Branch from '../models/Branch';
 import BranchMenuItem from '../models/BranchMenuItem';
 import MenuVariant from '../models/MenuVariant';
+import Company from '../models/Company';
 import * as factory from '../utils/controllerFactory';
 import catchAsync from '../utils/catchAsync';
 
@@ -11,10 +12,39 @@ const router = express.Router();
 
 // Public routes for menu display - no authentication required
 
+// Company/Tenant - public read-only access
+router.route('/public/company/:id')
+  .get(catchAsync(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const doc = await Company.findById(req.params.id);
+    if (!doc) {
+      return next(new (require('../utils/appError').default)('Company not found', 404));
+    }
+    // Only return active companies with active subscription
+    if (!doc.is_active || doc.subscription.status !== 'active') {
+      return next(new (require('../utils/appError').default)('Company is not active', 403));
+    }
+    // Transform _id to id for frontend compatibility
+    const transformedDoc = {
+      ...doc.toObject(),
+      id: doc._id.toString()
+    };
+    res.status(200).json({
+      status: 'success',
+      data: transformedDoc
+    });
+  }));
+
 // Menu Items - public read-only access
 router.route('/public/menu-items')
   .get(catchAsync(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    const doc = await MenuItem.find({ is_active: true });
+    const query: any = { is_active: true };
+    
+    // Filter by company_id if provided
+    if (req.query.company_id) {
+      query.company_id = req.query.company_id;
+    }
+    
+    const doc = await MenuItem.find(query);
     // Transform _id to id for frontend compatibility
     const transformedDocs = doc.map((d: any) => ({
       ...d.toObject(),
@@ -47,7 +77,14 @@ router.route('/public/menu-items/:id')
 // Categories - public read-only access
 router.route('/public/categories')
   .get(catchAsync(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    const doc = await Category.find({ is_active: true });
+    const query: any = { is_active: true };
+    
+    // Filter by company_id if provided
+    if (req.query.company_id) {
+      query.company_id = req.query.company_id;
+    }
+    
+    const doc = await Category.find(query);
     // Transform _id to id for frontend compatibility
     const transformedDocs = doc.map((d: any) => ({
       ...d.toObject(),
