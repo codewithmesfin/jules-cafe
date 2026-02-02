@@ -21,7 +21,8 @@ import {
   ListOrdered,
   Grid,
   Package,
-  Database
+  Database,
+  Building2
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { Button } from '../../components/ui/Button';
@@ -58,70 +59,37 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   }, []);
 
-  // Check if user is inactive from stored user
+  // Check if user is in onboarding status
+  const isStoredUserOnboarding = () => {
+    if (!storedUser) return false;
+    return storedUser.status === 'onboarding';
+  };
+
   const isStoredUserInactive = () => {
     if (!storedUser) return false;
     if (storedUser.role === 'customer') return false;
     return storedUser.status === 'inactive' || storedUser.status === 'pending' || storedUser.status === 'suspended';
   };
 
-  const isStoredUserOnboarding = () => {
-    if (!storedUser) return false;
-    return storedUser.status === 'onboarding';
-  };
-
-  // Get user's default dashboard path based on role
-  const getDefaultPath = () => {
-    const activeUser = user || storedUser;
-    if (!activeUser) return '/';
-    switch (activeUser.role) {
-      case 'admin': return '/admin';
-      case 'manager': return '/manager';
-      case 'cashier':
-      case 'staff': return '/cashier';
-      default: return '/';
-    }
-  };
-
-  // Check if user is truly inactive
-  const isUserInactive = () => {
-    if (!user) return false;
-    if (user.role === 'customer') return false;
-    return user.status === 'inactive' || user.status === 'pending' || user.status === 'suspended';
-  };
-
-  const isUserOnboarding = () => {
-    if (!user) return false;
-    return user.status === 'onboarding';
-  };
-
-  // Immediate redirect for inactive users - runs before any rendering
+  // Immediate redirect for inactive/onboarding users - runs before any rendering
   useLayoutEffect(() => {
-    // Check stored user first
-    if (storedUser && isStoredUserInactive()) {
-      router.replace('/inactive');
-      return;
-    }
-
+    // Check stored user first for onboarding
     if (storedUser && isStoredUserOnboarding()) {
+      // Allow access to company-setup page
+      if (pathname === '/company-setup') {
+        return;
+      }
+      // Redirect onboarding users to company setup
       router.replace('/company-setup');
       return;
     }
 
-    // Check if no user in storage but auth context has user
-    if (!loading && user) {
-      if (isUserInactive()) {
-        router.replace('/inactive');
-        return;
-      }
-      if (isUserOnboarding()) {
-        router.replace('/company-setup');
-        return;
-      }
-    } else if (!loading && !user && checkedStorage) {
-      router.replace('/login');
+    // Check stored user for inactive status
+    if (storedUser && isStoredUserInactive()) {
+      router.replace('/inactive');
+      return;
     }
-  }, [user, router, loading, storedUser, checkedStorage]);
+  }, [storedUser, pathname, router]);
 
   // Main redirect effect
   useEffect(() => {
@@ -134,15 +102,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       return;
     }
 
-    // If user is inactive, redirect to /inactive page
-    if (isUserInactive()) {
-      router.push('/inactive');
+    // If user is onboarding
+    if (user.status === 'onboarding') {
+      // Allow access to company-setup page
+      if (pathname !== '/company-setup') {
+        router.push('/company-setup');
+      }
       return;
     }
 
-    // If user is onboarding, redirect to company setup
-    if (isUserOnboarding()) {
-      router.push('/company-setup');
+    // If user is inactive
+    if (user.role !== 'customer' && 
+        (user.status === 'inactive' || user.status === 'pending' || user.status === 'suspended')) {
+      router.push('/inactive');
       return;
     }
   }, [user, pathname, router, loading]);
@@ -156,13 +128,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     );
   }
 
-  // Early return for inactive users
+  // Early returns for inactive/onboarding users (don't render dashboard)
   if (storedUser && isStoredUserInactive()) {
     return null;
   }
 
-  // Early return for inactive users from auth context
-  if (!loading && user && isUserInactive()) {
+  if (storedUser && isStoredUserOnboarding()) {
+    // Only render company-setup page
+    if (pathname === '/company-setup') {
+      return <>{children}</>;
+    }
+    return null;
+  }
+
+  if (!loading && user && user.status === 'inactive') {
     return null;
   }
 
@@ -173,11 +152,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const currentUser = user || storedUser;
 
+  // Check if user can access sidebar navigation
+  const canAccessNavigation = () => {
+    if (!currentUser) return false;
+    // Onboarding users shouldn't see navigation
+    if (currentUser.status === 'onboarding') return false;
+    // Customers don't get dashboard navigation in the same way
+    if (currentUser.role === 'customer') return false;
+    return true;
+  };
+
   const getMenuItems = (role: UserRole): MenuItem[] => {
     switch (role) {
       case 'admin':
         return [
           { icon: LayoutDashboard, label: 'Dashboard', path: '/admin' },
+          { icon: Building2, label: 'Company', path: '/admin/company' },
           { icon: Users, label: 'Users', path: '/admin/users' },
           { icon: MapPin, label: 'Branches', path: '/admin/branches' },
           { icon: Settings, label: 'Categories', path: '/admin/categories' },
@@ -191,7 +181,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       case 'manager':
         return [
           { icon: LayoutDashboard, label: 'Dashboard', path: '/manager' },
-          { icon: MapPin, label: 'Branch Profile', path: '/manager/profile' },
+          { icon: Building2, label: 'Branch Profile', path: '/manager/profile' },
           { icon: Settings, label: 'Categories', path: '/manager/categories' },
           { icon: Utensils, label: 'Menu Items', path: '/manager/menu-items' },
           { icon: Package, label: 'Inventory', path: '/manager/inventory' },

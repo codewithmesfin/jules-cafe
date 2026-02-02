@@ -86,7 +86,10 @@ const Login: React.FC = () => {
           
           <div className="mt-8 pt-6 border-t border-gray-100">
             <p className="text-center text-sm text-gray-500">
-              Don't have an account? <Link href="/signup" className="text-orange-600 font-medium hover:underline">Create an account</Link>
+              Don't have an account?{' '}
+              <Link href="/signup" className="text-orange-600 font-medium hover:underline">Create an account</Link>
+              {' '}as a customer or{' '}
+              <Link href="/signup?role=admin" className="text-orange-600 font-medium hover:underline">register your business</Link>
             </p>
           </div>
         </Card>

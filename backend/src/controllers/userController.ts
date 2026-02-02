@@ -9,9 +9,16 @@ import AppError from '../utils/appError';
 export const getAllUsers = catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
   let query: any = {};
 
-  // Tenant isolation
+  // Tenant isolation for non-customer users
+  // Note: Customers are returned regardless of company_id (for multi-tenant customer lists)
   if (req.user && req.user.role !== 'customer' && req.user.company_id) {
-    query.company_id = req.user.company_id;
+    // For admin/manager/cashier, show users in their company OR customers without company_id
+    query = {
+      $or: [
+        { company_id: req.user.company_id },
+        { role: 'customer' } // Include customers even without company_id
+      ]
+    };
   }
 
   if (req.user.role === 'manager' || req.user.role === 'staff' || req.user.role === 'cashier') {

@@ -23,12 +23,14 @@ const Cart: React.FC = () => {
   useEffect(() => {
     const fetchBranches = async () => {
       try {
-        const data = await api.branches.getAll();
-        setBranches(data);
+        const data = await api.public.branches.getAll();
+        // Handle response format for public API
+        const branchesData = Array.isArray(data) ? data : (data?.data || []);
+        setBranches(branchesData);
         if (branchId) {
           setSelectedBranchId(branchId);
-        } else if (data.length > 0) {
-          setSelectedBranchId(data[0].id);
+        } else if (branchesData.length > 0) {
+          setSelectedBranchId(branchesData[0].id);
         }
       } catch (error) {
         console.error('Failed to fetch branches:', error);

@@ -24,6 +24,14 @@ const fetcher = async (url: string, options?: RequestInit) => {
     throw new Error('Account inactive. Please contact Administrator.');
   }
 
+  // Handle onboarding required status - redirect to company-setup
+  if (response.status === 423 && response.url.includes('onboarding')) {
+    if (typeof window !== 'undefined') {
+      window.location.href = '/company-setup';
+    }
+    throw new Error('Please complete company setup first.');
+  }
+
   if (!response.ok) {
     let errorMessage = 'Something went wrong';
     try {
@@ -141,12 +149,54 @@ export const api = {
     delete: (id: string) => fetcher(`/api/items/${id}`, { method: 'DELETE' }),
   },
   companies: {
+    // Setup company during onboarding
     setup: (data: any) => fetcher('/api/companies/setup', { method: 'POST', body: JSON.stringify(data) }),
+    
+    // Get current company
     getMe: () => fetcher('/api/companies/me'),
+    
+    // Update company
+    update: (data: any) => fetcher('/api/companies', { method: 'PUT', body: JSON.stringify(data) }),
+    
+    // Get company statistics
+    getStats: () => fetcher('/api/companies/stats'),
+    
+    // Delete company (owner only)
+    delete: () => fetcher('/api/companies', { method: 'DELETE' }),
+    
+    // Branch management
+    getBranches: () => fetcher('/api/companies/branches'),
+    createBranch: (data: any) => fetcher('/api/companies/branches', { method: 'POST', body: JSON.stringify(data) }),
   },
   auth: {
     signup: (data: any) => fetcher('/api/auth/signup', { method: 'POST', body: JSON.stringify(data) }),
     forgotPassword: (email: string) => fetcher('/api/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) }),
     resetPassword: (token: string, data: any) => fetcher(`/api/auth/reset-password/${token}`, { method: 'POST', body: JSON.stringify(data) }),
+    getProfile: () => fetcher('/api/auth/me'),
+    updateProfile: (data: any) => fetcher('/api/auth/profile', { method: 'PUT', body: JSON.stringify(data) }),
+    changePassword: (data: any) => fetcher('/api/auth/change-password', { method: 'PUT', body: JSON.stringify(data) }),
+  },
+  public: {
+    // Public menu endpoints - no authentication required
+    menuItems: {
+      getAll: () => fetcher('/public/menu-items'),
+      getOne: (id: string) => fetcher(`/public/menu-items/${id}`),
+    },
+    categories: {
+      getAll: () => fetcher('/public/categories'),
+      getOne: (id: string) => fetcher(`/public/categories/${id}`),
+    },
+    branches: {
+      getAll: () => fetcher('/public/branches'),
+      getOne: (id: string) => fetcher(`/public/branches/${id}`),
+    },
+    branchMenuItems: {
+      getAll: () => fetcher('/public/branch-menu-items'),
+      getOne: (id: string) => fetcher(`/public/branch-menu-items/${id}`),
+    },
+    menuVariants: {
+      getAll: () => fetcher('/public/menu-variants'),
+      getOne: (id: string) => fetcher(`/public/menu-variants/${id}`),
+    },
   }
 };

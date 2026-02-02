@@ -15,6 +15,32 @@ export interface User {
   customer_type?: 'regular' | 'vip' | 'member';
   discount_rate?: number;
   created_at: string;
+  company?: Company;
+}
+
+export interface Company {
+  id: string;
+  _id?: string;
+  name: string;
+  legal_name?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  website?: string;
+  logo?: string;
+  primary_color?: string;
+  settings?: {
+    currency?: string;
+    timezone?: string;
+  };
+  subscription?: {
+    plan: 'trial' | 'starter' | 'professional' | 'enterprise';
+    status: 'active' | 'inactive' | 'suspended' | 'cancelled';
+    max_branches?: number;
+    max_users?: number;
+  };
+  is_active: boolean;
+  setup_completed: boolean;
 }
 
 export interface Branch {
@@ -28,6 +54,8 @@ export interface Branch {
   closing_time: string;
   capacity: number;
   company_id?: string;
+  phone?: string;
+  email?: string;
 }
 
 export interface Table {
@@ -58,6 +86,8 @@ export interface MenuItem {
   base_price: number;
   image_url: string;
   is_active: boolean;
+  company_id?: string;
+  branch_id?: string; // Branch-specific menu items
   created_at: string;
 }
 
@@ -125,6 +155,8 @@ export interface Reservation {
   status: ReservationStatus;
   note: string;
   client_request_id?: string;
+  email?: string;
+  phone?: string;
   created_at: string;
 }
 
@@ -161,6 +193,13 @@ export interface Recipe {
 }
 
 export type ItemType = 'menu_item' | 'inventory' | 'ingredient' | 'product' | 'packaging';
+
+export interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  message?: string;
+  error?: string;
+}
 
 export interface Item {
   id: string;

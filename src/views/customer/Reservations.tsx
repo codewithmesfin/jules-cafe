@@ -25,6 +25,8 @@ const Reservations: React.FC = () => {
     time: '19:00',
     guests: '2',
     note: '',
+    email: user?.email || '',
+    phone: user?.phone || '',
   });
 
   useEffect(() => {
@@ -36,8 +38,10 @@ const Reservations: React.FC = () => {
       setLoading(true);
       const [resData, brData] = await Promise.all([
         user ? api.reservations.getAll() : Promise.resolve([]),
-        api.branches.getAll(),
+        api.public.branches.getAll(),
       ]);
+      // Handle response format for public API
+      const branchesData = Array.isArray(brData) ? brData : (brData?.data || []);
       if (user) {
         setReservations(resData.filter((r: Reservation) => {
           const customerId = typeof r.customer_id === 'string' ? r.customer_id : (r.customer_id as any)?.id;
@@ -46,8 +50,8 @@ const Reservations: React.FC = () => {
       } else {
         setReservations([]);
       }
-      setBranches(brData);
-      if (brData.length > 0) setFormData(prev => ({ ...prev, branch_id: brData[0].id }));
+      setBranches(branchesData);
+      if (branchesData.length > 0) setFormData(prev => ({ ...prev, branch_id: branchesData[0].id }));
     } catch (error) {
       console.error('Failed to fetch user reservations:', error);
     } finally {
@@ -72,7 +76,9 @@ const Reservations: React.FC = () => {
         guests_count: parseInt(formData.guests),
         note: formData.note,
         status: 'requested',
-        client_request_id: clientRequestId
+        client_request_id: clientRequestId,
+        email: formData.email,
+        phone: formData.phone,
       });
       showNotification('Reservation requested! We will notify you once it is confirmed.');
       fetchData();
@@ -131,6 +137,22 @@ const Reservations: React.FC = () => {
                 value={formData.guests}
                 onChange={(e) => setFormData({ ...formData, guests: e.target.value })}
               />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Input
+                  label="Email"
+                  type="email"
+                  required
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                />
+                <Input
+                  label="Phone"
+                  type="tel"
+                  required
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                />
+              </div>
               <div className="w-full">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Special Notes (Optional)

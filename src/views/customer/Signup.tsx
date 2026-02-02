@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { UtensilsCrossed, User, Mail, Phone, Lock, Building2 } from 'lucide-react';
+import { UtensilsCrossed, Store, Users } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Card } from '../../components/ui/Card';
@@ -10,12 +10,15 @@ import Link from 'next/link';
 import { useNotification } from '../../context/NotificationContext';
 import { useAuth } from '../../context/AuthContext';
 
+type SignupRole = 'customer' | 'admin';
+
 const Signup: React.FC = () => {
   const { showNotification } = useNotification();
   const { login } = useAuth();
   const searchParams = useSearchParams();
-  const initialRole = searchParams.get('role') === 'admin' ? 'admin' : 'customer';
+  const initialRole = (searchParams.get('role') as SignupRole) || 'customer';
 
+  const [selectedRole, setSelectedRole] = useState<SignupRole>(initialRole);
   const [formData, setFormData] = useState({
     full_name: '',
     email: '',
@@ -27,11 +30,17 @@ const Signup: React.FC = () => {
   const router = useRouter();
 
   useEffect(() => {
-    const role = searchParams.get('role');
-    if (role === 'admin') {
-      setFormData(prev => ({ ...prev, role: 'admin' }));
+    const role = searchParams.get('role') as SignupRole;
+    if (role && (role === 'customer' || role === 'admin')) {
+      setSelectedRole(role);
+      setFormData(prev => ({ ...prev, role }));
     }
   }, [searchParams]);
+
+  const handleRoleChange = (role: SignupRole) => {
+    setSelectedRole(role);
+    setFormData(prev => ({ ...prev, role }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,8 +55,10 @@ const Signup: React.FC = () => {
         // Force refresh context or redirect
         showNotification('Account created successfully!', 'success');
 
-        if (data.user.status === 'onboarding') {
+        if (data.user.role === 'admin' && data.user.status === 'onboarding') {
           window.location.href = '/company-setup';
+        } else if (data.user.role === 'admin') {
+          window.location.href = '/admin';
         } else {
           window.location.href = '/';
         }
@@ -70,13 +81,68 @@ const Signup: React.FC = () => {
             <UtensilsCrossed size={32} />
           </div>
           <h1 className="text-3xl font-bold text-gray-900">
-            {formData.role === 'admin' ? 'Business Registration' : 'Create Account'}
+            {selectedRole === 'admin' ? 'Business Registration' : 'Create Account'}
           </h1>
           <p className="text-gray-500 mt-2">
-            {formData.role === 'admin'
+            {selectedRole === 'admin'
               ? 'Register your restaurant and start growing your business'
               : 'Join us and start ordering your favorites'}
           </p>
+        </div>
+
+        {/* Role Selection */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            I am registering as a...
+          </label>
+          <div className="grid grid-cols-2 gap-4">
+            <button
+              type="button"
+              onClick={() => handleRoleChange('customer')}
+              className={`p-4 rounded-xl border-2 transition-all text-left ${
+                selectedRole === 'customer'
+                  ? 'border-orange-600 bg-orange-50'
+                  : 'border-gray-200 hover:border-gray-300'
+              }`}
+            >
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 ${
+                selectedRole === 'customer' ? 'bg-orange-600 text-white' : 'bg-gray-100 text-gray-600'
+              }`}>
+                <Users size={20} />
+              </div>
+              <h3 className={`font-semibold ${
+                selectedRole === 'customer' ? 'text-orange-600' : 'text-gray-900'
+              }`}>
+                Customer
+              </h3>
+              <p className="text-xs text-gray-500 mt-1">
+                Order food & make reservations
+              </p>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleRoleChange('admin')}
+              className={`p-4 rounded-xl border-2 transition-all text-left ${
+                selectedRole === 'admin'
+                  ? 'border-orange-600 bg-orange-50'
+                  : 'border-gray-200 hover:border-gray-300'
+              }`}
+            >
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 ${
+                selectedRole === 'admin' ? 'bg-orange-600 text-white' : 'bg-gray-100 text-gray-600'
+              }`}>
+                <Store size={20} />
+              </div>
+              <h3 className={`font-semibold ${
+                selectedRole === 'admin' ? 'text-orange-600' : 'text-gray-900'
+              }`}>
+                Business Owner
+              </h3>
+              <p className="text-xs text-gray-500 mt-1">
+                Manage restaurant & staff
+              </p>
+            </button>
+          </div>
         </div>
 
         <Card>
@@ -112,7 +178,7 @@ const Signup: React.FC = () => {
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
             />
             <Button type="submit" className="w-full mt-6" size="lg" disabled={loading}>
-              {loading ? 'Creating Account...' : 'Sign Up'}
+              {loading ? 'Creating Account...' : (selectedRole === 'admin' ? 'Register Business' : 'Sign Up')}
             </Button>
           </form>
 

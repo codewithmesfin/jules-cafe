@@ -18,6 +18,7 @@ export interface IMenuItem extends Document {
   calories?: number;
   allergens?: string[];
   company_id?: mongoose.Types.ObjectId;
+  branch_id?: mongoose.Types.ObjectId; // Branch-specific menu items
   created_by?: mongoose.Types.ObjectId;
   created_at: Date;
   updated_at: Date;
@@ -37,11 +38,13 @@ const MenuItemSchema: Schema = new Schema({
   calories: { type: Number },
   allergens: [{ type: String }],
   company_id: { type: Schema.Types.ObjectId, ref: 'Company' },
+  branch_id: { type: Schema.Types.ObjectId, ref: 'Branch' }, // Branch-specific menu items
   created_by: { type: Schema.Types.ObjectId, ref: 'User' },
 }, { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } });
 
 // Indexes
 MenuItemSchema.index({ category_id: 1, is_available: 1 });
-MenuItemSchema.index({ item_id: 1 }, { unique: true }); // One menu item per item
+MenuItemSchema.index({ item_id: 1, branch_id: 1 }, { unique: true }); // One menu item per item per branch
+MenuItemSchema.index({ branch_id: 1, is_available: 1 });
 
 export default mongoose.model<IMenuItem>('MenuItem', MenuItemSchema);

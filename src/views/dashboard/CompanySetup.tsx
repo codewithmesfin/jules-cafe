@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Building2, MapPin, Phone, Globe, Mail, ArrowRight } from 'lucide-react';
+import { Building2, MapPin, Phone, Globe, Mail, ArrowRight, Clock, Users } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Card } from '../../components/ui/Card';
@@ -11,34 +11,63 @@ import { useAuth } from '../../context/AuthContext';
 
 const CompanySetup: React.FC = () => {
   const { showNotification } = useNotification();
-  const { login } = useAuth();
-  const [formData, setFormData] = useState({
+  const { refreshUser } = useAuth();
+  const router = useRouter();
+  
+  const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
+  
+  const [companyData, setCompanyData] = useState({
     name: '',
+    legal_name: '',
     address: '',
     phone: '',
     email: '',
     website: '',
   });
-  const [loading, setLoading] = useState(false);
-  const router = useRouter();
+  
+  const [branchData, setBranchData] = useState({
+    branch_name: 'Main Branch',
+    branch_address: '',
+    branch_phone: '',
+    branch_email: '',
+    opening_time: '09:00',
+    closing_time: '22:00',
+    capacity: 50,
+  });
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleCompanySubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!companyData.name.trim()) {
+      showNotification('Company name is required', 'error');
+      return;
+    }
+    setStep(2);
+  };
+
+  const handleBranchSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       setLoading(true);
-      await api.companies.setup(formData);
-      showNotification('Company setup successfully!', 'success');
-
-      // Refresh user data to get the active status and company_id
-      // Since we don't have a getMe that returns updated data easily in AuthContext without re-login
-      // or we can just tell the user to re-login, but it's better to update the context.
-      // In this case, I'll just redirect to dashboard and hope the next refresh works,
-      // or I can implement a refresh logic.
-
-      // For now, let's just use window.location to force a reload of the app state
-      window.location.href = '/admin';
+      
+      // Combine company and branch data
+      const combinedData = {
+        ...companyData,
+        ...branchData,
+      };
+      
+      const response = await api.companies.setup(combinedData);
+      showNotification('Company setup completed successfully!', 'success');
+      
+      // Clear auth storage and redirect to login for a fresh session
+      // This ensures the user gets updated company_id and status='active'
+      localStorage.removeItem('user');
+      localStorage.removeItem('jwt');
+      
+      // Redirect to login page
+      window.location.href = '/login';
     } catch (error: any) {
-      showNotification(error.message, 'error');
+      showNotification(error.message || 'Failed to setup company', 'error');
     } finally {
       setLoading(false);
     }
@@ -51,74 +80,194 @@ const CompanySetup: React.FC = () => {
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-orange-100 text-orange-600 mb-6 shadow-xl shadow-orange-100">
             <Building2 size={40} />
           </div>
-          <h1 className="text-4xl font-black text-gray-900 tracking-tight uppercase">Setup Your Company</h1>
-          <p className="text-gray-500 mt-3 text-lg">Tell us about your business to get started</p>
+          <h1 className="text-4xl font-black text-gray-900 tracking-tight uppercase">
+            {step === 1 ? 'Setup Your Company' : 'Setup Your First Branch'}
+          </h1>
+          <p className="text-gray-500 mt-3 text-lg">
+            {step === 1 
+              ? 'Tell us about your business to get started' 
+              : 'Configure your main branch location'}
+          </p>
+        </div>
+
+        {/* Progress Steps */}
+        <div className="flex justify-center mb-8">
+          <div className="flex items-center gap-4">
+            <div className={`
+              w-10 h-10 rounded-full flex items-center justify-center font-bold text-white
+              ${step >= 1 ? 'bg-orange-600' : 'bg-gray-300'}
+            `}>1</div>
+            <div className={`w-16 h-1 ${step >= 2 ? 'bg-orange-600' : 'bg-gray-300'}`} />
+            <div className={`
+              w-10 h-10 rounded-full flex items-center justify-center font-bold text-white
+              ${step >= 2 ? 'bg-orange-600' : 'bg-gray-300'}
+            `}>2</div>
+          </div>
         </div>
 
         <Card className="p-8 border-none shadow-2xl shadow-gray-200/50 rounded-[2rem]">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="md:col-span-2">
+          {step === 1 ? (
+            /* Company Information Form */
+            <form onSubmit={handleCompanySubmit} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="md:col-span-2">
+                  <Input
+                    label="Company Name"
+                    placeholder="e.g. Gourmet Kitchen"
+                    required
+                    value={companyData.name}
+                    onChange={(e) => setCompanyData({ ...companyData, name: e.target.value })}
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <Input
+                    label="Legal Business Name (Optional)"
+                    placeholder="e.g. Gourmet Kitchen LLC"
+                    value={companyData.legal_name}
+                    onChange={(e) => setCompanyData({ ...companyData, legal_name: e.target.value })}
+                  />
+                </div>
+
                 <Input
-                  label="Company Name"
-                  placeholder="e.g. Gourmet Kitchen"
-                  required
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  icon={<Building2 className="text-gray-400" size={18} />}
+                  label="Business Email"
+                  type="email"
+                  placeholder="contact@company.com"
+                  value={companyData.email}
+                  onChange={(e) => setCompanyData({ ...companyData, email: e.target.value })}
                 />
+
+                <Input
+                  label="Phone Number"
+                  placeholder="+1 (555) 000-0000"
+                  value={companyData.phone}
+                  onChange={(e) => setCompanyData({ ...companyData, phone: e.target.value })}
+                />
+
+                <div className="md:col-span-2">
+                  <Input
+                    label="Website"
+                    placeholder="https://www.company.com"
+                    value={companyData.website}
+                    onChange={(e) => setCompanyData({ ...companyData, website: e.target.value })}
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <Input
+                    label="Headquarters Address"
+                    placeholder="123 Business Ave, Suite 100"
+                    value={companyData.address}
+                    onChange={(e) => setCompanyData({ ...companyData, address: e.target.value })}
+                  />
+                </div>
               </div>
 
-              <Input
-                label="Business Email"
-                type="email"
-                placeholder="contact@company.com"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                icon={<Mail className="text-gray-400" size={18} />}
-              />
-
-              <Input
-                label="Phone Number"
-                placeholder="+1 (555) 000-0000"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                icon={<Phone className="text-gray-400" size={18} />}
-              />
-
-              <div className="md:col-span-2">
-                <Input
-                  label="Website"
-                  placeholder="https://www.company.com"
-                  value={formData.website}
-                  onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-                  icon={<Globe className="text-gray-400" size={18} />}
-                />
-              </div>
-
-              <div className="md:col-span-2">
-                <Input
-                  label="Headquarters Address"
-                  placeholder="123 Business Ave, Suite 100"
-                  value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  icon={<MapPin className="text-gray-400" size={18} />}
-                />
-              </div>
-            </div>
-
-            <Button type="submit" className="w-full mt-8 py-8 text-xl font-black rounded-2xl bg-orange-600 hover:bg-orange-500 shadow-xl shadow-orange-200 transition-all active:scale-[0.98]" disabled={loading}>
-              {loading ? 'Setting up...' : (
+              <Button 
+                type="submit" 
+                className="w-full mt-8 py-6 text-lg font-bold rounded-2xl bg-orange-600 hover:bg-orange-500 shadow-xl shadow-orange-200 transition-all active:scale-[0.98]"
+              >
                 <span className="flex items-center justify-center gap-2">
-                  Complete Setup <ArrowRight size={24} />
+                  Continue to Branch Setup <ArrowRight size={20} />
                 </span>
-              )}
-            </Button>
-          </form>
+              </Button>
+            </form>
+          ) : (
+            /* Branch Information Form */
+            <form onSubmit={handleBranchSubmit} className="space-y-6">
+              <div className="bg-orange-50 rounded-xl p-4 mb-6">
+                <p className="text-sm text-orange-800">
+                  <strong>Note:</strong> You are setting up your first branch. You can add more branches later from the admin dashboard.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="md:col-span-2">
+                  <Input
+                    label="Branch Name"
+                    placeholder="e.g. Main Branch"
+                    required
+                    value={branchData.branch_name}
+                    onChange={(e) => setBranchData({ ...branchData, branch_name: e.target.value })}
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <Input
+                    label="Branch Address"
+                    placeholder="123 Business Ave, Suite 100"
+                    value={branchData.branch_address || companyData.address}
+                    onChange={(e) => setBranchData({ ...branchData, branch_address: e.target.value })}
+                  />
+                </div>
+
+                <Input
+                  label="Branch Phone"
+                  placeholder="+1 (555) 000-0000"
+                  value={branchData.branch_phone || companyData.phone}
+                  onChange={(e) => setBranchData({ ...branchData, branch_phone: e.target.value })}
+                />
+
+                <Input
+                  label="Branch Email"
+                  type="email"
+                  placeholder="branch@company.com"
+                  value={branchData.branch_email || companyData.email}
+                  onChange={(e) => setBranchData({ ...branchData, branch_email: e.target.value })}
+                />
+
+                <Input
+                  label="Opening Time"
+                  type="time"
+                  value={branchData.opening_time}
+                  onChange={(e) => setBranchData({ ...branchData, opening_time: e.target.value })}
+                />
+
+                <Input
+                  label="Closing Time"
+                  type="time"
+                  value={branchData.closing_time}
+                  onChange={(e) => setBranchData({ ...branchData, closing_time: e.target.value })}
+                />
+
+                <div className="md:col-span-2">
+                  <Input
+                    label="Branch Capacity (seats)"
+                    type="number"
+                    min="1"
+                    value={branchData.capacity}
+                    onChange={(e) => setBranchData({ ...branchData, capacity: parseInt(e.target.value) || 50 })}
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-4 mt-8">
+                <Button 
+                  type="button"
+                  variant="outline"
+                  onClick={() => setStep(1)}
+                  className="flex-1 py-6 text-lg font-bold rounded-2xl"
+                >
+                  Back
+                </Button>
+                <Button 
+                  type="submit" 
+                  className="flex-1 py-6 text-lg font-bold rounded-2xl bg-orange-600 hover:bg-orange-500 shadow-xl shadow-orange-200 transition-all active:scale-[0.98]"
+                  disabled={loading}
+                >
+                  {loading ? 'Setting up...' : (
+                    <span className="flex items-center justify-center gap-2">
+                      Complete Setup <ArrowRight size={20} />
+                    </span>
+                  )}
+                </Button>
+              </div>
+            </form>
+          )}
         </Card>
 
         <p className="text-center text-gray-400 mt-8 text-sm font-medium uppercase tracking-widest">
-          Step 1 of 1: Initial Configuration
+          Step {step} of 2: {step === 1 ? 'Company Information' : 'Branch Configuration'}
         </p>
       </div>
     </div>
