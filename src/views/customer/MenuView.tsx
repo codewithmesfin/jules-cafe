@@ -10,7 +10,11 @@ import { Badge } from '../../components/ui/Badge';
 import { useCart } from '../../context/CartContext';
 import type { MenuItem, MenuCategory, Branch, BranchMenuItem } from '../../types';
 
-const MenuView: React.FC = () => {
+interface MenuViewProps {
+  companyId?: string;
+}
+
+const MenuView: React.FC<MenuViewProps> = ({ companyId }) => {
   const searchParams = useSearchParams();
   const urlBranchId = searchParams.get('branchId');
   const urlTableId = searchParams.get('tableId');
@@ -45,8 +49,8 @@ const MenuView: React.FC = () => {
       try {
         setLoading(true);
         const [items, cats, brnchs, bmItems] = await Promise.all([
-          api.public.menuItems.getAll(),
-          api.public.categories.getAll(),
+          api.public.menuItems.getAll(companyId),
+          api.public.categories.getAll(companyId),
           api.public.branches.getAll(),
           api.public.branchMenuItems.getAll(),
         ]);
@@ -62,7 +66,7 @@ const MenuView: React.FC = () => {
       }
     };
     fetchData();
-  }, []);
+  }, [companyId]);
 
   const filteredItems = menuItems.map(item => {
     // If a branch is selected, find the override for availability

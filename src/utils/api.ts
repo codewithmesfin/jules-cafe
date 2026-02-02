@@ -179,11 +179,11 @@ export const api = {
   public: {
     // Public menu endpoints - no authentication required
     menuItems: {
-      getAll: () => fetcher('/public/menu-items'),
+      getAll: (companyId?: string) => fetcher(`/public/menu-items${companyId ? `?company_id=${companyId}` : ''}`),
       getOne: (id: string) => fetcher(`/public/menu-items/${id}`),
     },
     categories: {
-      getAll: () => fetcher('/public/categories'),
+      getAll: (companyId?: string) => fetcher(`/public/categories${companyId ? `?company_id=${companyId}` : ''}`),
       getOne: (id: string) => fetcher(`/public/categories/${id}`),
     },
     branches: {
@@ -197,6 +197,9 @@ export const api = {
     menuVariants: {
       getAll: () => fetcher('/public/menu-variants'),
       getOne: (id: string) => fetcher(`/public/menu-variants/${id}`),
+    },
+    company: {
+      getOne: (id: string) => fetcher(`/public/company/${id}`),
     },
   }
 };

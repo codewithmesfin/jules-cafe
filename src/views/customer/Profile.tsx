@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, Calendar, Shield, ShoppingBag, Star, Heart } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/Button';
@@ -8,7 +8,7 @@ import { api } from '../../utils/api';
 import { useNotification } from '../../context/NotificationContext';
 
 const Profile: React.FC = () => {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const { showNotification } = useNotification();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -16,15 +16,51 @@ const Profile: React.FC = () => {
     phone: user?.phone || '',
   });
 
+  // Fetch latest user profile on mount
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const userData = await api.auth.getProfile();
+        setFormData({
+          full_name: userData.full_name || '',
+          phone: userData.phone || '',
+        });
+      } catch (error) {
+        console.error('Failed to fetch profile:', error);
+      }
+    };
+    
+    if (user) {
+      fetchProfile();
+    }
+  }, [user]);
+
   if (!user) return null;
+
+  // Only allow customers to edit their own profile
+  if (user.role !== 'customer') {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold mb-8">My Profile</h1>
+        <Card className="text-center py-8">
+          <div className="w-24 h-24 bg-orange-100 text-[#e60023] rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white shadow-sm">
+            <User size={48} />
+          </div>
+          <h3 className="text-xl font-bold">{user.full_name || user.username || 'User'}</h3>
+          <p className="text-gray-500 capitalize mb-6">{user.role}</p>
+          <p className="text-gray-500">Staff accounts can only be managed through the admin panel.</p>
+        </Card>
+      </div>
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       setLoading(true);
-      await api.users.update(user.id, formData);
+      await api.auth.updateProfile(formData);
       showNotification("Profile updated successfully");
-      // Note: Ideally we would refresh the auth user state here too
+      await refreshUser();
     } catch (error) {
       showNotification("Failed to update profile", "error");
     } finally {
