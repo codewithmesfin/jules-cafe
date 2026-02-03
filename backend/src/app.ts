@@ -3,17 +3,25 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import path from 'path';
+
+// Import Routes
 import authRoutes from './routes/authRoutes';
-import companyRoutes from './routes/companyRoutes';
-import branchRoutes from './routes/branchRoutes';
-import tableRoutes from './routes/tableRoutes';
+import businessRoutes from './routes/businessRoutes';
+import productRoutes from './routes/productRoutes';
 import categoryRoutes from './routes/categoryRoutes';
-import menuItemRoutes from './routes/menuItemRoutes';
+import ingredientRoutes from './routes/ingredientRoutes';
+import recipeRoutes from './routes/recipeRoutes';
+import inventoryRoutes from './routes/inventoryRoutes';
 import orderRoutes from './routes/orderRoutes';
 import userRoutes from './routes/userRoutes';
-import itemRoutes from './routes/itemRoutes';
-import otherRoutes from './routes/otherRoutes';
+import tableRoutes from './routes/tableRoutes';
+import customerRoutes from './routes/customerRoutes';
+import taskRoutes from './routes/taskRoutes';
+import cashSessionRoutes from './routes/cashSessionRoutes';
+import shiftRoutes from './routes/shiftRoutes';
+import analyticsRoutes from './routes/analyticsRoutes';
 import publicRoutes from './routes/publicRoutes';
+
 import errorHandler from './middleware/errorHandler';
 
 const app = express();
@@ -50,43 +58,37 @@ app.use(cors(corsOptions));
 
 // Rate limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 200, // Limit each IP to 200 requests per windowMs (increased from 100)
+  windowMs: 15 * 60 * 1000,
+  max: 1000, // Increased for development/review
   message: { error: 'Too many requests from this IP, please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
 });
 app.use('/api', limiter);
 
-// Stricter rate limit for auth routes
-const authLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 10, // Limit each IP to 10 login attempts per hour
-  message: { error: 'Too many login attempts, please try again after an hour.' },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-app.use('/api/auth/login', authLimiter);
-app.use('/api/auth/register', authLimiter);
-app.use('/api/auth/forgot-password', authLimiter);
-
-app.use(express.json({ limit: '10kb' })); // Limit body size
+app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
 // Static folder for uploads
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// Routes
+// API Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/companies', companyRoutes);
-app.use('/api/branches', branchRoutes);
-app.use('/api/tables', tableRoutes);
+app.use('/api/business', businessRoutes);
+app.use('/api/products', productRoutes);
 app.use('/api/categories', categoryRoutes);
-app.use('/api/menu-items', menuItemRoutes);
+app.use('/api/ingredients', ingredientRoutes);
+app.use('/api/recipes', recipeRoutes);
+app.use('/api/inventory', inventoryRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/users', userRoutes);
-app.use('/api/items', itemRoutes);
-app.use('/api', otherRoutes);
+app.use('/api/tables', tableRoutes);
+app.use('/api/customers', customerRoutes);
+app.use('/api/tasks', taskRoutes);
+app.use('/api/cash-sessions', cashSessionRoutes);
+app.use('/api/shifts', shiftRoutes);
+app.use('/api/analytics', analyticsRoutes);
+
 app.use('/', publicRoutes);
 
 // Health check

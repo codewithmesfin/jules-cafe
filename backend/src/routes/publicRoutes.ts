@@ -1,265 +1,74 @@
 import express from 'express';
-import MenuItem from '../models/MenuItem';
+import Business from '../models/Business';
+import Product from '../models/Product';
 import Category from '../models/Category';
-import Branch from '../models/Branch';
-import BranchMenuItem from '../models/BranchMenuItem';
-import MenuVariant from '../models/MenuVariant';
-import Company from '../models/Company';
-import * as factory from '../utils/controllerFactory';
 import catchAsync from '../utils/catchAsync';
 import AppError from '../utils/appError';
+import mongoose from 'mongoose';
 
 const router = express.Router();
 
-// Public routes for menu display - no authentication required
+/**
+ * Public Business Info (by ID or Slug)
+ */
+router.get('/public/business/:identifier', catchAsync(async (req, res, next) => {
+  const { identifier } = req.params;
 
-// Company/Tenant - public read-only access
-router.route('/public/company/:id')
-  .get(catchAsync(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    const doc = await Company.findById(req.params.id);
-    if (!doc) {
-      return next(new (require('../utils/appError').default)('Company not found', 404));
-    }
-    // Only return active companies with active subscription
-    if (!doc.is_active || doc.subscription.status !== 'active') {
-      return next(new (require('../utils/appError').default)('Company is not active', 403));
-    }
-    // Transform _id to id for frontend compatibility
-    const transformedDoc = {
-      ...doc.toObject(),
-      id: doc._id.toString()
-    };
-    res.status(200).json({
-      status: 'success',
-      data: transformedDoc
-    });
-  }));
+  let business;
+  if (mongoose.Types.ObjectId.isValid(identifier)) {
+    business = await Business.findById(identifier);
+  } else {
+    business = await Business.findOne({ slug: identifier });
+  }
 
-// Get all active companies (public endpoint)
-router.route('/public/companies')
-  .get(catchAsync(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    const docs = await Company.find({ 
-      is_active: true,
-      'subscription.status': 'active',
-      setup_completed: true
-    }).select('name description logo category primary_color website email phone address');
-    
-    // Transform _id to id for frontend compatibility
-    const transformedDocs = docs.map((d: any) => ({
-      ...d.toObject(),
-      id: d._id.toString()
-    }));
-    
-    res.status(200).json({
-      status: 'success',
-      results: transformedDocs.length,
-      data: transformedDocs
-    });
-  }));
+  if (!business) {
+    return next(new AppError('Business not found', 404));
+  }
 
-// Menu Items - public read-only access
-router.route('/public/menu-items')
-  .get(catchAsync(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    const query: any = { is_active: true };
-    
-    // Filter by company_id - required for public access
-    if (!req.query.company_id) {
-      return next(new AppError('company_id is required', 400));
-    }
-    query.company_id = req.query.company_id;
-    
-    const doc = await MenuItem.find(query);
-    // Transform _id to id for frontend compatibility
-    const transformedDocs = doc.map((d: any) => ({
-      ...d.toObject(),
-      id: d._id.toString()
-    }));
-    res.status(200).json({
-      status: 'success',
-      results: transformedDocs.length,
-      data: transformedDocs
-    });
-  }));
+  res.status(200).json({
+    success: true,
+    data: business
+  });
+}));
 
-router.route('/public/menu-items/:id')
-  .get(catchAsync(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    const doc = await MenuItem.findById(req.params.id);
-    if (!doc) {
-      return next(new (require('../utils/appError').default)('Menu item not found', 404));
-    }
-    // Transform _id to id for frontend compatibility
-    const transformedDoc = {
-      ...doc.toObject(),
-      id: doc._id.toString()
-    };
-    res.status(200).json({
-      status: 'success',
-      data: transformedDoc
-    });
-  }));
+/**
+ * Public Menu Products
+ */
+router.get('/public/products', catchAsync(async (req, res, next) => {
+  const { business_id } = req.query;
+  if (!business_id) {
+    return next(new AppError('business_id is required', 400));
+  }
 
-// Categories - public read-only access
-router.route('/public/categories')
-  .get(catchAsync(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    const query: any = { is_active: true };
-    
-    // Filter by company_id - required for public access
-    if (!req.query.company_id) {
-      return next(new AppError('company_id is required', 400));
-    }
-    query.company_id = req.query.company_id;
-    
-    const doc = await Category.find(query);
-    // Transform _id to id for frontend compatibility
-    const transformedDocs = doc.map((d: any) => ({
-      ...d.toObject(),
-      id: d._id.toString()
-    }));
-    res.status(200).json({
-      status: 'success',
-      results: transformedDocs.length,
-      data: transformedDocs
-    });
-  }));
+  const products = await Product.find({
+    business_id,
+    is_active: true
+  }).populate('category_id');
 
-router.route('/public/categories/:id')
-  .get(catchAsync(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    const doc = await Category.findById(req.params.id);
-    if (!doc) {
-      return next(new (require('../utils/appError').default)('Category not found', 404));
-    }
-    // Transform _id to id for frontend compatibility
-    const transformedDoc = {
-      ...doc.toObject(),
-      id: doc._id.toString()
-    };
-    res.status(200).json({
-      status: 'success',
-      data: transformedDoc
-    });
-  }));
+  res.status(200).json({
+    success: true,
+    data: products
+  });
+}));
 
-// Branches - public read-only access
-router.route('/public/branches')
-  .get(catchAsync(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    const query: any = { is_active: true };
-    
-    // Filter by company_id - required for public access
-    if (!req.query.company_id) {
-      return next(new AppError('company_id is required', 400));
-    }
-    query.company_id = req.query.company_id;
-    
-    const doc = await Branch.find(query);
-    // Transform _id to id and branch_name to name for frontend compatibility
-    const transformedDocs = doc.map((d: any) => ({
-      ...d.toObject(),
-      id: d._id.toString(),
-      name: d.branch_name
-    }));
-    res.status(200).json({
-      status: 'success',
-      results: transformedDocs.length,
-      data: transformedDocs
-    });
-  }));
+/**
+ * Public Categories
+ */
+router.get('/public/categories', catchAsync(async (req, res, next) => {
+  const { business_id } = req.query;
+  if (!business_id) {
+    return next(new AppError('business_id is required', 400));
+  }
 
-router.route('/public/branches/:id')
-  .get(catchAsync(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    const doc = await Branch.findById(req.params.id);
-    if (!doc) {
-      return next(new (require('../utils/appError').default)('Branch not found', 404));
-    }
-    // Transform _id to id and branch_name to name for frontend compatibility
-    const transformedDoc = {
-      ...doc.toObject(),
-      id: doc._id.toString(),
-      name: doc.branch_name
-    };
-    res.status(200).json({
-      status: 'success',
-      data: transformedDoc
-    });
-  }));
+  const categories = await Category.find({
+    business_id,
+    is_active: true
+  });
 
-// Branch Menu Items - public read-only access
-router.route('/public/branch-menu-items')
-  .get(catchAsync(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    const query: any = {};
-    
-    // Filter by company_id - required for public access
-    if (!req.query.company_id) {
-      return next(new AppError('company_id is required', 400));
-    }
-    
-    const companyId = req.query.company_id;
-    const branches = await Branch.find({ company_id: companyId }).select('_id');
-    const branchIds = branches.map(b => b._id);
-    query.branch_id = { $in: branchIds };
-
-    const doc = await BranchMenuItem.find(query);
-    // Transform _id to id and convert ObjectId fields to strings
-    const transformedDocs = doc.map((d: any) => ({
-      ...d.toObject(),
-      id: d._id.toString(),
-      branch_id: d.branch_id?.toString(),
-      menu_item_id: d.menu_item_id?.toString()
-    }));
-    res.status(200).json({
-      status: 'success',
-      results: transformedDocs.length,
-      data: transformedDocs
-    });
-  }));
-
-router.route('/public/branch-menu-items/:id')
-  .get(catchAsync(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    const doc = await BranchMenuItem.findById(req.params.id);
-    if (!doc) {
-      return next(new (require('../utils/appError').default)('Branch menu item not found', 404));
-    }
-    // Transform _id to id for frontend compatibility
-    const transformedDoc = {
-      ...doc.toObject(),
-      id: doc._id.toString()
-    };
-    res.status(200).json({
-      status: 'success',
-      data: transformedDoc
-    });
-  }));
-
-// Menu Variants - public read-only access
-router.route('/public/menu-variants')
-  .get(catchAsync(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    const doc = await MenuVariant.find({ is_active: true });
-    // Transform _id to id for frontend compatibility
-    const transformedDocs = doc.map((d: any) => ({
-      ...d.toObject(),
-      id: d._id.toString()
-    }));
-    res.status(200).json({
-      status: 'success',
-      results: transformedDocs.length,
-      data: transformedDocs
-    });
-  }));
-
-router.route('/public/menu-variants/:id')
-  .get(catchAsync(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    const doc = await MenuVariant.findById(req.params.id);
-    if (!doc) {
-      return next(new (require('../utils/appError').default)('Menu variant not found', 404));
-    }
-    // Transform _id to id for frontend compatibility
-    const transformedDoc = {
-      ...doc.toObject(),
-      id: doc._id.toString()
-    };
-    res.status(200).json({
-      status: 'success',
-      data: transformedDoc
-    });
-  }));
+  res.status(200).json({
+    success: true,
+    data: categories
+  });
+}));
 
 export default router;

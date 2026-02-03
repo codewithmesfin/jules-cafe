@@ -126,7 +126,7 @@ export const useAuth = () => {
 export const useHasAccess = () => {
   const { user, isAuthenticated, requiresOnboarding } = useAuth();
   
-  const hasAccess = isAuthenticated && (!requiresOnboarding || user?.role === 'customer');
+  const hasAccess = isAuthenticated && !requiresOnboarding;
   
   return {
     hasAccess,

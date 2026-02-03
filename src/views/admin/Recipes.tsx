@@ -1,43 +1,27 @@
+"use client";
+
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Edit, Trash2, UtensilsCrossed, AlertCircle } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, UtensilsCrossed, AlertCircle, Save, X, ChevronRight, Package } from 'lucide-react';
 import { api } from '../../utils/api';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import { Table } from '../../components/ui/Table';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
-import { Modal } from '../../components/ui/Modal';
-import { ConfirmationDialog } from '../../components/ui/ConfirmationDialog';
-import { calculateAvailablePortions } from '../../utils/recipeUtils';
 import { useNotification } from '../../context/NotificationContext';
-import type { Recipe, MenuItem, Branch, InventoryItem, Item } from '../../types';
-
-interface RecipeIngredientForm {
-  item_id: string;
-  item_name: string;
-  quantity: number;
-  unit: string;
-}
+import { cn } from '../../utils/cn';
+import type { Recipe, Product, Ingredient } from '../../types';
 
 const Recipes: React.FC = () => {
   const { showNotification } = useNotification();
   const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
-  const [branches, setBranches] = useState<Branch[]>([]);
-  const [inventory, setInventory] = useState<InventoryItem[]>([]);
-  const [items, setItems] = useState<Item[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [loading, setLoading] = useState(true);
-
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedBranchId, setSelectedBranchId] = useState('');
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [recipeToDelete, setRecipeToDelete] = useState<Recipe | null>(null);
-  const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
-  const [formIngredients, setFormIngredients] = useState<RecipeIngredientForm[]>([{ item_id: '', item_name: '', quantity: 0, unit: '' }]);
-  const [formInstructions, setFormInstructions] = useState('');
-  const [formMenuItemId, setFormMenuItemId] = useState('');
+  // Editor state
+  const [editingIngredients, setEditingIngredients] = useState<{ ingredient_id: string, quantity_required: number }[]>([]);
 
   useEffect(() => {
     fetchData();
@@ -46,413 +30,216 @@ const Recipes: React.FC = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [recData, itemData, brData, invData, itemsData] = await Promise.all([
+      const [recData, prodData, ingData] = await Promise.all([
         api.recipes.getAll(),
-        api.menuItems.getAll(),
-        api.branches.getAll(),
-        api.inventory.getAll(),
-        api.items.getAll(),
+        api.products.getAll(),
+        api.ingredients.getAll(),
       ]);
       setRecipes(recData);
-      setMenuItems(itemData);
-      setBranches(brData);
-      setInventory(invData);
-      setItems(itemsData);
-      if (brData.length > 0) setSelectedBranchId(brData[0].id || brData[0]._id || '');
+      setProducts(prodData);
+      setIngredients(ingData);
     } catch (error) {
-      console.error('Failed to fetch recipes data:', error);
+      showNotification("Failed to load recipe data", "error");
     } finally {
       setLoading(false);
     }
   };
 
-  const filteredRecipes = recipes.filter(recipe => {
-    const menuItemId = typeof recipe.menu_item_id === 'string' ? recipe.menu_item_id : (recipe.menu_item_id as any).id;
-    const menuItem = menuItems.find(m => m.id === menuItemId);
-    return menuItem?.name.toLowerCase().includes(searchTerm.toLowerCase());
-  });
+  const filteredProducts = products.filter(p =>
+    p.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
-  const branchInventory = inventory.filter(i => i.branch_id === selectedBranchId);
-
-  // Get ingredients from Items table (item_type = 'ingredient')
-  const ingredientItems = items.filter(item => item.item_type === 'ingredient' && item.is_active);
-
-  // Helper to get item name by id
-  const getItemName = (itemId: string) => {
-    const item = items.find(i => i.id === itemId || i._id === itemId);
-    return item?.item_name || 'Unknown';
+  const loadRecipeForProduct = (product: Product) => {
+    setSelectedProduct(product);
+    const productRecipes = recipes.filter(r => r.product_id === product.id);
+    setEditingIngredients(productRecipes.map(r => ({
+      ingredient_id: typeof r.ingredient_id === 'string' ? r.ingredient_id : (r.ingredient_id as any).id,
+      quantity_required: r.quantity_required
+    })));
   };
 
-  // Helper to get item unit by id
-  const getItemUnit = (itemId: string) => {
-    const item = items.find(i => i.id === itemId || i._id === itemId);
-    return item?.unit || '';
+  const addIngredientRow = () => {
+    setEditingIngredients([...editingIngredients, { ingredient_id: '', quantity_required: 0 }]);
   };
 
-  const handleSave = async () => {
+  const removeIngredientRow = (index: number) => {
+    setEditingIngredients(editingIngredients.filter((_, i) => i !== index));
+  };
+
+  const updateIngredientRow = (index: number, field: string, value: any) => {
+    const newIngs = [...editingIngredients];
+    (newIngs[index] as any)[field] = value;
+    setEditingIngredients(newIngs);
+  };
+
+  const saveRecipe = async () => {
+    if (!selectedProduct) return;
+
     try {
-      // Convert form ingredients to recipe format with item_id references
-      const ingredients = formIngredients.map(ing => ({
-        item_name: getItemName(ing.item_id),
-        quantity: ing.quantity,
-        unit: ing.unit
-      }));
+      // Logic: Delete all existing recipe entries for this product and create new ones
+      // Since we don't have a bulk update endpoint, we'll do it one by one or ideally the backend should handle this.
+      // For now, we'll use the existing endpoints.
 
-      const recipeData = {
-        menu_item_id: formMenuItemId,
-        ingredients,
-        instructions: formInstructions
-      };
+      const existingRecipes = recipes.filter(r => r.product_id === selectedProduct.id);
 
-      if (editingRecipe) {
-        await api.recipes.update(editingRecipe.id, recipeData);
-        showNotification("Recipe updated successfully");
-      } else {
-        await api.recipes.create(recipeData);
-        showNotification("Recipe created successfully");
-      }
-      setIsModalOpen(false);
-      setEditingRecipe(null);
+      // Delete old
+      await Promise.all(existingRecipes.map(r => api.recipes.delete(r.id)));
+
+      // Create new
+      await Promise.all(editingIngredients
+        .filter(ing => ing.ingredient_id && ing.quantity_required > 0)
+        .map(ing => api.recipes.create({
+          product_id: selectedProduct.id,
+          ingredient_id: ing.ingredient_id,
+          quantity_required: ing.quantity_required
+        }))
+      );
+
+      showNotification("Recipe saved successfully");
       fetchData();
     } catch (error) {
       showNotification("Failed to save recipe", "error");
     }
   };
 
-  const handleDelete = async () => {
-    if (recipeToDelete) {
-      try {
-        await api.recipes.delete(recipeToDelete.id);
-        showNotification("Recipe deleted successfully", "success");
-        setIsDeleteDialogOpen(false);
-        setRecipeToDelete(null);
-        fetchData();
-      } catch (error) {
-        showNotification("Failed to delete recipe", "error");
-      }
-    }
-  };
-
-  const addIngredient = () => {
-    setFormIngredients([...formIngredients, { item_id: '', item_name: '', quantity: 0, unit: '' }]);
-  };
-
-  const updateIngredient = (index: number, field: keyof RecipeIngredientForm, value: string | number) => {
-    const newIngs = [...formIngredients];
-    (newIngs[index] as any)[field] = value;
-    
-    // Auto-fill unit and item_name when item_id is selected
-    if (field === 'item_id') {
-      const item = items.find(i => i.id === value || i._id === value);
-      if (item) {
-        newIngs[index].item_name = item.item_name;
-        newIngs[index].unit = item.unit || '';
-      }
-    }
-    setFormIngredients(newIngs);
-  };
-
-  const removeIngredient = (index: number) => {
-    setFormIngredients(formIngredients.filter((_, i) => i !== index));
-  };
-
-  if (loading) return <div className="text-center py-20">Loading Recipes...</div>;
-
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-          <div className="relative w-full sm:w-96">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <Input
-              placeholder="Search recipes by menu item..."
-              className="pl-10"
+    <div className="flex h-[calc(100vh-12rem)] gap-8 animate-in fade-in duration-500">
+      {/* Product List */}
+      <div className="w-1/3 bg-white rounded-[2.5rem] border border-slate-200 shadow-sm flex flex-col overflow-hidden">
+        <div className="p-6 border-b border-slate-100">
+          <h3 className="text-lg font-bold text-slate-900 mb-4">Products</h3>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+            <input
+              placeholder="Filter products..."
+              className="w-full pl-10 pr-4 py-2 bg-slate-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 transition-all"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <select
-            className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e60023]"
-            value={selectedBranchId}
-            onChange={(e) => setSelectedBranchId(e.target.value)}
-          >
-            {branches.map(b => (
-              <option key={b.id || b._id} value={b.id || b._id}>{b.name || b.branch_name}</option>
-            ))}
-          </select>
         </div>
-        <Button className="gap-2" onClick={() => {
-          setEditingRecipe(null);
-          setFormIngredients([{ item_id: '', item_name: '', quantity: 0, unit: '' }]);
-          setFormInstructions('');
-          setFormMenuItemId(menuItems[0]?.id || '');
-          setIsModalOpen(true);
-        }}>
-          <Plus size={20} /> Create Recipe
-        </Button>
+        <div className="flex-1 overflow-y-auto p-2 custom-scrollbar">
+          {filteredProducts.map(p => {
+            const hasRecipe = recipes.some(r => r.product_id === p.id);
+            const isActive = selectedProduct?.id === p.id;
+            return (
+              <div
+                key={p.id}
+                onClick={() => loadRecipeForProduct(p)}
+                className={cn(
+                  "flex items-center justify-between p-4 rounded-2xl cursor-pointer transition-all mb-1",
+                  isActive ? "bg-blue-50 border-blue-100" : "hover:bg-slate-50 border-transparent"
+                )}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center overflow-hidden">
+                    {p.image_url ? <img src={p.image_url} className="w-full h-full object-cover" /> : <Package size={20} className="text-slate-300" />}
+                  </div>
+                  <div>
+                    <p className={cn("text-sm font-bold", isActive ? "text-blue-700" : "text-slate-900")}>{p.name}</p>
+                    <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wider">
+                       {hasRecipe ? 'Recipe Configured' : 'No Recipe'}
+                    </p>
+                  </div>
+                </div>
+                <ChevronRight size={16} className={cn(isActive ? "text-blue-400" : "text-slate-300")} />
+              </div>
+            );
+          })}
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="bg-orange-50 border-orange-100">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-orange-100 text-[#e60023] rounded-full">
-              <UtensilsCrossed size={24} />
-            </div>
-            <div>
-              <p className="text-xs text-[#e60023] font-bold uppercase">Total Recipes</p>
-              <h3 className="text-2xl font-bold text-orange-900">{recipes.length}</h3>
-            </div>
-          </div>
-        </Card>
-
-        {filteredRecipes.slice(0, 6).map(recipe => {
-          const menuItemId = typeof recipe.menu_item_id === 'string' ? recipe.menu_item_id : (recipe.menu_item_id as any).id;
-          const menuItem = menuItems.find(m => m.id === menuItemId);
-          const available = calculateAvailablePortions(recipe, branchInventory);
-
-          return (
-            <Card key={recipe.id} className="relative overflow-hidden">
-              {available < 5 && (
-                <div className="absolute top-0 right-0 p-2">
-                  <Badge variant="error" className="flex items-center gap-1">
-                    <AlertCircle size={12} /> Low Stock
-                  </Badge>
+      {/* Recipe Editor */}
+      <div className="flex-1 bg-white rounded-[2.5rem] border border-slate-200 shadow-sm flex flex-col overflow-hidden">
+        {selectedProduct ? (
+          <>
+            <div className="p-8 border-b border-slate-100 flex justify-between items-center">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center">
+                  <UtensilsCrossed size={28} />
                 </div>
-              )}
-              <div className="flex items-start gap-4 mb-4">
-                <img
-                  src={menuItem?.image_url || undefined}
-                  alt={menuItem?.name}
-                  className="w-12 h-12 rounded-lg object-cover border border-gray-100"
-                />
                 <div>
-                  <h4 className="font-bold text-gray-900">{menuItem?.name}</h4>
-                  <p className="text-xs text-gray-500">{recipe.ingredients?.length || 0} ingredients</p>
+                  <h3 className="text-2xl font-black text-slate-900">{selectedProduct.name}</h3>
+                  <p className="text-slate-500 text-sm">Define ingredients and quantities required for one serving.</p>
                 </div>
               </div>
-
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg mb-4">
-                <span className="text-sm text-gray-600 font-medium">Available to serve</span>
-                <span className={`text-lg font-bold ${available < 5 ? 'text-red-600' : 'text-green-600'}`}>
-                  {available}
-                </span>
-              </div>
-
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" className="flex-1" onClick={() => {
-                  setEditingRecipe(recipe);
-                  // Convert existing ingredients to form format with item_id
-                  const formIngs: RecipeIngredientForm[] = (recipe.ingredients || []).map(ing => {
-                    // Try to find the item by name
-                    const item = items.find(i => i.item_name === ing.item_name);
-                    return {
-                      item_id: item?.id || '',
-                      item_name: ing.item_name,
-                      quantity: ing.quantity,
-                      unit: ing.unit
-                    };
-                  });
-                  setFormIngredients(formIngs);
-                  setFormInstructions(recipe.instructions || '');
-                  setFormMenuItemId(menuItemId);
-                  setIsModalOpen(true);
-                }}>
-                  Edit Recipe
+              <div className="flex items-center gap-3">
+                <Button variant="outline" onClick={() => setSelectedProduct(null)} className="rounded-xl font-bold">Cancel</Button>
+                <Button onClick={saveRecipe} className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-6 font-bold flex items-center gap-2 shadow-lg shadow-blue-200">
+                  <Save size={18} /> Save Recipe
                 </Button>
               </div>
-            </Card>
-          );
-        })}
-      </div>
+            </div>
 
-      <Table
-        data={filteredRecipes}
-        columns={[
-          {
-            header: 'Menu Item',
-            accessor: (r) => {
-              const menuItemId = typeof r.menu_item_id === 'string' ? r.menu_item_id : (r.menu_item_id as any).id;
-              return menuItems.find(m => m.id === menuItemId)?.name || 'Unknown';
-            }
-          },
-          {
-            header: 'Ingredients',
-            accessor: (r) => (
-              <div className="flex flex-wrap gap-1">
-                {(r.ingredients || []).map((ing, idx) => (
-                  <Badge key={idx} variant="neutral" className="text-[10px]">
-                    {ing.item_name}: {ing.quantity}{ing.unit}
-                  </Badge>
-                ))}
-              </div>
-            )
-          },
-          {
-            header: 'Available (Portions)',
-            accessor: (r) => {
-              const available = calculateAvailablePortions(r, branchInventory);
-              return (
-                <span className={available < 5 ? 'text-red-600 font-bold' : 'text-green-600 font-bold'}>
-                  {available}
-                </span>
-              );
-            }
-          },
-          {
-            header: 'Actions',
-            accessor: (r) => (
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" size="sm" onClick={() => {
-                  const menuItemId = typeof r.menu_item_id === 'string' ? r.menu_item_id : (r.menu_item_id as any).id;
-                  setEditingRecipe(r);
-                  const formIngs: RecipeIngredientForm[] = (r.ingredients || []).map(ing => {
-                    const item = items.find(i => i.item_name === ing.item_name);
-                    return {
-                      item_id: item?.id || '',
-                      item_name: ing.item_name,
-                      quantity: ing.quantity,
-                      unit: ing.unit
-                    };
-                  });
-                  setFormIngredients(formIngs);
-                  setFormInstructions(r.instructions || '');
-                  setFormMenuItemId(menuItemId);
-                  setIsModalOpen(true);
-                }}>
-                  <Edit size={16} />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-red-600"
-                  onClick={() => {
-                    setRecipeToDelete(r);
-                    setIsDeleteDialogOpen(true);
-                  }}
+            <div className="flex-1 overflow-y-auto p-8 space-y-4 custom-scrollbar">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="text-sm font-bold text-slate-400 uppercase tracking-widest">Ingredients List</h4>
+                <button
+                  onClick={addIngredientRow}
+                  className="flex items-center gap-1.5 text-blue-600 font-bold text-sm hover:underline"
                 >
-                  <Trash2 size={16} />
-                </Button>
+                  <Plus size={16} /> Add Ingredient
+                </button>
               </div>
-            )
-          }
-        ]}
-      />
 
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title={editingRecipe ? 'Edit Recipe' : 'Create New Recipe'}
-        size="lg"
-      >
-        <div className="space-y-4">
-          {!editingRecipe && (
-            <div className="w-full">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Select Menu Item</label>
-              <select
-                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e60023]"
-                value={formMenuItemId}
-                onChange={(e) => setFormMenuItemId(e.target.value)}
-              >
-                <option value="">Select Menu Item</option>
-                {menuItems.map(m => (
-                  <option key={m.id} value={m.id}>{m.name}</option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          <div>
-            <div className="flex justify-between items-center mb-2">
-              <label className="text-sm font-medium text-gray-700">Ingredients</label>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-[#e60023] h-8"
-                onClick={addIngredient}
-              >
-                <Plus size={14} className="mr-1" /> Add Ingredient
-              </Button>
-            </div>
-            <div className="space-y-2">
-              {formIngredients.map((ing, idx) => (
-                <div key={idx} className="flex gap-2 items-end">
-                  <div className="flex-1">
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Ingredient</label>
-                    <select
-                      className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e60023]"
-                      value={ing.item_id}
-                      onChange={(e) => updateIngredient(idx, 'item_id', e.target.value)}
-                    >
-                      <option value="">Select from Items Table</option>
-                      {ingredientItems.map(item => (
-                        <option key={item.id || item._id} value={item.id || item._id}>
-                          {item.item_name} ({item.unit})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="w-24">
-                    <Input
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      step="0.01"
-                      placeholder="Qty"
-                      label="Qty"
-                      value={ing.quantity || ""}
-                      onChange={(e) => updateIngredient(idx, 'quantity', parseFloat(e.target.value) || 0)}
-                    />
-                  </div>
-                  <div className="w-24">
-                    <Input
-                      placeholder="Unit"
-                      label="Unit"
-                      value={ing.unit}
-                      onChange={(e) => updateIngredient(idx, 'unit', e.target.value)}
-                    />
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-red-500 mb-1"
-                    onClick={() => removeIngredient(idx)}
-                  >
-                    <Trash2 size={16} />
-                  </Button>
+              {editingIngredients.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 text-center">
+                   <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mb-4 text-slate-200">
+                     <UtensilsCrossed size={32} />
+                   </div>
+                   <p className="text-slate-500 font-medium">No ingredients added yet.</p>
+                   <button onClick={addIngredientRow} className="text-blue-600 font-bold mt-2 hover:underline">Start adding ingredients</button>
                 </div>
-              ))}
-              {formIngredients.length === 0 && (
-                <p className="text-sm text-gray-500 text-center py-4">No ingredients added yet. Click "Add Ingredient" to select from the Items table.</p>
+              ) : (
+                <div className="space-y-3">
+                  {editingIngredients.map((ing, idx) => (
+                    <div key={idx} className="flex items-center gap-4 animate-in slide-in-from-left-2 duration-200" style={{ animationDelay: `${idx * 50}ms` }}>
+                      <div className="flex-1">
+                        <select
+                          className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-blue-500/20 appearance-none cursor-pointer"
+                          value={ing.ingredient_id}
+                          onChange={(e) => updateIngredientRow(idx, 'ingredient_id', e.target.value)}
+                        >
+                          <option value="">Select Ingredient</option>
+                          {ingredients.map(i => (
+                            <option key={i.id} value={i.id}>{i.name} ({i.unit})</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="w-32 relative">
+                        <input
+                          type="number"
+                          placeholder="Qty"
+                          className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-blue-500/20 text-center"
+                          value={ing.quantity_required || ''}
+                          onChange={(e) => updateIngredientRow(idx, 'quantity_required', parseFloat(e.target.value) || 0)}
+                        />
+                      </div>
+                      <div className="w-20 text-xs font-bold text-slate-400 uppercase">
+                        {ingredients.find(i => i.id === ing.ingredient_id)?.unit || "unit"}
+                      </div>
+                      <button
+                        onClick={() => removeIngredientRow(idx)}
+                        className="p-2 text-slate-300 hover:text-red-500 transition-colors"
+                      >
+                        <Trash2 size={20} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
+          </>
+        ) : (
+          <div className="flex-1 flex flex-col items-center justify-center text-center p-20">
+             <div className="w-24 h-24 bg-slate-50 rounded-[2rem] flex items-center justify-center mb-6 text-slate-200">
+               <UtensilsCrossed size={48} />
+             </div>
+             <h3 className="text-xl font-bold text-slate-900 mb-2">Select a product to view recipe</h3>
+             <p className="text-slate-500 max-w-xs">Configure the ingredients required for each item in your menu for automated inventory tracking.</p>
           </div>
-
-          <div className="w-full">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Preparation Instructions</label>
-            <textarea
-              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e60023] min-h-[100px]"
-              value={formInstructions}
-              onChange={(e) => setFormInstructions(e.target.value)}
-              placeholder="Step by step instructions..."
-            />
-          </div>
-
-          <div className="pt-4 flex justify-end gap-3">
-            <Button variant="outline" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-            <Button onClick={handleSave}>Save Recipe</Button>
-          </div>
-        </div>
-      </Modal>
-
-      <ConfirmationDialog
-        isOpen={isDeleteDialogOpen}
-        onClose={() => setIsDeleteDialogOpen(false)}
-        onConfirm={handleDelete}
-        title="Delete Recipe"
-        description="Are you sure you want to delete this recipe? This action cannot be undone."
-        confirmLabel="Delete"
-        variant="danger"
-      />
+        )}
+      </div>
     </div>
   );
 };

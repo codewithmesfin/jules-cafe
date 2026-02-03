@@ -1,219 +1,162 @@
-export type UserRole = 'admin' | 'manager' | 'cashier' | 'customer' | 'staff';
+export type UserRole = 'saas_admin' | 'admin' | 'manager' | 'cashier' | 'waiter';
 export type UserStatus = 'active' | 'inactive' | 'pending' | 'suspended' | 'onboarding';
 
 export interface User {
   id: string;
   _id?: string;
-  username?: string;
   full_name?: string;
   email: string;
   phone?: string;
   role: UserRole;
   status: UserStatus;
-  branch_id?: string;
-  company_id?: string;
-  customer_type?: 'regular' | 'vip' | 'member';
-  discount_rate?: number;
+  default_business_id?: string;
+  is_active: boolean;
   created_at: string;
-  company?: Company;
 }
 
-export interface Company {
+export interface Business {
   id: string;
   _id?: string;
   name: string;
   legal_name?: string;
   description?: string;
-  category?: 'cafe' | 'restaurant' | 'coffee_shop' | 'bar' | 'bakery' | 'other';
   address?: string;
-  phone?: string;
-  email?: string;
-  website?: string;
   logo?: string;
-  primary_color?: string;
-  settings?: {
-    currency?: string;
-    timezone?: string;
-  };
-  subscription?: {
-    plan: 'trial' | 'starter' | 'professional' | 'enterprise';
-    status: 'active' | 'inactive' | 'suspended' | 'cancelled';
-    max_branches?: number;
-    max_users?: number;
-  };
-  is_active: boolean;
-  setup_completed: boolean;
+  banner?: string;
+  owner_id: string;
+  created_at: string;
 }
 
-export interface Branch {
+export interface Product {
   id: string;
   _id?: string;
-  name?: string; // Alias for branch_name, added by controller factory
-  branch_name: string;
-  location_address: string;
+  business_id: string;
+  category_id: string;
+  name: string;
+  description?: string;
+  price: number;
+  image_url?: string;
   is_active: boolean;
-  opening_time: string;
-  closing_time: string;
-  capacity: number;
-  company_id?: string;
-  phone?: string;
-  email?: string;
+}
+
+export interface Ingredient {
+  id: string;
+  _id?: string;
+  business_id: string;
+  name: string;
+  unit: string;
+}
+
+export interface Category {
+  id: string;
+  _id?: string;
+  business_id: string;
+  name: string;
+  description?: string;
+  is_active: boolean;
+}
+
+export interface Inventory {
+  id: string;
+  _id?: string;
+  business_id: string;
+  ingredient_id: string | Ingredient;
+  quantity_available: number;
+  reorder_level: number;
+}
+
+export interface Recipe {
+  id: string;
+  _id?: string;
+  business_id: string;
+  product_id: string;
+  ingredient_id: string | Ingredient;
+  quantity_required: number;
 }
 
 export interface Table {
   id: string;
   _id?: string;
-  branch_id: string;
+  business_id: string;
   table_number: string;
   capacity: number;
   status: 'available' | 'occupied' | 'reserved';
 }
 
-export interface MenuCategory {
-  id: string;
-  _id?: string;
-  name: string;
-  description: string;
-  is_active: boolean;
-  created_at: string;
-}
-
-export interface MenuItem {
-  id: string;
-  _id?: string;
-  item_id?: string; // Reference to Items table
-  category_id: string;
-  name: string;
-  description: string;
-  base_price: number;
-  image_url: string;
-  is_active: boolean;
-  is_available?: boolean; // Branch-specific availability
-  company_id?: string;
-  branch_id?: string; // Branch-specific menu items
-  created_at: string;
-}
-
-export interface MenuVariant {
-  id: string;
-  _id?: string;
-  menu_item_id: string;
-  name: string;
-  price_override?: number;
-}
-
-export interface BranchMenuItem {
-  id: string;
-  _id?: string;
-  branch_id: string;
-  menu_item_id: string;
-  is_available: boolean;
-}
-
-export type OrderStatus = 'pending' | 'accepted' | 'preparing' | 'ready' | 'completed' | 'cancelled';
-export type OrderType = 'walk-in' | 'self-service';
-
 export interface Order {
   id: string;
   _id?: string;
-  order_number: string;
-  customer_id: string;
-  branch_id: string;
+  business_id: string;
+  creator_id: string;
+  customer_id?: string;
   table_id?: string;
-  waiter_id?: string;
-  status: OrderStatus;
-  type: OrderType;
+  order_status: 'pending' | 'accepted' | 'preparing' | 'ready' | 'delivered' | 'completed' | 'cancelled';
   total_amount: number;
-  discount_amount?: number;
+  payment_status: 'unpaid' | 'partial' | 'paid';
+  payment_method?: 'cash' | 'card' | 'mobile' | 'other';
   notes?: string;
   created_at: string;
-  cancel_reason?: string;
-  client_request_id?: string;
 }
 
 export interface OrderItem {
   id: string;
   _id?: string;
   order_id: string;
-  menu_item_id: string;
-  menu_item_name: string;
-  variant_id?: string;
-  variant_name?: string;
+  product_id: string | Product;
   quantity: number;
-  unit_price: number;
+  price: number;
 }
 
-export type ReservationStatus = 'requested' | 'confirmed' | 'seated' | 'cancelled' | 'no_show';
-
-export interface Reservation {
+export interface Customer {
   id: string;
   _id?: string;
-  customer_id: string;
-  branch_id: string;
-  table_id?: string;
-  waiter_id?: string;
-  reservation_date: string;
-  reservation_time: string;
-  guests_count: number;
-  status: ReservationStatus;
-  note: string;
-  client_request_id?: string;
+  business_id: string;
+  full_name: string;
   email?: string;
   phone?: string;
-  created_at: string;
+  loyalty_points: number;
+  total_spent: number;
 }
 
-export interface Report {
-  orders_per_branch: { branch_name: string; count: number }[];
-  top_selling_items: { item_name: string; count: number }[];
-}
-
-export interface InventoryItem {
+export interface Task {
   id: string;
   _id?: string;
-  item_id?: string; // Reference to Items table
-  branch_id: string;
-  item_name: string;
-  category: string;
-  quantity: number;
-  unit: string;
-  min_stock: number;
-  last_updated: string;
+  business_id: string;
+  title: string;
+  description?: string;
+  assigned_to?: string;
+  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  due_date?: string;
 }
 
-export interface RecipeIngredient {
-  item_name: string;
-  quantity: number;
-  unit: string;
-}
-
-export interface Recipe {
+export interface CashSession {
   id: string;
   _id?: string;
-  menu_item_id: string;
-  ingredients: RecipeIngredient[];
-  instructions?: string;
+  business_id: string;
+  user_id: string;
+  opening_balance: number;
+  closing_balance?: number;
+  expected_balance?: number;
+  difference?: number;
+  status: 'open' | 'closed';
+  opened_at: string;
+  closed_at?: string;
 }
 
-export type ItemType = 'menu_item' | 'inventory' | 'ingredient' | 'product' | 'packaging';
+export interface Shift {
+  id: string;
+  _id?: string;
+  business_id: string;
+  user_id: string;
+  clock_in: string;
+  clock_out?: string;
+  status: 'active' | 'completed';
+}
 
 export interface ApiResponse<T> {
   success: boolean;
   data?: T;
   message?: string;
   error?: string;
-}
-
-export interface Item {
-  id: string;
-  _id?: string;
-  item_name: string;
-  item_type: ItemType;
-  category?: string;
-  unit?: string;
-  default_price?: number;
-  description?: string;
-  image_url?: string;
-  is_active: boolean;
-  created_at: string;
 }

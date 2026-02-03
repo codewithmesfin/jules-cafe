@@ -2,39 +2,23 @@ import mongoose, { Schema, Document } from 'mongoose';
 
 /**
  * User Model - Handles all user types including:
- * - admin: System administrator (tenant owner)
- * - manager: Branch manager (can manage their branch)
- * - staff: Restaurant staff (chefs, waiters, etc.)
+ * - saas_admin: Global system administrator
+ * - admin: Business owner (tenant owner)
+ * - manager: Business manager
  * - cashier: Cashier for processing payments
- * - customer: End customers
+ * - waiter: Staff for taking orders
  */
 export interface IUser extends Document {
   email: string;
   password?: string;
   full_name?: string;
   phone?: string;
-  role: 'admin' | 'manager' | 'staff' | 'cashier' | 'customer';
+  role: 'saas_admin' | 'admin' | 'manager' | 'cashier' | 'waiter';
+  is_active: boolean;
   status: 'active' | 'inactive' | 'pending' | 'suspended' | 'onboarding';
   
-  // Multi-tenancy - User belongs to a company (tenant)
-  company_id?: mongoose.Types.ObjectId;
-  
-  // Branch assignment (for staff/cashier/manager)
-  branch_id?: mongoose.Types.ObjectId;
-  managed_branches?: mongoose.Types.ObjectId[];
-  
-  // Customer-specific fields
-  customer_type?: 'regular' | 'vip' | 'member';
-  loyalty_points?: number;
-  discount_rate?: number;
-  total_spent?: number;
-  visit_count?: number;
-  
-  // Staff-specific fields
-  employee_id?: string;
-  hire_date?: Date;
-  position?: string;
-  salary?: number;
+  // Multi-tenancy - User's default business
+  default_business_id?: mongoose.Types.ObjectId;
   
   // Security
   passwordResetToken?: string;
@@ -57,38 +41,18 @@ const UserSchema: Schema = new Schema({
   phone: { type: String, trim: true },
   role: {
     type: String,
-    enum: ['admin', 'manager', 'staff', 'cashier', 'customer'],
-    default: 'customer'
+    enum: ['saas_admin', 'admin', 'manager', 'cashier', 'waiter'],
+    default: 'admin'
   },
+  is_active: { type: Boolean, default: true },
   status: {
     type: String,
     enum: ['active', 'inactive', 'pending', 'suspended', 'onboarding'],
     default: 'pending'
   },
   
-  // Multi-tenancy - User belongs to a company (tenant)
-  company_id: { type: Schema.Types.ObjectId, ref: 'Company', index: true },
-  
-  // Branch assignment
-  branch_id: { type: Schema.Types.ObjectId, ref: 'Branch', index: true },
-  managed_branches: [{ type: Schema.Types.ObjectId, ref: 'Branch' }],
-  
-  // Customer-specific
-  customer_type: {
-    type: String,
-    enum: ['regular', 'vip', 'member'],
-    default: 'regular'
-  },
-  loyalty_points: { type: Number, default: 0 },
-  discount_rate: { type: Number, default: 0 },
-  total_spent: { type: Number, default: 0 },
-  visit_count: { type: Number, default: 0 },
-  
-  // Staff-specific
-  employee_id: { type: String },
-  hire_date: { type: Date },
-  position: { type: String },
-  salary: { type: Number },
+  // Multi-tenancy - User belongs to a business
+  default_business_id: { type: Schema.Types.ObjectId, ref: 'Business', index: true },
   
   // Security
   passwordResetToken: String,
@@ -107,10 +71,8 @@ const UserSchema: Schema = new Schema({
 
 // Indexes
 UserSchema.index({ email: 1 });
-UserSchema.index({ company_id: 1, role: 1 });
-UserSchema.index({ branch_id: 1, role: 1 });
+UserSchema.index({ default_business_id: 1, role: 1 });
 UserSchema.index({ role: 1, status: 1 });
-UserSchema.index({ customer_type: 1 });
 
 // Virtual for checking if account is locked
 UserSchema.virtual('isLocked').get(function(this: IUser) {
