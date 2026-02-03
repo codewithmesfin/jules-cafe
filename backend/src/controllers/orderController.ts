@@ -1,9 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
+import mongoose from 'mongoose';
 import Order from '../models/Order';
 import User from '../models/User';
 import Branch from '../models/Branch';
 import * as factory from '../utils/controllerFactory';
-import { deductInventoryForOrder, revertInventoryForOrder } from '../utils/inventoryUtils';
+import { deductInventoryForOrder, revertInventoryForOrder, checkInventoryForOrder } from '../utils/inventoryUtils';
 import { sendEmail } from '../utils/mailer';
 import { AuthRequest } from '../middleware/auth';
 import catchAsync from '../utils/catchAsync';
@@ -18,8 +19,15 @@ export const updateOrder = catchAsync(async (req: AuthRequest, res: Response, ne
   }
 
   // Tenant security check
-  if (req.user && req.user.role !== 'customer' && existingOrder.company_id) {
-    if (existingOrder.company_id.toString() !== req.user.company_id?.toString()) {
+  if (req.user && existingOrder.company_id) {
+    if (!req.user.company_id || existingOrder.company_id.toString() !== req.user.company_id.toString()) {
+      return next(new AppError('You do not have permission to update this order', 403));
+    }
+  }
+
+  // Customer security check
+  if (req.user && req.user.role === 'customer') {
+    if (existingOrder.customer_id?.toString() !== (req.user._id || req.user.id).toString()) {
       return next(new AppError('You do not have permission to update this order', 403));
     }
   }
@@ -34,6 +42,15 @@ export const updateOrder = catchAsync(async (req: AuthRequest, res: Response, ne
 
   const itemsChanged = req.body.items && JSON.stringify(req.body.items) !== JSON.stringify(existingOrder.items);
   const statusChanged = req.body.status && req.body.status !== existingOrder.status;
+
+  // Pre-check stock if items changed or if order is being un-cancelled
+  if (itemsChanged || (statusChanged && existingOrder.status === 'cancelled' && req.body.status !== 'cancelled')) {
+    const mergedOrder = { ...existingOrder.toObject(), ...req.body };
+    const { canDeduct, missingIngredients } = await checkInventoryForOrder(mergedOrder as any);
+    if (!canDeduct) {
+      return next(new AppError(`Insufficient stock for update: ${missingIngredients.join(', ')}`, 400));
+    }
+  }
 
   // Handle inventory adjustments
   const userId = req.user?._id || req.user?.id || (existingOrder.created_by as any);
@@ -90,8 +107,15 @@ export const deleteOrder = catchAsync(async (req: AuthRequest, res: Response, ne
   }
 
   // Tenant security check
-  if (req.user && req.user.role !== 'customer' && order.company_id) {
-    if (order.company_id.toString() !== req.user.company_id?.toString()) {
+  if (req.user && order.company_id) {
+    if (!req.user.company_id || order.company_id.toString() !== req.user.company_id.toString()) {
+      return next(new AppError('You do not have permission to delete this order', 403));
+    }
+  }
+
+  // Customer security check
+  if (req.user && req.user.role === 'customer') {
+    if (order.customer_id?.toString() !== (req.user._id || req.user.id).toString()) {
       return next(new AppError('You do not have permission to delete this order', 403));
     }
   }
@@ -120,6 +144,21 @@ export const deleteOrder = catchAsync(async (req: AuthRequest, res: Response, ne
 
 export const createOrder = catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
   const data = { ...req.body };
+
+  // Validation
+  if (!data.items || !Array.isArray(data.items) || data.items.length === 0) {
+    return next(new AppError('Order must have at least one item', 400));
+  }
+
+  for (const item of data.items) {
+    if (!item.menu_item_id || !item.quantity || item.quantity <= 0) {
+      return next(new AppError('Each item must have a valid menu_item_id and quantity greater than 0', 400));
+    }
+  }
+
+  if (!data.type) {
+    return next(new AppError('Order type (dine_in, takeaway, delivery) is required', 400));
+  }
 
   // Automatically set created_by to the authenticated user's ID
   data.created_by = req.user?._id || req.user?.id;
@@ -154,6 +193,12 @@ export const createOrder = catchAsync(async (req: AuthRequest, res: Response, ne
     }
   }
 
+  // 1. Stock availability check (Pre-check)
+  const { canDeduct, missingIngredients } = await checkInventoryForOrder(data);
+  if (!canDeduct) {
+    return next(new AppError(`Insufficient stock: ${missingIngredients.join(', ')}`, 400));
+  }
+
   // Fetch customer to check for discount
   let discountAmount = 0;
   let discountRate = 0;
@@ -183,16 +228,30 @@ export const createOrder = catchAsync(async (req: AuthRequest, res: Response, ne
     data.total_amount = subtotal;
   }
 
-  const order = await Order.create(data);
+  // 2. Transactional creation and deduction
+  let order;
+  const userId = req.user?._id || req.user?.id || data.created_by;
 
-  // Deduct Inventory based on Recipes
   try {
-    const userId = req.user?._id || req.user?.id || (order.created_by as any);
-    await deductInventoryForOrder(order, userId);
-  } catch (inventoryError) {
-    console.error('Failed to deduct inventory:', inventoryError);
-    // We continue even if inventory deduction fails to not block the order
+    const session = await mongoose.startSession();
+    await session.withTransaction(async () => {
+      const orders = await Order.create([data], { session });
+      order = orders[0];
+      await deductInventoryForOrder(order, userId, session);
+    });
+    session.endSession();
+  } catch (err: any) {
+    console.error('Transaction failed, falling back to non-transactional creation:', err.message);
+    // If transactions are not supported by the environment, fallback to non-transactional
+    if (err.message.includes('replica set') || err.message.includes('transaction')) {
+      order = await Order.create(data);
+      await deductInventoryForOrder(order, userId);
+    } else {
+      return next(err);
+    }
   }
+
+  if (!order) return next(new AppError('Failed to create order', 500));
 
   // Attempt to send email to customer if email is provided
   try {

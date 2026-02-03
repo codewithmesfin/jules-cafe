@@ -15,10 +15,8 @@ export const getAll = (model: Model<any>) =>
     
     const features = model.find();
 
-    // Tenant isolation: filter by company_id if model has it and user is not superadmin
-    if (req.user && req.user.role !== 'customer' && model.schema.path('company_id')) {
-      console.log(`[${model.modelName}] User company_id:`, req.user.company_id);
-      console.log(`[${model.modelName}] Model has company_id path:`, model.schema.path('company_id'));
+    // Tenant isolation: filter by company_id if model has it
+    if (req.user && model.schema.path('company_id')) {
       if (req.user.company_id) {
         // For admin users, also return items without company_id (backwards compatibility)
         if (req.user.role === 'admin') {
@@ -31,9 +29,20 @@ export const getAll = (model: Model<any>) =>
           features.where('company_id').equals(req.user.company_id);
         }
       } else {
-        console.log(`[${model.modelName}] No company_id on user, returning empty results`);
-        const emptyResults: any[] = [];
-        return res.status(200).json(emptyResults);
+        // If user has no company_id but model requires it, return empty (except for onboarding admins)
+        if (req.user.status !== 'onboarding') {
+          return res.status(200).json([]);
+        }
+      }
+    }
+
+    // Customer isolation: customers only see their own records for relevant models
+    if (req.user && req.user.role === 'customer') {
+      if (model.schema.path('customer_id')) {
+        features.where('customer_id').equals(req.user._id || req.user.id);
+      } else if (model.modelName === 'User') {
+        // Customers can only see themselves in User model listing
+        features.where('_id').equals(req.user._id || req.user.id);
       }
     }
 
@@ -89,9 +98,19 @@ export const getOne = (model: Model<any>) =>
     }
 
     // Tenant security check
-    if (req.user && req.user.role !== 'customer' && doc.company_id) {
-      if (doc.company_id.toString() !== req.user.company_id?.toString()) {
+    if (req.user && doc.company_id) {
+      if (!req.user.company_id || doc.company_id.toString() !== req.user.company_id.toString()) {
         return next(new AppError('You do not have permission to access this document', 403));
+      }
+    }
+
+    // Customer security check
+    if (req.user && req.user.role === 'customer') {
+      if (doc.customer_id && doc.customer_id.toString() !== (req.user._id || req.user.id).toString()) {
+        return next(new AppError('You do not have permission to access this document', 403));
+      }
+      if (model.modelName === 'User' && doc._id.toString() !== (req.user._id || req.user.id).toString()) {
+        return next(new AppError('You do not have permission to access this user', 403));
       }
     }
 
@@ -171,9 +190,19 @@ export const updateOne = (model: Model<any>) =>
     }
 
     // Tenant security check
-    if (req.user && req.user.role !== 'customer' && doc.company_id) {
-      if (doc.company_id.toString() !== req.user.company_id?.toString()) {
+    if (req.user && doc.company_id) {
+      if (!req.user.company_id || doc.company_id.toString() !== req.user.company_id.toString()) {
         return next(new AppError('You do not have permission to update this document', 403));
+      }
+    }
+
+    // Customer security check
+    if (req.user && req.user.role === 'customer') {
+      if (doc.customer_id && doc.customer_id.toString() !== (req.user._id || req.user.id).toString()) {
+        return next(new AppError('You do not have permission to update this document', 403));
+      }
+      if (model.modelName === 'User' && doc._id.toString() !== (req.user._id || req.user.id).toString()) {
+        return next(new AppError('You do not have permission to update this user', 403));
       }
     }
 
@@ -220,9 +249,19 @@ export const deleteOne = (model: Model<any>) =>
     }
 
     // Tenant security check
-    if (req.user && req.user.role !== 'customer' && doc.company_id) {
-      if (doc.company_id.toString() !== req.user.company_id?.toString()) {
+    if (req.user && doc.company_id) {
+      if (!req.user.company_id || doc.company_id.toString() !== req.user.company_id.toString()) {
         return next(new AppError('You do not have permission to delete this document', 403));
+      }
+    }
+
+    // Customer security check
+    if (req.user && req.user.role === 'customer') {
+      if (doc.customer_id && doc.customer_id.toString() !== (req.user._id || req.user.id).toString()) {
+        return next(new AppError('You do not have permission to delete this document', 403));
+      }
+      if (model.modelName === 'User' && doc._id.toString() !== (req.user._id || req.user.id).toString()) {
+        return next(new AppError('You do not have permission to delete this user', 403));
       }
     }
 

@@ -25,7 +25,7 @@ export const getAllUsers = catchAsync(async (req: AuthRequest, res: Response, ne
     }
   }
 
-  const docs = await User.find(query).populate(req.query.populate as string || '');
+  const docs = await User.find(query).select('-password').populate(req.query.populate as string || '');
 
   const transformedDocs = docs.map((doc: any) => ({
     ...doc.toObject(),
@@ -34,7 +34,37 @@ export const getAllUsers = catchAsync(async (req: AuthRequest, res: Response, ne
 
   res.status(200).json(transformedDocs);
 });
-export const getUser = factory.getOne(User);
+
+export const getUser = catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
+  const user = await User.findById(req.params.id).select('-password').populate(req.query.populate as string || '');
+  if (!user) {
+    return next(new AppError('User not found', 404));
+  }
+
+  // Tenant security check
+  if (req.user && user.company_id) {
+    if (!req.user.company_id || user.company_id.toString() !== req.user.company_id.toString()) {
+      return next(new AppError('You do not have permission to access this user', 403));
+    }
+  }
+
+  // Role based security
+  if (req.user.role === 'customer') {
+    if (user._id.toString() !== (req.user._id || req.user.id).toString()) {
+      return next(new AppError('You do not have permission to access this user', 403));
+    }
+  } else if (['manager', 'staff', 'cashier'].includes(req.user.role)) {
+    // Branch based check
+    if (user.role !== 'customer' && user.branch_id?.toString() !== req.user.branch_id?.toString()) {
+      return next(new AppError('You do not have permission to access this user', 403));
+    }
+  }
+
+  res.status(200).json({
+    ...user.toObject(),
+    id: user._id.toString()
+  });
+});
 export const deleteUser = catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
   const userToDelete = await User.findById(req.params.id);
   if (!userToDelete) {

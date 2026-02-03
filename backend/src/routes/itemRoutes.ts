@@ -33,9 +33,11 @@ router.get('/type/:type', catchAsync(async (req: AuthRequest, res: any, next: an
     is_active: true 
   };
 
-  // Apply tenant isolation for non-customer users
-  if (req.user.role !== 'customer' && req.user.company_id) {
+  // Apply tenant isolation
+  if (req.user.company_id) {
     query.company_id = req.user.company_id;
+  } else if (req.user.role !== 'customer') {
+    return res.status(200).json([]);
   }
 
   const items = await Item.find(query).sort({ item_name: 1 });

@@ -11,8 +11,10 @@ export const getAllInventory = catchAsync(async (req: AuthRequest, res: Response
   const query: any = { is_active: true };
 
   // Tenant isolation
-  if (req.user && req.user.role !== 'customer' && req.user.company_id) {
+  if (req.user && req.user.company_id) {
     query.company_id = req.user.company_id;
+  } else if (req.user && req.user.role !== 'customer') {
+    return res.status(200).json([]);
   }
 
   // Branch security for manager/staff/cashier
@@ -53,8 +55,8 @@ export const getOneInventory = catchAsync(async (req: AuthRequest, res: Response
   }
 
   // Tenant security check
-  if (req.user && req.user.role !== 'customer' && doc.company_id) {
-    if (doc.company_id.toString() !== req.user.company_id?.toString()) {
+  if (req.user && doc.company_id) {
+    if (!req.user.company_id || doc.company_id.toString() !== req.user.company_id.toString()) {
       return next(new AppError('You do not have permission to access this inventory item', 403));
     }
   }
@@ -212,8 +214,8 @@ export const updateInventory = catchAsync(async (req: AuthRequest, res: Response
   }
 
   // Tenant security check
-  if (req.user && req.user.role !== 'customer' && existingDoc.company_id) {
-    if (existingDoc.company_id.toString() !== req.user.company_id?.toString()) {
+  if (req.user && existingDoc.company_id) {
+    if (!req.user.company_id || existingDoc.company_id.toString() !== req.user.company_id.toString()) {
       return next(new AppError('You do not have permission to update this inventory item', 403));
     }
   }
@@ -290,8 +292,8 @@ export const deleteInventory = catchAsync(async (req: AuthRequest, res: Response
   }
 
   // Tenant security check
-  if (req.user && req.user.role !== 'customer' && existingDoc.company_id) {
-    if (existingDoc.company_id.toString() !== req.user.company_id?.toString()) {
+  if (req.user && existingDoc.company_id) {
+    if (!req.user.company_id || existingDoc.company_id.toString() !== req.user.company_id.toString()) {
       return next(new AppError('You do not have permission to delete this inventory item', 403));
     }
   }
