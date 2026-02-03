@@ -23,6 +23,8 @@ export interface Company {
   _id?: string;
   name: string;
   legal_name?: string;
+  description?: string;
+  category?: 'cafe' | 'restaurant' | 'coffee_shop' | 'bar' | 'bakery' | 'other';
   address?: string;
   phone?: string;
   email?: string;
@@ -86,6 +88,7 @@ export interface MenuItem {
   base_price: number;
   image_url: string;
   is_active: boolean;
+  is_available?: boolean; // Branch-specific availability
   company_id?: string;
   branch_id?: string; // Branch-specific menu items
   created_at: string;

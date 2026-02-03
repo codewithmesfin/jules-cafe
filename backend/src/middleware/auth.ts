@@ -24,7 +24,11 @@ export const protect = catchAsync(async (req: AuthRequest, res: Response, next: 
     return next(new AppError('Not authorized, no token', 401));
   }
 
-  const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'secret');
+  if (!process.env.JWT_SECRET) {
+    return next(new AppError('Server configuration error', 500));
+  }
+
+  const decoded: any = jwt.verify(token, process.env.JWT_SECRET);
   req.user = await User.findById(decoded.id).select('-password');
   
   if (!req.user) {

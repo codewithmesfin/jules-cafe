@@ -10,11 +10,12 @@ import { Badge } from "../../components/ui/Badge";
 import { Modal } from "../../components/ui/Modal";
 import { ConfirmationDialog } from "../../components/ui/ConfirmationDialog";
 import { useNotification } from "../../context/NotificationContext";
-import type { Item, ItemType } from "../../types";
+import type { Item, ItemType, MenuCategory } from "../../types";
 
 const Items = () => {
   const { showNotification } = useNotification();
   const [items, setItems] = useState<Item[]>([]);
+  const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedType, setSelectedType] = useState<ItemType | "all">("all");
@@ -32,6 +33,7 @@ const Items = () => {
 
   useEffect(() => {
     fetchItems();
+    fetchCategories();
   }, []);
 
   const fetchItems = async () => {
@@ -44,6 +46,15 @@ const Items = () => {
       showNotification("Failed to load items", "error");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const data = await api.categories.getAll();
+      setCategories(data);
+    } catch (error) {
+      console.error("Failed to fetch categories:", error);
     }
   };
 
@@ -264,10 +275,24 @@ const Items = () => {
               <option value="packaging">Packaging</option>
             </select>
           </div>
-          <Input label="Category" placeholder="e.g. Canned Goods, Dairy, Spices" value={formCategory} onChange={(e) => setFormCategory(e.target.value)} />
+          <div className="w-full">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+            <select
+              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e60023]"
+              value={formCategory}
+              onChange={(e) => setFormCategory(e.target.value)}
+            >
+              <option value="">Select a category</option>
+              {categories.map((category) => (
+                <option key={category.id} value={category.name}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
+          </div>
           <div className="grid grid-cols-2 gap-4">
             <Input label="Unit" placeholder="e.g. kg, liters, pieces" value={formUnit} onChange={(e) => setFormUnit(e.target.value)} />
-            <Input label="Default Price" type="number" step="0.01" placeholder="0.00" value={formDefaultPrice} onChange={(e) => setFormDefaultPrice(parseFloat(e.target.value) || 0)} />
+            <Input label="Default Price" type="number" step="0.01" placeholder="0.00" value={formDefaultPrice || ""} onChange={(e) => setFormDefaultPrice(parseFloat(e.target.value) || 0)} />
           </div>
           <div className="w-full">
             <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>

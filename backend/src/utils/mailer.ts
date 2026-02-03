@@ -13,7 +13,7 @@ export const sendEmail = async (options: { email: string; subject: string; messa
   });
 
   const mailOptions = {
-    from: 'SaaS Restaurant <noreply@saasrestaurant.com>',
+    from: 'Abc Cafe <noreply@abccafe.com>',
     to: options.email,
     subject: options.subject,
     text: options.message,

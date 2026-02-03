@@ -393,11 +393,13 @@ const Recipes: React.FC = () => {
                   </div>
                   <div className="w-24">
                     <Input
-                      type="number"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       step="0.01"
                       placeholder="Qty"
                       label="Qty"
-                      value={ing.quantity}
+                      value={ing.quantity || ""}
                       onChange={(e) => updateIngredient(idx, 'quantity', parseFloat(e.target.value) || 0)}
                     />
                   </div>

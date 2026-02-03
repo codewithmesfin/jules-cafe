@@ -234,9 +234,14 @@ const CompanySetup: React.FC = () => {
                   <Input
                     label="Branch Capacity (seats)"
                     type="number"
-                    min="1"
-                    value={branchData.capacity}
-                    onChange={(e) => setBranchData({ ...branchData, capacity: parseInt(e.target.value) || 50 })}
+                    min={1}
+                    value={branchData.capacity || ""}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === '' || /^[0-9]+$/.test(value)) {
+                        setBranchData({ ...branchData, capacity: value === '' ? 50 : parseInt(value, 10) });
+                      }
+                    }}
                   />
                 </div>
               </div>

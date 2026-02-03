@@ -100,12 +100,6 @@ const Login: React.FC = () => {
             </p>
           </div>
         </Card>
-
-        <div className="mt-8 p-4 bg-gray-100 rounded-lg text-xs text-gray-500">
-          <p className="font-bold mb-1">Demo Credentials:</p>
-          <p>Customer: customer@example.com / any</p>
-          <p>Admin: admin@example.com / any</p>
-        </div>
       </div>
     </div>
   );

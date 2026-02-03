@@ -10,7 +10,10 @@ import AppError from '../utils/appError';
 import { AuthRequest } from '../middleware/auth';
 
 const generateToken = (id: string) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET || 'secret', {
+  if (!process.env.JWT_SECRET) {
+    throw new AppError('JWT_SECRET is not configured', 500);
+  }
+  return jwt.sign({ id }, process.env.JWT_SECRET, {
     expiresIn: '30d',
   });
 };
@@ -80,7 +83,16 @@ export const login = catchAsync(async (req: Request, res: Response, next: NextFu
 
   const user = await User.findOne({ email: identifier });
 
-  if (!user || !(await bcrypt.compare(password || '', user.password || ''))) {
+  if (!user) {
+    return next(new AppError('Invalid email or password', 401));
+  }
+
+  // Check if user has a password (some users might be SSO users without password)
+  if (!user.password) {
+    return next(new AppError('Invalid email or password', 401));
+  }
+
+  if (!(await bcrypt.compare(password, user.password))) {
     return next(new AppError('Invalid email or password', 401));
   }
 

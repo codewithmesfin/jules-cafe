@@ -278,7 +278,7 @@ export const getStats = catchAsync(async (req: AuthRequest, res: Response, next:
   ]);
 
   // 4. Orders per Branch
-  let topBranches = [];
+  let topBranches: { name: string; count: number }[] = [];
   if (!branchId) {
     const branchStats = await Order.aggregate([
       {

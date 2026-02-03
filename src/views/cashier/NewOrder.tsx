@@ -156,7 +156,7 @@ const NewOrder: React.FC = () => {
         table_id: selectedTable || undefined,
         waiter_id: selectedWaiter || undefined,
         notes: orderNotes,
-        status: 'pending',
+        status: 'preparing',
         type: 'walk-in',
         total_amount: total,
         discount_amount: discountAmount,
@@ -477,7 +477,7 @@ const NewOrder: React.FC = () => {
                   </div>
                   <div className="flex-1 flex flex-col">
                     <h4 className="font-bold text-gray-900 text-sm sm:text-base mb-1 line-clamp-1 group-hover:text-[#e60023] transition-colors">{item.name}</h4>
-                    <p className="text-[10px] sm:text-xs text-gray-500 line-clamp-2 mb-2 min-h-[2.5em]">{item.description}</p>
+                    {item.description && <p className="text-[10px] sm:text-xs text-gray-500 line-clamp-2 mb-2 min-h-[2.5em]">{item.description}</p>}
                     <div className="mt-auto pt-2 flex justify-between items-center border-t border-gray-50">
                       <span className="font-black text-[#e60023] text-base">ETB {item.base_price.toFixed(2)}</span>
                     </div>
@@ -553,6 +553,7 @@ const NewOrder: React.FC = () => {
                   full_name: newCustomer.name,
                   role: 'customer',
                   status: 'active',
+                  branch_id: user?.branch_id,
                   password: 'password123'
                 });
                 showNotification("Customer added successfully!");
@@ -571,20 +572,20 @@ const NewOrder: React.FC = () => {
             label="Full Name"
             placeholder="e.g. John Doe"
             value={newCustomer.name}
-            onChange={(e) => setNewCustomer({...newCustomer, name: e.target.value})}
+            onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })}
           />
           <Input
             label="Phone Number"
             placeholder="e.g. +1 234 567 890"
             value={newCustomer.phone}
-            onChange={(e) => setNewCustomer({...newCustomer, phone: e.target.value})}
+            onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })}
           />
           <Input
             label="Email Address (Optional)"
             type="email"
             placeholder="e.g. john@example.com"
             value={newCustomer.email}
-            onChange={(e) => setNewCustomer({...newCustomer, email: e.target.value})}
+            onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })}
           />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div className="space-y-1">
@@ -597,7 +598,7 @@ const NewOrder: React.FC = () => {
                   let discount = 0;
                   if (type === 'vip') discount = 15;
                   else if (type === 'member') discount = 5;
-                  setNewCustomer({...newCustomer, type, discount});
+                  setNewCustomer({ ...newCustomer, type, discount });
                 }}
               >
                 <option value="regular">Regular Guest</option>
@@ -607,9 +608,11 @@ const NewOrder: React.FC = () => {
             </div>
             <Input
               label="Custom Discount (%)"
-              type="number"
-              value={newCustomer.discount}
-              onChange={(e) => setNewCustomer({...newCustomer, discount: parseFloat(e.target.value) || 0})}
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={newCustomer.discount || ""}
+              onChange={(e) => setNewCustomer({ ...newCustomer, discount: parseFloat(e.target.value) || 0 })}
             />
           </div>
         </div>

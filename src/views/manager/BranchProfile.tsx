@@ -114,8 +114,10 @@ const BranchProfile: React.FC = () => {
             </div>
             <Input
               label="Total Seating Capacity"
-              type="number"
-              value={capacity}
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={capacity || ""}
               onChange={(e) => setCapacity(parseInt(e.target.value) || 0)}
             />
           </div>

@@ -130,11 +130,13 @@ const Reservations: React.FC = () => {
               </div>
               <Input
                 label="Number of Guests"
-                type="number"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 min="1"
                 max="20"
                 required
-                value={formData.guests}
+                value={formData.guests || ""}
                 onChange={(e) => setFormData({ ...formData, guests: e.target.value })}
               />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

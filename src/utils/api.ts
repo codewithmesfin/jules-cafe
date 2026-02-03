@@ -1,6 +1,23 @@
 export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
-const fetcher = async (url: string, options?: RequestInit) => {
+// Maximum number of retries for rate-limited requests
+const MAX_RETRIES = 3;
+
+// Base delay for exponential backoff (in milliseconds)
+const BASE_DELAY = 1000;
+
+// Calculate delay with exponential backoff and jitter
+const getRetryDelay = (attempt: number): number => {
+  const delay = BASE_DELAY * Math.pow(2, attempt);
+  // Add random jitter (±20%)
+  const jitter = delay * 0.2 * (Math.random() * 2 - 1);
+  return Math.min(delay + jitter, 30000); // Cap at 30 seconds
+};
+
+// Sleep utility for delays
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+const fetcher = async (url: string, options?: RequestInit, retryCount = 0): Promise<any> => {
   const jwt = typeof window !== 'undefined' ? localStorage.getItem('jwt') : null;
 
   const fullUrl = url.startsWith('http') ? url : `${API_URL}${url}`;
@@ -15,6 +32,14 @@ const fetcher = async (url: string, options?: RequestInit) => {
       ...options?.headers,
     },
   });
+
+  // Handle rate limiting (429) with exponential backoff retry
+  if (response.status === 429 && retryCount < MAX_RETRIES) {
+    const delay = getRetryDelay(retryCount);
+    console.warn(`Rate limited. Retrying in ${Math.round(delay)}ms... (attempt ${retryCount + 1}/${MAX_RETRIES})`);
+    await sleep(delay);
+    return fetcher(url, options, retryCount + 1);
+  }
 
   // Handle inactive user status (423) - redirect to inactive page
   if (response.status === 423) {
@@ -187,11 +212,11 @@ export const api = {
       getOne: (id: string) => fetcher(`/public/categories/${id}`),
     },
     branches: {
-      getAll: () => fetcher('/public/branches'),
+      getAll: (companyId?: string) => fetcher(`/public/branches${companyId ? `?company_id=${companyId}` : ''}`),
       getOne: (id: string) => fetcher(`/public/branches/${id}`),
     },
     branchMenuItems: {
-      getAll: () => fetcher('/public/branch-menu-items'),
+      getAll: (companyId?: string) => fetcher(`/public/branch-menu-items${companyId ? `?company_id=${companyId}` : ''}`),
       getOne: (id: string) => fetcher(`/public/branch-menu-items/${id}`),
     },
     menuVariants: {
@@ -200,6 +225,7 @@ export const api = {
     },
     company: {
       getOne: (id: string) => fetcher(`/public/company/${id}`),
+      getAll: () => fetcher('/public/companies'),
     },
   }
 };

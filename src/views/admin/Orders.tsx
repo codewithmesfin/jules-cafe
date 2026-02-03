@@ -249,9 +249,11 @@ const Orders: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     min="0"
-                    value={orderItems[item.id] || 0}
+                    value={orderItems[item.id] || ""}
                     onChange={(e) => setOrderItems({ ...orderItems, [item.id]: parseInt(e.target.value) || 0 })}
                     className="w-16 px-2 py-1 border rounded text-sm"
                   />

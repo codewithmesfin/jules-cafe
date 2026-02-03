@@ -243,9 +243,11 @@ const Branches: React.FC = () => {
           />
           <Input
             label="Total Capacity"
-            type="number"
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
             placeholder="50"
-            value={capacity}
+            value={capacity || ""}
             onChange={(e) => setCapacity(parseInt(e.target.value) || 0)}
           />
           <div className="flex items-center mt-8">
