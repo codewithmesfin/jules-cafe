@@ -120,40 +120,20 @@ export interface Customer {
   total_spent: number;
 }
 
-export interface Task {
+export interface Unit {
   id: string;
   _id?: string;
-  business_id: string;
-  title: string;
+  name: string;
   description?: string;
-  assigned_to?: string;
-  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  due_date?: string;
+  is_active: boolean;
 }
 
-export interface CashSession {
+export interface UnitConversion {
   id: string;
   _id?: string;
-  business_id: string;
-  user_id: string;
-  opening_balance: number;
-  closing_balance?: number;
-  expected_balance?: number;
-  difference?: number;
-  status: 'open' | 'closed';
-  opened_at: string;
-  closed_at?: string;
-}
-
-export interface Shift {
-  id: string;
-  _id?: string;
-  business_id: string;
-  user_id: string;
-  clock_in: string;
-  clock_out?: string;
-  status: 'active' | 'completed';
+  from_unit: string;
+  to_unit: string;
+  factor: number;
 }
 
 export interface ApiResponse<T> {

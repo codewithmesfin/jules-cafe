@@ -1,163 +1,75 @@
 "use client";
 
 import React from 'react';
-import { useAuth } from '@/context/AuthContext';
+import { TrendingUp, Package, Users, BarChart3, ShoppingCart, PlusCircle, Database } from 'lucide-react';
 import { RoleGuard } from '@/components/RoleGuard';
-import {
-  DollarSign,
-  ShoppingBag,
-  Users,
-  Package,
-  TrendingUp,
-  AlertCircle,
-  Clock,
-  ArrowUpRight
-} from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+import Link from 'next/link';
 
 export default function DashboardPage() {
   const { user } = useAuth();
-
   const stats = [
-    { label: 'Total Sales', value: '$12,345', change: '+12.5%', positive: true, icon: DollarSign },
-    { label: 'New Orders', value: '45', change: '+8.2%', positive: true, icon: ShoppingBag },
-    { label: 'Customers', value: '128', change: '+5.1%', positive: true, icon: Users },
-    { label: 'Low Stock Items', value: '3', change: '-2', positive: true, icon: Package },
-  ];
-
-  const recentOrders = [
-    { id: 'ORD-001', customer: 'John Doe', items: 3, total: 45.99, status: 'completed', time: '5 min ago' },
-    { id: 'ORD-002', customer: 'Jane Smith', items: 2, total: 28.50, status: 'preparing', time: '12 min ago' },
-    { id: 'ORD-003', customer: 'Bob Johnson', items: 5, total: 89.99, status: 'pending', time: '18 min ago' },
-    { id: 'ORD-004', customer: 'Alice Brown', items: 1, total: 12.00, status: 'ready', time: '25 min ago' },
-  ];
-
-  const lowStockItems = [
-    { name: 'Tomatoes', current: 5, reorder: 20, unit: 'kg' },
-    { name: 'Chicken Breast', current: 2, reorder: 15, unit: 'kg' },
-    { name: 'Olive Oil', current: 3, reorder: 10, unit: 'bottles' },
+    { label: 'Total Sales', value: '$0.00', change: '+0%', positive: true, icon: TrendingUp, color: 'text-blue-600', bg: 'bg-blue-50' },
+    { label: 'Inventory Hub', value: '0 Items', change: 'Stable', positive: true, icon: Database, color: 'text-purple-600', bg: 'bg-purple-50' },
+    { label: 'New Customers', value: '0', change: '+0%', positive: true, icon: Users, color: 'text-green-600', bg: 'bg-green-50' },
+    { label: 'Stock Entry', value: '0 today', change: 'Normal', positive: true, icon: Package, color: 'text-orange-600', bg: 'bg-orange-50' },
   ];
 
   return (
     <RoleGuard allowedRoles={['admin', 'manager', 'cashier', 'waiter']}>
-      <div className="space-y-6">
-        {/* Welcome Section */}
-        <div className="flex items-center justify-between">
+      <div className="space-y-8 animate-in fade-in duration-500">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
-            <p className="text-slate-500">Welcome back, {user?.full_name || 'User'}!</p>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Business Snapshot</h1>
+            <p className="text-slate-500 font-medium">Welcome back, {user?.full_name || 'Admin'}</p>
           </div>
-          <div className="flex items-center gap-2 text-sm text-slate-500">
-            <Clock size={16} />
-            <span>{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
-          </div>
+          <Link href="/orders?mode=new" className="flex items-center gap-2 px-6 h-12 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 transition-all font-black shadow-lg shadow-blue-100">
+            <PlusCircle size={20} /> New Order
+          </Link>
         </div>
-
-        {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {stats.map((stat, index) => (
-            <div key={index} className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center">
-                  <stat.icon size={24} className="text-blue-600" />
-                </div>
-                <span className={`flex items-center gap-1 text-sm font-medium ${stat.positive ? 'text-green-600' : 'text-red-600'}`}>
-                  <ArrowUpRight size={16} />
-                  {stat.change}
-                </span>
+            <div key={index} className="bg-white rounded-[2rem] p-7 shadow-sm border border-slate-100">
+              <div className="flex items-center justify-between mb-6">
+                <div className={`w-14 h-14 ${stat.bg} rounded-2xl flex items-center justify-center`}><stat.icon size={28} className={stat.color} /></div>
+                <div className={`flex items-center gap-1 text-xs font-black px-2 py-1 rounded-lg ${stat.positive ? 'bg-green-50 text-green-600' : 'bg-rose-50 text-rose-600'}`}>{stat.change}</div>
               </div>
-              <p className="text-2xl font-bold text-slate-900">{stat.value}</p>
-              <p className="text-sm text-slate-500">{stat.label}</p>
+              <p className="text-3xl font-black text-slate-900 mb-1">{stat.value}</p>
+              <p className="text-sm text-slate-400 font-bold uppercase tracking-widest">{stat.label}</p>
             </div>
           ))}
         </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Recent Orders */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100">
-            <div className="p-6 border-b border-slate-100">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-slate-900">Recent Orders</h2>
-                <a href="/orders" className="text-sm text-blue-600 hover:text-blue-700 font-medium">View All</a>
-              </div>
-            </div>
-            <div className="divide-y divide-slate-100">
-              {recentOrders.map((order) => (
-                <div key={order.id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center text-slate-600 font-bold text-sm">
-                      {order.customer.charAt(0)}
-                    </div>
-                    <div>
-                      <p className="font-medium text-slate-900">{order.id}</p>
-                      <p className="text-sm text-slate-500">{order.customer} • {order.items} items</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-semibold text-slate-900">${order.total.toFixed(2)}</p>
-                    <p className={`text-xs font-medium capitalize ${
-                      order.status === 'completed' ? 'text-green-600' :
-                      order.status === 'preparing' ? 'text-blue-600' :
-                      order.status === 'ready' ? 'text-purple-600' :
-                      'text-amber-600'
-                    }`}>
-                      {order.status}
-                    </p>
-                  </div>
-                </div>
-              ))}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100">
+            <h3 className="text-xl font-black text-slate-900 mb-6">Quick Operations</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <Link href="/products" className="group p-6 bg-slate-50 rounded-[2rem] hover:bg-blue-600 transition-all">
+                <Package size={32} className="text-slate-400 mb-4 group-hover:text-white" />
+                <p className="font-black text-slate-900 group-hover:text-white">Catalog</p>
+                <p className="text-xs text-slate-400 group-hover:text-blue-100">Manage products</p>
+              </Link>
+              <Link href="/ingredients/inventory" className="group p-6 bg-slate-50 rounded-[2rem] hover:bg-blue-600 transition-all">
+                <Database size={32} className="text-slate-400 mb-4 group-hover:text-white" />
+                <p className="font-black text-slate-900 group-hover:text-white">Stock</p>
+                <p className="text-xs text-slate-400 group-hover:text-blue-100">Inventory hub</p>
+              </Link>
             </div>
           </div>
-
-          {/* Low Stock Alerts */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100">
-            <div className="p-6 border-b border-slate-100">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-slate-900">Low Stock Alerts</h2>
-                <a href="/ingredients/inventory" className="text-sm text-blue-600 hover:text-blue-700 font-medium">Manage Inventory</a>
+          <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-black text-slate-900">Reports Snapshot</h3>
+              <Link href="/reports" className="text-blue-600 font-black text-xs uppercase tracking-widest hover:underline">View All</Link>
+            </div>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl">
+                <div className="flex items-center gap-3"><BarChart3 size={20} className="text-blue-600" /><span className="font-bold text-slate-700">Daily Revenue</span></div>
+                <span className="font-black text-slate-900">$0.00</span>
+              </div>
+              <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl">
+                <div className="flex items-center gap-3"><ShoppingCart size={20} className="text-green-600" /><span className="font-bold text-slate-700">Orders Completed</span></div>
+                <span className="font-black text-slate-900">0</span>
               </div>
             </div>
-            <div className="divide-y divide-slate-100">
-              {lowStockItems.map((item, index) => (
-                <div key={index} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center">
-                      <AlertCircle size={20} className="text-amber-600" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-slate-900">{item.name}</p>
-                      <p className="text-sm text-slate-500">Reorder level: {item.reorder} {item.unit}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-semibold text-amber-600">{item.current} {item.unit}</p>
-                    <p className="text-xs text-slate-500">Current stock</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-          <h2 className="text-lg font-semibold text-slate-900 mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <a href="/orders" className="flex flex-col items-center gap-2 p-4 bg-slate-50 rounded-xl hover:bg-blue-50 transition-colors group">
-              <ShoppingBag size={24} className="text-slate-600 group-hover:text-blue-600" />
-              <span className="text-sm font-medium text-slate-700 group-hover:text-blue-600">New Order</span>
-            </a>
-            <a href="/products" className="flex flex-col items-center gap-2 p-4 bg-slate-50 rounded-xl hover:bg-blue-50 transition-colors group">
-              <Package size={24} className="text-slate-600 group-hover:text-blue-600" />
-              <span className="text-sm font-medium text-slate-700 group-hover:text-blue-600">Add Product</span>
-            </a>
-            <a href="/customers" className="flex flex-col items-center gap-2 p-4 bg-slate-50 rounded-xl hover:bg-blue-50 transition-colors group">
-              <Users size={24} className="text-slate-600 group-hover:text-blue-600" />
-              <span className="text-sm font-medium text-slate-700 group-hover:text-blue-600">Add Customer</span>
-            </a>
-            <a href="/reports" className="flex flex-col items-center gap-2 p-4 bg-slate-50 rounded-xl hover:bg-blue-50 transition-colors group">
-              <TrendingUp size={24} className="text-slate-600 group-hover:text-blue-600" />
-              <span className="text-sm font-medium text-slate-700 group-hover:text-blue-600">View Reports</span>
-            </a>
           </div>
         </div>
       </div>
