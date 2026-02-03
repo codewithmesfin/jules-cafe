@@ -9,12 +9,19 @@ interface TenantGuardProps {
   children: React.ReactNode;
 }
 
+export interface CompanyData {
+  id: string;
+  name: string;
+  logo?: string;
+}
+
 const TenantGuard: React.FC<TenantGuardProps> = ({ children }) => {
   const params = useParams();
   const router = useRouter();
   const { showNotification } = useNotification();
   const [isValidating, setIsValidating] = useState(true);
   const [isValid, setIsValid] = useState(false);
+  const [companyData, setCompanyData] = useState<CompanyData | null>(null);
 
   useEffect(() => {
     const validateTenant = async () => {
@@ -26,7 +33,12 @@ const TenantGuard: React.FC<TenantGuardProps> = ({ children }) => {
       }
 
       try {
-        await api.public.company.getOne(tenantId);
+        const company = await api.public.company.getOne(tenantId);
+        setCompanyData(company);
+        // Store company data in sessionStorage for use in layout
+        sessionStorage.setItem('tenantCompany', JSON.stringify(company));
+        // Dispatch event so layout can update immediately
+        window.dispatchEvent(new CustomEvent('tenantCompanyLoaded', { detail: company }));
         setIsValid(true);
       } catch (error: any) {
         // Company not found or not active
@@ -52,7 +64,14 @@ const TenantGuard: React.FC<TenantGuardProps> = ({ children }) => {
     return null;
   }
 
-  return <>{children}</>;
+  return (
+    <TenantContext.Provider value={companyData}>
+      {children}
+    </TenantContext.Provider>
+  );
 };
+
+// Create a context for tenant data
+export const TenantContext = React.createContext<CompanyData | null>(null);
 
 export default TenantGuard;

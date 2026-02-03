@@ -31,6 +31,34 @@ const MenuView: React.FC<MenuViewProps> = ({ companyId }) => {
 
   const { addToCart, setBranchId, setTableId, setTableNo, tableNo } = useCart();
 
+  // Simple cache for API responses (1 minute cache) - includes version to invalidate old cache
+  const cacheKey = `menu_cache_v2_${companyId}`;
+  const getCachedData = (key: string) => {
+    try {
+      const cached = sessionStorage.getItem(cacheKey);
+      if (cached) {
+        const data = JSON.parse(cached);
+        if (data[key] && Date.now() - data[key].timestamp < 60000) {
+          return data[key].value;
+        }
+      }
+    } catch (e) {
+      // Ignore errors
+    }
+    return null;
+  };
+
+  const setCachedData = (key: string, value: any) => {
+    try {
+      const cached = sessionStorage.getItem(cacheKey);
+      const data = cached ? JSON.parse(cached) : {};
+      data[key] = { value, timestamp: Date.now() };
+      sessionStorage.setItem(cacheKey, JSON.stringify(data));
+    } catch (e) {
+      // Ignore errors
+    }
+  };
+
   useEffect(() => {
     if (urlBranchId) {
       setSelectedBranchId(urlBranchId);
@@ -48,44 +76,84 @@ const MenuView: React.FC<MenuViewProps> = ({ companyId }) => {
     const fetchData = async () => {
       try {
         setLoading(true);
+        
+        // Check cache first
+        const cachedItems = getCachedData('items');
+        const cachedCats = getCachedData('categories');
+        const cachedBranches = getCachedData('branches');
+        const cachedBmItems = getCachedData('bmItems');
+        
+        if (cachedItems && cachedCats && cachedBranches && cachedBmItems) {
+          setMenuItems(cachedItems);
+          setCategories(cachedCats);
+          setBranches(cachedBranches);
+          setBranchMenuItems(cachedBmItems);
+          setLoading(false);
+          return;
+        }
+        
         const [items, cats, brnchs, bmItems] = await Promise.all([
           api.public.menuItems.getAll(companyId),
           api.public.categories.getAll(companyId),
-          api.public.branches.getAll(),
-          api.public.branchMenuItems.getAll(),
+          api.public.branches.getAll(companyId),
+          api.public.branchMenuItems.getAll(companyId),
         ]);
-        // API returns data in standard format with id transformation
-        setMenuItems(items?.data || items);
-        setCategories(cats?.data || cats);
-        setBranches(brnchs?.data || brnchs);
-        setBranchMenuItems(bmItems?.data || bmItems);
+        
+        const itemsData = items?.data || items;
+        const catsData = cats?.data || cats;
+        const brnchsData = brnchs?.data || brnchs;
+        const bmItemsData = bmItems?.data || bmItems;
+        
+        // Cache the responses
+        setCachedData('items', itemsData);
+        setCachedData('categories', catsData);
+        setCachedData('branches', brnchsData);
+        setCachedData('bmItems', bmItemsData);
+        
+        setMenuItems(itemsData);
+        setCategories(catsData);
+        setBranches(brnchsData);
+        setBranchMenuItems(bmItemsData);
       } catch (error) {
         console.error('Failed to fetch data:', error);
       } finally {
         setLoading(false);
       }
     };
+    
     fetchData();
   }, [companyId]);
 
   const filteredItems = menuItems.map(item => {
     // If a branch is selected, find the override for availability
     let isAvailable = item.is_active;
+    let belongsToBranch = false;
     if (selectedBranchId !== 'all') {
-      const branchInfo = branchMenuItems.find(bm => {
-        const bId = typeof bm.branch_id === 'string' ? bm.branch_id : (bm.branch_id as any)?.id;
-        const mId = typeof bm.menu_item_id === 'string' ? bm.menu_item_id : (bm.menu_item_id as any)?.id;
-        return bId === selectedBranchId && mId === item.id;
-      });
-      // If record exists, use its availability. Otherwise default to item's global active status.
-      if (branchInfo) {
-        isAvailable = item.is_active && branchInfo.is_available;
+      // Check BranchMenuItem record first
+      const branchInfo = branchMenuItems.find(bm => 
+        bm.branch_id === selectedBranchId && bm.menu_item_id === item.id
+      );
+      
+      // Also check if menu item has branch_id set directly
+      const hasDirectBranchId = item.branch_id === selectedBranchId;
+      
+      if (branchInfo || hasDirectBranchId) {
+        belongsToBranch = true;
+        if (branchInfo) {
+          isAvailable = item.is_active && branchInfo.is_available;
+        } else {
+          isAvailable = item.is_available ?? item.is_active;
+        }
       }
+    } else {
+      // When "All Branches" is selected, show all company items
+      belongsToBranch = true;
     }
 
     return {
       ...item,
-      computed_available: isAvailable
+      computed_available: isAvailable,
+      belongs_to_branch: belongsToBranch
     };
   }).filter(item => {
     const matchesCategory = selectedCategory === 'all' || item.category_id === selectedCategory;
@@ -93,7 +161,9 @@ const MenuView: React.FC<MenuViewProps> = ({ companyId }) => {
       item.description.toLowerCase().includes(searchQuery.toLowerCase());
     // Only show active items
     const isActive = item.is_active;
-    return matchesCategory && matchesSearch && isActive;
+    // If branch is selected, only show items that belong to that branch
+    const matchesBranch = selectedBranchId === 'all' || item.belongs_to_branch;
+    return matchesCategory && matchesSearch && isActive && matchesBranch;
   });
 
   const selectedBranch = branches.find(b => b.id === selectedBranchId);
@@ -172,12 +242,18 @@ const MenuView: React.FC<MenuViewProps> = ({ companyId }) => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredItems.map(item => (
             <div key={item.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden group hover:shadow-md transition-shadow">
-              <div className="relative h-48 overflow-hidden">
-                <img
-                  src={item.image_url || undefined}
-                  alt={item.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                />
+              <div className="relative h-48 overflow-hidden bg-gray-100">
+                {item.image_url ? (
+                  <img
+                    src={item.image_url}
+                    alt={item.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-gray-400">
+                    <span className="text-4xl">🍽️</span>
+                  </div>
+                )}
                 {!item.computed_available && (
                   <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                     <Badge variant="error" className="text-sm px-3 py-1">Not available</Badge>

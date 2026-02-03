@@ -1,21 +1,48 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { MenuIcon, ShoppingCart, User, UtensilsCrossed, X } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
-import { PINTEREST_RED } from '@/utils/hero-teams';
 import { Button } from '@/components/ui/Button';
-import TenantGuard from '@/components/TenantGuard';
+import { api } from '@/utils/api';
+import TenantGuard, { TenantContext } from '@/components/TenantGuard';
 
 export default function CustomerLayout({ children }: { children: React.ReactNode }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [brand, setBrand] = useState({ logo: "", name: "Abc Cafe" })
   const { cartItems } = useCart();
   const { user, logout } = useAuth();
   const params = useParams();
   const tenantId = params?.tenant_id as string;
+  const companyData = useContext(TenantContext);
+
+  // Fetch company data directly from database
+  useEffect(() => {
+    if (!tenantId) return;
+
+    const fetchCompanyData = async () => {
+      try {
+        const company = await api.public.company.getOne(tenantId);
+        // Handle both response formats: company.data.name or company.name
+        const companyName = company.data?.name || company.name;
+        const companyLogo = company.data?.logo || company.logo || "";
+        setBrand({ logo: companyLogo, name: companyName })
+      } catch (e) {
+        // Ignore errors - will use fallback
+      }
+    };
+
+    fetchCompanyData();
+  }, [tenantId]);
+
+  // Get company name from context or fallback
+  const companyName = companyData?.name || brand.name || 'Abc Cafe';
+
+  // Get company logo from context or fallback
+  const companyLogo = companyData?.logo || brand.logo || null;
 
   const getBaseLink = (path: string) => {
     if (tenantId) {
@@ -37,8 +64,12 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
           <div className='flex items-center justify-between w-full max-w-7xl mx-auto'>
             <div className="flex items-center gap-2 md:gap-4 lg:gap-8">
               <Link href={getBaseLink('/')} className="flex items-center gap-2 text-[#e60023] font-bold text-xl">
-                <UtensilsCrossed className="w-8 h-8" />
-                <span className="hidden sm:inline">QuickServe</span>
+                {companyLogo ? (
+                  <img src={companyLogo} alt={companyName} className="w-10 h-10 object-contain rounded-lg" />
+                ) : (
+                  <UtensilsCrossed className="w-8 h-8" />
+                )}
+                <span className="hidden sm:inline">Abc Cafe</span>
               </Link>
               <div className="hidden lg:flex items-center gap-8 font-semibold text-black">
                 <Link href={getBaseLink('/companies')} className="hover:text-gray-600 transition-colors">Explore</Link>
@@ -101,9 +132,13 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
         <nav className="sticky top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm px-4 md:px-6 lg:px-8 py-4">
           <div className='flex items-center justify-between w-full max-w-7xl mx-auto'>
             <div className="flex items-center gap-2 md:gap-4 lg:gap-8">
-              <Link href={getBaseLink('/')} className="flex items-center gap-2 text-[#e60023] font-bold text-xl">
-                <UtensilsCrossed className="w-8 h-8" />
-                <span className="hidden sm:inline">QuickServe</span>
+              <Link href={getBaseLink('/')} className="flex items-center gap-2 text-[#e60023] font-bold text-xl" suppressHydrationWarning>
+                {brand.logo && brand.logo !== "" ? (
+                  <img src={brand.logo} alt={companyName} className="w-10 h-10 object-contain rounded-lg" suppressHydrationWarning />
+                ) : (
+                  <UtensilsCrossed className="w-8 h-8" />
+                )}
+                <span className="hidden sm:inline">{brand.name}</span>
               </Link>
               <div className="hidden lg:flex items-center gap-8 font-semibold text-black">
                 <Link href={getBaseLink('/menu')} className="hover:text-gray-600 transition-colors">Explore</Link>
@@ -187,7 +222,7 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
           <div>
             <div className="flex items-center gap-2 text-white font-bold text-xl mb-4">
               <UtensilsCrossed className="w-6 h-6 text-[#e60023]" />
-              <span>QuickServe</span>
+              <span>Abc Cafe</span>
             </div>
             <p className="text-sm">
               Providing modern self-service solutions for small restaurant companies.
@@ -207,12 +242,12 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
             <ul className="space-y-2 text-sm">
               <li>123 Foodie Street, Gourmet City</li>
               <li>Phone: (555) 123-4567</li>
-              <li>Email: hello@quickserve.com</li>
+              <li>Email: hello@abccafe.com</li>
             </ul>
           </div>
         </div>
         <div className="container mx-auto px-4 mt-12 pt-8 border-t border-gray-800 text-center text-xs">
-          © {new Date().getFullYear()} QuickServe Restaurant Management. All rights reserved.
+          © {new Date().getFullYear()} Abc Cafe Restaurant Management. All rights reserved.
         </div>
       </footer>
     </div>

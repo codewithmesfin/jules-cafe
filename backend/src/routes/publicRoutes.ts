@@ -139,7 +139,14 @@ router.route('/public/categories/:id')
 // Branches - public read-only access
 router.route('/public/branches')
   .get(catchAsync(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    const doc = await Branch.find({ is_active: true });
+    const query: any = { is_active: true };
+    
+    // Filter by company_id if provided
+    if (req.query.company_id) {
+      query.company_id = req.query.company_id;
+    }
+    
+    const doc = await Branch.find(query);
     // Transform _id to id and branch_name to name for frontend compatibility
     const transformedDocs = doc.map((d: any) => ({
       ...d.toObject(),
@@ -174,11 +181,23 @@ router.route('/public/branches/:id')
 // Branch Menu Items - public read-only access
 router.route('/public/branch-menu-items')
   .get(catchAsync(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    const doc = await BranchMenuItem.find();
-    // Transform _id to id for frontend compatibility
+    const query: any = {};
+    
+    // Filter by company_id if provided - filter by branch's company
+    if (req.query.company_id) {
+      const companyId = req.query.company_id;
+      const branches = await Branch.find({ company_id: companyId }).select('_id');
+      const branchIds = branches.map(b => b._id);
+      query.branch_id = { $in: branchIds };
+    }
+    
+    const doc = await BranchMenuItem.find(query);
+    // Transform _id to id and convert ObjectId fields to strings
     const transformedDocs = doc.map((d: any) => ({
       ...d.toObject(),
-      id: d._id.toString()
+      id: d._id.toString(),
+      branch_id: d.branch_id?.toString(),
+      menu_item_id: d.menu_item_id?.toString()
     }));
     res.status(200).json({
       status: 'success',

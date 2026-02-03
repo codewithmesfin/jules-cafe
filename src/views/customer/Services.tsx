@@ -78,7 +78,7 @@ const Services: React.FC = () => {
             Ready to Experience Our Services?
           </h2>
           <p className="text-gray-400 text-xl max-w-2xl mx-auto mb-10">
-            Join thousands of happy customers who enjoy the convenience of QuickServe.
+            Join thousands of happy customers who enjoy the convenience of Abc Cafe.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link 

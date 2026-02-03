@@ -67,7 +67,7 @@ const Features: React.FC = () => {
           </h1>
           <p className="text-xl text-gray-300 max-w-3xl mx-auto mb-10">
             Built with modern technology to deliver exceptional user experiences. 
-            Discover what makes QuickServe the preferred choice for restaurants and customers.
+            Discover what makes Abc Cafe the preferred choice for restaurants and customers.
           </p>
           <Link 
             href="/signup" 
@@ -129,7 +129,7 @@ const Features: React.FC = () => {
             Experience All Features Today
           </h2>
           <p className="text-gray-600 text-xl max-w-2xl mx-auto mb-10">
-            Join the growing community of restaurants and customers who trust QuickServe.
+            Join the growing community of restaurants and customers who trust Abc Cafe.
           </p>
           <Link 
             href="/signup" 

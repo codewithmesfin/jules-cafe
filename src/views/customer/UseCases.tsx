@@ -46,7 +46,7 @@ const UseCases: React.FC = () => {
             Use <span className="text-green-600">Cases</span>
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-10">
-            QuickServe adapts to various business models. Discover how different types of food 
+            Abc Cafe adapts to various business models. Discover how different types of food 
             businesses leverage our platform to grow and succeed.
           </p>
           <Link 
@@ -121,7 +121,7 @@ const UseCases: React.FC = () => {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
-              { name: "Sarah Johnson", role: "Restaurant Owner", text: "QuickServe transformed our operations. We now handle 3x more orders with the same staff." },
+              { name: "Sarah Johnson", role: "Restaurant Owner", text: "Abc Cafe transformed our operations. We now handle 3x more orders with the same staff." },
               { name: "Mike Chen", role: "Cafe Manager", text: "The mobile ordering feature is a game-changer. Our customers love the convenience." },
               { name: "Emily Davis", role: "Chain Director", text: "Managing multiple locations has never been easier. Highly recommended!" }
             ].map((testimonial, index) => (
@@ -144,7 +144,7 @@ const UseCases: React.FC = () => {
             Ready to Transform Your Business?
           </h2>
           <p className="text-gray-600 text-xl max-w-2xl mx-auto mb-10">
-            Join hundreds of successful restaurants using QuickServe to grow their business.
+            Join hundreds of successful restaurants using Abc Cafe to grow their business.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link 
