@@ -81,8 +81,27 @@ export const createMenuItem = catchAsync(async (req: AuthRequest, res: Response,
   res.status(201).json(doc);
 });
 
-export const updateMenuItem = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+export const updateMenuItem = catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
   const data = { ...req.body };
+
+  const existingDoc = await MenuItem.findById(req.params.id);
+  if (!existingDoc) {
+    return next(new AppError('Document not found', 404));
+  }
+
+  // Tenant security check
+  if (req.user && existingDoc.company_id) {
+    if (!req.user.company_id || existingDoc.company_id.toString() !== req.user.company_id.toString()) {
+      return next(new AppError('You do not have permission to update this menu item', 403));
+    }
+  }
+
+  // Branch security check
+  if (req.user && ['manager', 'staff', 'cashier'].includes(req.user.role)) {
+    if (existingDoc.branch_id && existingDoc.branch_id.toString() !== req.user.branch_id?.toString()) {
+      return next(new AppError('You do not have permission to update this menu item', 403));
+    }
+  }
 
   // Validate item_id if provided
   if (data.item_id && data.item_id !== '') {

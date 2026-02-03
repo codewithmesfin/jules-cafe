@@ -53,16 +53,23 @@ export const updateReservation = catchAsync(async (req: AuthRequest, res: Respon
   }
 
   // Tenant security check
-  if (req.user && req.user.role !== 'customer' && reservation.company_id) {
-    if (reservation.company_id.toString() !== req.user.company_id?.toString()) {
-      return next(new AppError('You do not have permission to update this document', 403));
+  if (req.user && reservation.company_id) {
+    if (!req.user.company_id || reservation.company_id.toString() !== req.user.company_id.toString()) {
+      return next(new AppError('You do not have permission to update this reservation', 403));
+    }
+  }
+
+  // Customer security check
+  if (req.user && req.user.role === 'customer') {
+    if (reservation.customer_id?.toString() !== (req.user._id || req.user.id).toString()) {
+      return next(new AppError('You do not have permission to update this reservation', 403));
     }
   }
 
   // Branch security check
   if (req.user && ['manager', 'staff', 'cashier'].includes(req.user.role)) {
     if (reservation.branch_id?.toString() !== req.user.branch_id?.toString()) {
-      return next(new Error('You do not have permission to update this document'));
+      return next(new AppError('You do not have permission to update this reservation', 403));
     }
   }
 

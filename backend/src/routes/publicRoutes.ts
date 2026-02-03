@@ -7,6 +7,7 @@ import MenuVariant from '../models/MenuVariant';
 import Company from '../models/Company';
 import * as factory from '../utils/controllerFactory';
 import catchAsync from '../utils/catchAsync';
+import AppError from '../utils/appError';
 
 const router = express.Router();
 
@@ -61,10 +62,11 @@ router.route('/public/menu-items')
   .get(catchAsync(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
     const query: any = { is_active: true };
     
-    // Filter by company_id if provided
-    if (req.query.company_id) {
-      query.company_id = req.query.company_id;
+    // Filter by company_id - required for public access
+    if (!req.query.company_id) {
+      return next(new AppError('company_id is required', 400));
     }
+    query.company_id = req.query.company_id;
     
     const doc = await MenuItem.find(query);
     // Transform _id to id for frontend compatibility
@@ -101,10 +103,11 @@ router.route('/public/categories')
   .get(catchAsync(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
     const query: any = { is_active: true };
     
-    // Filter by company_id if provided
-    if (req.query.company_id) {
-      query.company_id = req.query.company_id;
+    // Filter by company_id - required for public access
+    if (!req.query.company_id) {
+      return next(new AppError('company_id is required', 400));
     }
+    query.company_id = req.query.company_id;
     
     const doc = await Category.find(query);
     // Transform _id to id for frontend compatibility
@@ -141,10 +144,11 @@ router.route('/public/branches')
   .get(catchAsync(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
     const query: any = { is_active: true };
     
-    // Filter by company_id if provided
-    if (req.query.company_id) {
-      query.company_id = req.query.company_id;
+    // Filter by company_id - required for public access
+    if (!req.query.company_id) {
+      return next(new AppError('company_id is required', 400));
     }
+    query.company_id = req.query.company_id;
     
     const doc = await Branch.find(query);
     // Transform _id to id and branch_name to name for frontend compatibility
@@ -183,14 +187,16 @@ router.route('/public/branch-menu-items')
   .get(catchAsync(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
     const query: any = {};
     
-    // Filter by company_id if provided - filter by branch's company
-    if (req.query.company_id) {
-      const companyId = req.query.company_id;
-      const branches = await Branch.find({ company_id: companyId }).select('_id');
-      const branchIds = branches.map(b => b._id);
-      query.branch_id = { $in: branchIds };
+    // Filter by company_id - required for public access
+    if (!req.query.company_id) {
+      return next(new AppError('company_id is required', 400));
     }
     
+    const companyId = req.query.company_id;
+    const branches = await Branch.find({ company_id: companyId }).select('_id');
+    const branchIds = branches.map(b => b._id);
+    query.branch_id = { $in: branchIds };
+
     const doc = await BranchMenuItem.find(query);
     // Transform _id to id and convert ObjectId fields to strings
     const transformedDocs = doc.map((d: any) => ({

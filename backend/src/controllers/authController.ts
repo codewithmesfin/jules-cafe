@@ -24,6 +24,21 @@ const generateToken = (id: string) => {
  */
 export const register = catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
   const { email, password, full_name, phone, role, company_id } = req.body;
+
+  // Basic validation
+  if (!email || !password || !full_name) {
+    return next(new AppError('Please provide email, password and full name', 400));
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return next(new AppError('Please provide a valid email address', 400));
+  }
+
+  if (password.length < 6) {
+    return next(new AppError('Password must be at least 6 characters long', 400));
+  }
+
   console.log('Signup request body:', req.body);
   console.log('Role received:', role);
 
