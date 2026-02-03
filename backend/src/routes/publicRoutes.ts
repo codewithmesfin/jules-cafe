@@ -34,6 +34,28 @@ router.route('/public/company/:id')
     });
   }));
 
+// Get all active companies (public endpoint)
+router.route('/public/companies')
+  .get(catchAsync(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const docs = await Company.find({ 
+      is_active: true,
+      'subscription.status': 'active',
+      setup_completed: true
+    }).select('name description logo category primary_color website email phone address');
+    
+    // Transform _id to id for frontend compatibility
+    const transformedDocs = docs.map((d: any) => ({
+      ...d.toObject(),
+      id: d._id.toString()
+    }));
+    
+    res.status(200).json({
+      status: 'success',
+      results: transformedDocs.length,
+      data: transformedDocs
+    });
+  }));
+
 // Menu Items - public read-only access
 router.route('/public/menu-items')
   .get(catchAsync(async (req: express.Request, res: express.Response, next: express.NextFunction) => {

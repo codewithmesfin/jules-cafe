@@ -200,6 +200,7 @@ export const api = {
     },
     company: {
       getOne: (id: string) => fetcher(`/public/company/${id}`),
+      getAll: () => fetcher('/public/companies'),
     },
   }
 };
