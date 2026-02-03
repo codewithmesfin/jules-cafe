@@ -62,9 +62,26 @@ export interface Inventory {
   id: string;
   _id?: string;
   business_id: string;
-  ingredient_id: string | Ingredient;
+  item_id: string | Ingredient | Product;
+  item_type: 'ingredient' | 'product';
+  ingredient_id: string | Ingredient | Product;
   quantity_available: number;
   reorder_level: number;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface InventoryTransaction {
+  id: string;
+  _id?: string;
+  business_id: string;
+  item_id: string | Ingredient | Product;
+  item_type: 'ingredient' | 'product';
+  change_quantity: number;
+  reference_type: 'purchase' | 'sale' | 'waste' | 'adjustment' | 'production';
+  reference_id?: string;
+  note?: string;
+  created_at: string;
 }
 
 export interface Recipe {
@@ -80,9 +97,16 @@ export interface Table {
   id: string;
   _id?: string;
   business_id: string;
-  table_number: string;
-  capacity: number;
-  status: 'available' | 'occupied' | 'reserved';
+  creator_id?: string;
+  name: string;
+  table_number?: string;
+  seats: number;
+  capacity?: number;
+  location?: string;
+  status?: 'available' | 'occupied' | 'reserved';
+  is_active: boolean;
+  created_at: string;
+  updated_at?: string;
 }
 
 export interface Order {
@@ -92,6 +116,7 @@ export interface Order {
   creator_id: string;
   customer_id?: string;
   table_id?: string;
+  order_type: 'dine-in' | 'takeaway' | 'delivery';
   order_status: 'pending' | 'accepted' | 'preparing' | 'ready' | 'delivered' | 'completed' | 'cancelled';
   total_amount: number;
   payment_status: 'unpaid' | 'partial' | 'paid';

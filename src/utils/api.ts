@@ -86,6 +86,7 @@ export const api = {
     getTransactions: () => fetcher('/api/inventory/transactions'),
     create: (data: any) => fetcher('/api/inventory', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: string, data: any) => fetcher(`/api/inventory/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    delete: (id: string) => fetcher(`/api/inventory/${id}`, { method: 'DELETE' }),
   },
   orders: {
     getAll: () => fetcher('/api/orders'),

@@ -5,6 +5,7 @@ export interface IOrder extends Document {
   business_id: mongoose.Types.ObjectId;
   customer_id?: mongoose.Types.ObjectId;
   table_id?: mongoose.Types.ObjectId;
+  order_type: 'dine-in' | 'takeaway' | 'delivery';
   order_status: 'pending' | 'accepted' | 'preparing' | 'ready' | 'delivered' | 'completed' | 'cancelled';
   total_amount: number;
   payment_status: 'unpaid' | 'partial' | 'paid';
@@ -19,6 +20,11 @@ const OrderSchema: Schema = new Schema({
   business_id: { type: Schema.Types.ObjectId, ref: 'Business', required: true },
   customer_id: { type: Schema.Types.ObjectId, ref: 'Customer' },
   table_id: { type: Schema.Types.ObjectId, ref: 'Table' },
+  order_type: {
+    type: String,
+    enum: ['dine-in', 'takeaway', 'delivery'],
+    default: 'dine-in'
+  },
   order_status: {
     type: String,
     enum: ['pending', 'accepted', 'preparing', 'ready', 'delivered', 'completed', 'cancelled'],

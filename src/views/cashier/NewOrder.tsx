@@ -1,21 +1,42 @@
+"use client";
+
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { ShoppingCart, Plus, Minus, Search, Grid, User, UserPlus, ArrowLeft } from 'lucide-react';
+import {
+  ShoppingCart, Plus, Minus, Search, Grid, User, ArrowLeft,
+  Utensils, Package, Coffee, Pizza, ChefHat, Truck, ChevronRight
+} from 'lucide-react';
 import { api } from '../../utils/api';
 import { Button } from '../../components/ui/Button';
-import { Input } from '../../components/ui/Input';
-import { Card } from '../../components/ui/Card';
-import { Modal } from '../../components/ui/Modal';
-import { Drawer } from '../../components/ui/Drawer';
 import { Badge } from '../../components/ui/Badge';
+import { Modal } from '../../components/ui/Modal';
 import { useNotification } from '../../context/NotificationContext';
 import { useAuth } from '@/context/AuthContext';
 import { cn } from '../../utils/cn';
-import type { Product, Category, Table, User as UserType, Customer } from '../../types';
+import type { Product, Category, Table, Customer } from '../../types';
 
 interface CartItem extends Product {
   quantity: number;
 }
+
+type OrderType = 'dine-in' | 'takeaway' | 'delivery';
+
+const categoryColors: Record<string, string> = {
+  Pizza: 'bg-amber-100 text-amber-700',
+  Burger: 'bg-orange-100 text-orange-700',
+  Pasta: 'bg-yellow-100 text-yellow-700',
+  Drinks: 'bg-blue-100 text-blue-700',
+  Dessert: 'bg-pink-100 text-pink-700',
+  default: 'bg-slate-100 text-slate-700',
+};
+
+const categoryIcons: Record<string, React.ElementType> = {
+  Pizza: Pizza,
+  Burger: ChefHat,
+  Pasta: Utensils,
+  Drinks: Coffee,
+  default: Package,
+};
 
 const NewOrder: React.FC = () => {
   const { user } = useAuth();
@@ -27,14 +48,12 @@ const NewOrder: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [selectedTable, setSelectedTable] = useState('');
-  const [selectedCustomer, setSelectedCustomer] = useState('');
+  const [orderType, setOrderType] = useState<OrderType>('dine-in');
+  const [selectedTable, setSelectedTable] = useState<Table | null>(null);
+  const [showTableSelector, setShowTableSelector] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [showCustomerModal, setShowCustomerModal] = useState(false);
   const [orderNotes, setOrderNotes] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'mobile' | 'other'>('cash');
-
-  const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
-  const [isCartDrawerOpen, setIsCartDrawerOpen] = useState(false);
-  const [newCustomer, setNewCustomer] = useState({ full_name: '', email: '', phone: '' });
 
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -55,7 +74,6 @@ const NewOrder: React.FC = () => {
           api.customers.getAll(),
         ]);
 
-        // Handle both response formats (direct array or { success, data })
         setProducts(Array.isArray(prodList) ? prodList : prodList.data || []);
         setCategories(Array.isArray(catList) ? catList : catList.data || []);
         setTables(Array.isArray(tblList) ? tblList : tblList.data || []);
@@ -66,7 +84,7 @@ const NewOrder: React.FC = () => {
         }
       } catch (error: any) {
         console.error('Failed to fetch data:', error);
-        showNotification(error.message || 'Failed to fetch data', 'error');
+        showNotification('Failed to load data', 'error');
       } finally {
         setLoading(false);
       }
@@ -80,37 +98,22 @@ const NewOrder: React.FC = () => {
       const orderResponse = await api.orders.getOne(id);
       const order = orderResponse.data || orderResponse;
 
-      const editableStatuses = ['pending', 'accepted', 'preparing'];
-      if (!editableStatuses.includes(order.order_status)) {
-        showNotification(`Orders in ${order.order_status} status cannot be edited.`, 'warning');
-        router.push('/cashier/queue');
-        return;
-      }
-
-      setSelectedCustomer(order.customer_id?._id || order.customer_id || '');
-      setSelectedTable(order.table_id?._id || order.table_id || '');
+      setOrderType((order.order_type as OrderType) || 'dine-in');
+      setSelectedCustomer(order.customer_id as any);
       setOrderNotes(order.notes || '');
-      setPaymentMethod(order.payment_method || 'cash');
 
-      // Fetch order items
       const itemsResponse = await api.orders.getItems(id);
       const items = Array.isArray(itemsResponse) ? itemsResponse : itemsResponse.data || [];
 
       const cartItems: CartItem[] = items.map((item: any) => {
         const product = allProducts.find(p => p.id === (item.product_id?._id || item.product_id) || p._id === (item.product_id?._id || item.product_id));
-
         if (!product) return null;
-
-        return {
-          ...product,
-          quantity: item.quantity,
-          price: item.price
-        };
+        return { ...product, quantity: item.quantity, price: item.price };
       }).filter(Boolean) as CartItem[];
 
       setCart(cartItems);
     } catch (error: any) {
-      showNotification(error.message || 'Failed to fetch order details', 'error');
+      showNotification('Failed to load order', 'error');
     } finally {
       setOrderLoading(false);
     }
@@ -143,16 +146,17 @@ const NewOrder: React.FC = () => {
   };
 
   const subtotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
-  const total = subtotal; // Can add tax/discounts later if needed
+  const tax = subtotal * 0.1;
+  const total = subtotal + tax;
 
   const handlePlaceOrder = async () => {
     try {
       setSaving(true);
       const orderData = {
-        customer_id: selectedCustomer || undefined,
-        table_id: selectedTable || undefined,
+        order_type: orderType,
+        customer_id: selectedCustomer?.id || selectedCustomer?._id,
+        table_id: selectedTable?.id || selectedTable?._id,
         notes: orderNotes,
-        payment_method: paymentMethod,
         items: cart.map(item => ({
           product_id: item.id || item._id,
           quantity: item.quantity
@@ -161,397 +165,379 @@ const NewOrder: React.FC = () => {
 
       if (orderId) {
         await api.orders.update(orderId, orderData);
-        showNotification("Order updated successfully!");
-        router.push('/cashier/queue');
+        showNotification('Order updated successfully!');
+        router.push('/orders?mode=queue');
       } else {
         await api.orders.create(orderData);
-        showNotification("Order placed successfully!");
+        showNotification('Order placed successfully!');
         setCart([]);
-        setSelectedCustomer('');
-        setSelectedTable('');
+        setSelectedTable(null);
+        setSelectedCustomer(null);
         setOrderNotes('');
-        setIsCartDrawerOpen(false);
       }
     } catch (error: any) {
-      showNotification(error.message || `Failed to ${orderId ? 'update' : 'place'} order`, "error");
+      showNotification(error.message || 'Failed to place order', 'error');
     } finally {
       setSaving(false);
     }
   };
 
-  const cartContent = (
-    <div className="flex flex-col h-full flex-1 overflow-y-auto">
-      <div className="p-4 border-b border-gray-100 space-y-4">
-        <div className="space-y-1">
-          <label className="text-xs font-bold text-slate-400 uppercase flex items-center gap-1">
-            <Grid size={12} /> Table
-          </label>
-          <select
-            className="w-full text-sm border-slate-200 rounded-xl bg-slate-50 px-3 py-2.5 focus:ring-blue-500 focus:border-blue-500"
-            value={selectedTable}
-            onChange={(e) => setSelectedTable(e.target.value)}
-          >
-            <option value="">Walk-in / No Table</option>
-            {tables.map(t => (
-              <option key={t.id || t._id} value={t.id || t._id}>Table {t.table_number} ({t.capacity} seats)</option>
-            ))}
-          </select>
-        </div>
+  // Helper to get table name/number
+  const getTableDisplayName = (table: Table): string => {
+    return table.table_number || table.name || 'Unknown';
+  };
 
-        <div className="space-y-1">
-          <label className="text-xs font-bold text-slate-400 uppercase flex items-center gap-1">
-            <User size={12} className="text-blue-600" /> Customer
-          </label>
-          <div className="flex items-center gap-2">
-            <select
-              className="flex-1 text-sm border-slate-200 rounded-xl bg-slate-50 px-3 py-2.5 focus:ring-blue-500 focus:border-blue-500 font-medium"
-              value={selectedCustomer}
-              onChange={(e) => setSelectedCustomer(e.target.value)}
-            >
-              <option value="">Guest Customer</option>
-              {customers.map(c => (
-                <option key={c.id || c._id} value={c.id || c._id}>{c.full_name} {c.phone ? `(${c.phone})` : ''}</option>
-              ))}
-            </select>
-            <button
-              onClick={() => setIsCustomerModalOpen(true)}
-              className="p-2.5 text-blue-600 hover:bg-blue-50 rounded-xl border border-blue-100 transition-colors"
-              title="Add New Customer"
-            >
-              <UserPlus size={18} />
-            </button>
-          </div>
-        </div>
+  // Helper to get table seats
+  const getTableSeats = (table: Table): number => {
+    return table.seats || table.capacity || 0;
+  };
 
-        <div className="space-y-1">
-          <label className="text-xs font-bold text-slate-400 uppercase flex items-center gap-1">
-            Payment Method
-          </label>
-          <div className="grid grid-cols-2 gap-2">
-            {(['cash', 'card', 'mobile', 'other'] as const).map((method) => (
-              <button
-                key={method}
-                onClick={() => setPaymentMethod(method)}
-                className={cn(
-                  "py-2 text-xs font-bold rounded-lg border transition-all capitalize",
-                  paymentMethod === method
-                    ? "bg-blue-600 border-blue-600 text-white shadow-sm"
-                    : "bg-white border-slate-200 text-slate-600 hover:border-blue-200"
-                )}
-              >
-                {method}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="pt-2">
-          <textarea
-            className="w-full text-xs border border-slate-200 rounded-xl p-3 bg-white focus:ring-blue-500 focus:border-blue-500"
-            placeholder="Order notes (customizations, allergies...)"
-            rows={2}
-            value={orderNotes}
-            onChange={(e) => setOrderNotes(e.target.value)}
-          />
+  if (orderLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-slate-200 border-t-slate-900 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-500">Loading order...</p>
         </div>
       </div>
-
-      <div className="flex-1 p-4 space-y-4 pb-10">
-        {cart.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-slate-400 space-y-2">
-            <ShoppingCart size={48} strokeWidth={1.5} />
-            <p className="text-sm font-medium">Your cart is empty</p>
-            <p className="text-xs">Select products to start your order</p>
-          </div>
-        ) : (
-          cart.map(item => (
-            <div key={item.id || item._id} className="flex justify-between items-center gap-3 p-3 hover:bg-slate-50 rounded-2xl transition-colors border border-transparent hover:border-slate-100">
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-slate-900 truncate">{item.name}</p>
-                <p className="text-xs text-blue-600 font-bold">${item.price.toFixed(2)}</p>
-              </div>
-              <div className="flex items-center gap-3 bg-white border border-slate-100 rounded-full px-2 py-1 shadow-sm">
-                <button
-                  onClick={() => updateQuantity((item.id || item._id)!, -1)}
-                  className="p-1.5 hover:bg-blue-50 text-blue-600 rounded-full transition-colors"
-                >
-                  <Minus size={14} />
-                </button>
-                <span className="text-sm font-black w-4 text-center">{item.quantity}</span>
-                <button
-                  onClick={() => updateQuantity((item.id || item._id)!, 1)}
-                  className="p-1.5 hover:bg-blue-50 text-blue-600 rounded-full transition-colors"
-                >
-                  <Plus size={14} />
-                </button>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-
-      <div className="sticky bottom-0 p-6 bg-slate-50 border-t border-slate-100 space-y-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm text-slate-500">
-            <span>Subtotal</span>
-            <span className="font-medium text-slate-900">${subtotal.toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between text-2xl font-black text-slate-900 pt-2 border-t border-slate-200">
-            <span>Total</span>
-            <span className="text-blue-600">${total.toFixed(2)}</span>
-          </div>
-        </div>
-        <Button
-          className="w-full h-14 text-lg font-bold shadow-lg shadow-blue-100 rounded-2xl"
-          size="lg"
-          disabled={cart.length === 0 || saving}
-          onClick={handlePlaceOrder}
-        >
-          {saving ? 'Processing...' : orderId ? 'Update Order' : 'Complete Sale'}
-        </Button>
-      </div>
-    </div>
-  );
-
-  if (orderLoading) return (
-    <div className="flex flex-col items-center justify-center h-full space-y-4">
-      <div className="w-12 h-12 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
-      <p className="text-slate-500 font-medium">Loading order details...</p>
-    </div>
-  );
+    );
+  }
 
   return (
-    <div className="flex flex-col lg:flex-row h-full gap-6 relative pb-24 lg:pb-0">
-      {/* Product Selection */}
-      <div className="flex-1 flex flex-col min-w-0 h-full">
-        {/* Header Actions */}
-        <div className="space-y-4 mb-6">
-          <div className="flex items-center gap-4">
+    <div className="flex h-full bg-slate-50">
+      {/* Left Side - Products */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Header */}
+        <div className="bg-white border-b border-slate-200 px-6 py-4">
+          <div className="flex items-center gap-4 mb-4">
             {orderId && (
               <button
-                onClick={() => router.push('/cashier/queue')}
-                className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-500"
+                onClick={() => router.push('/orders?mode=queue')}
+                className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
               >
-                <ArrowLeft size={20} />
+                <ArrowLeft size={20} className="text-slate-600" />
               </button>
             )}
-            <h1 className="text-2xl font-black text-slate-900 truncate">
-              {orderId ? `Editing Order #${orderId.slice(-4)}` : 'New Sale'}
+            <h1 className="text-2xl font-bold text-slate-900">
+              {orderId ? `Edit Order #${orderId.slice(-4)}` : 'New Order'}
             </h1>
           </div>
 
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="relative flex-1 group">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors w-5 h-5" />
-              <input
-                placeholder="Search products by name..."
-                className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <div className="hidden xl:block w-64">
-              <select
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm"
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-              >
-                <option value="all">All Categories</option>
-                {categories.map(cat => (
-                  <option key={cat.id || cat._id} value={cat.id || cat._id}>{cat.name}</option>
-                ))}
-              </select>
-            </div>
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+            <input
+              type="text"
+              placeholder="Search products..."
+              className="w-full pl-10 pr-4 py-3 bg-slate-100 border-0 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300 transition-all"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
+        </div>
 
-          {/* Category Pills */}
-          <div className="flex gap-2 overflow-x-auto pb-2 -mx-2 px-2 no-scrollbar">
+        {/* Categories */}
+        <div className="px-6 py-4 bg-white border-b border-slate-200">
+          <div className="flex gap-3 overflow-x-auto pb-2">
             <button
               onClick={() => setSelectedCategory('all')}
               className={cn(
-                "whitespace-nowrap px-6 py-2.5 rounded-2xl text-sm font-bold transition-all border shrink-0",
+                'flex-shrink-0 px-4 py-2 rounded-full font-medium text-sm transition-all',
                 selectedCategory === 'all'
-                  ? "bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-100"
-                  : "bg-white border-slate-200 text-slate-600 hover:border-blue-200 hover:bg-blue-50"
+                  ? 'bg-slate-900 text-white'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               )}
             >
-              All Items
+              All
             </button>
-            {categories.map(cat => (
-              <button
-                key={cat.id || cat._id}
-                onClick={() => setSelectedCategory((cat.id || cat._id)!)}
-                className={cn(
-                  "whitespace-nowrap px-6 py-2.5 rounded-2xl text-sm font-bold transition-all border shrink-0",
-                  selectedCategory === (cat.id || cat._id)
-                    ? "bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-100"
-                    : "bg-white border-slate-200 text-slate-600 hover:border-blue-200 hover:bg-blue-50"
-                )}
-              >
-                {cat.name}
-              </button>
-            ))}
+            {categories.map((cat) => {
+              const Icon = categoryIcons[cat.name] || categoryIcons.default;
+              const style = categoryColors[cat.name] || categoryColors.default;
+              return (
+                <button
+                  key={cat.id || cat._id}
+                  onClick={() => setSelectedCategory(cat.id || cat._id!)}
+                  className={cn(
+                    'flex-shrink-0 px-4 py-2 rounded-full font-medium text-sm transition-all flex items-center gap-2',
+                    selectedCategory === (cat.id || cat._id)
+                      ? 'bg-slate-900 text-white'
+                      : `${style} hover:opacity-80`
+                  )}
+                >
+                  <Icon size={16} />
+                  {cat.name}
+                </button>
+              );
+            })}
           </div>
         </div>
 
         {/* Products Grid */}
-        <div className="flex-1 overflow-y-auto pr-2 pb-6 no-scrollbar">
+        <div className="flex-1 overflow-y-auto p-6">
           {loading ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-              {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-                <div key={i} className="bg-slate-100 animate-pulse rounded-3xl h-64" />
+            <div className="grid grid-cols-4 gap-4">
+              {[...Array(12)].map((_, i) => (
+                <div key={i} className="bg-white rounded-xl h-36 animate-pulse" />
               ))}
             </div>
           ) : filteredItems.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-slate-400 space-y-4">
-              <div className="p-6 bg-slate-50 rounded-full">
-                <Search size={48} strokeWidth={1} />
-              </div>
-              <p className="font-medium">No products found</p>
+            <div className="flex flex-col items-center justify-center h-64 text-slate-400">
+              <Search size={48} strokeWidth={1} />
+              <p className="mt-4 font-medium">No products found</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-              {filteredItems.map(product => (
-                <div
+            <div className="grid grid-cols-4 gap-4">
+              {filteredItems.map((product) => (
+                <button
                   key={product.id || product._id}
-                  className="group relative bg-white border border-slate-100 rounded-3xl p-3 shadow-sm hover:shadow-xl hover:border-blue-200 transition-all cursor-pointer flex flex-col active:scale-95"
                   onClick={() => addToCart(product)}
+                  className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all text-left group"
                 >
-                  <div className="relative aspect-square mb-3 overflow-hidden rounded-2xl bg-slate-50">
+                  <div className="aspect-square bg-slate-100 rounded-lg mb-3 overflow-hidden">
                     {product.image_url ? (
                       <img
-                        src={product.image_url || undefined}
+                        src={product.image_url}
                         alt={product.name}
-                        className="w-full h-full object-cover transition-transform group-hover:scale-110 duration-500"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-slate-300 group-hover:text-blue-300 transition-colors">
-                        <Grid size={48} strokeWidth={1} />
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Grid size={32} className="text-slate-300" />
                       </div>
                     )}
-                    <div className="absolute top-2 right-2">
-                      <div className="bg-white/90 backdrop-blur-md p-2 rounded-xl shadow-sm">
-                        <Plus size={18} className="text-blue-600" />
-                      </div>
-                    </div>
                   </div>
-                  <div className="flex-1 flex flex-col px-1">
-                    <h4 className="font-bold text-slate-900 text-sm sm:text-base mb-1 line-clamp-1 group-hover:text-blue-600 transition-colors">{product.name}</h4>
-                    {product.description && <p className="text-[10px] sm:text-xs text-slate-500 line-clamp-2 mb-2 min-h-[2.5em]">{product.description}</p>}
-                    <div className="mt-auto pt-2 flex justify-between items-center border-t border-slate-50">
-                      <span className="font-black text-blue-600 text-base">${product.price.toFixed(2)}</span>
-                    </div>
+                  <h4 className="font-medium text-slate-900 text-sm truncate">{product.name}</h4>
+                  <p className="text-lg font-bold text-slate-900 mt-1">${product.price.toFixed(2)}</p>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Right Side - Cart Panel */}
+      <div className="w-96 bg-white border-l border-slate-200 flex flex-col">
+        {/* Order Type Tabs */}
+        <div className="p-4 border-b border-slate-200">
+          <div className="flex gap-2">
+            {[
+              { type: 'dine-in' as const, icon: Utensils, label: 'Dine In' },
+              { type: 'takeaway' as const, icon: Package, label: 'Pickup' },
+              { type: 'delivery' as const, icon: Truck, label: 'Delivery' },
+            ].map(({ type, icon: Icon, label }) => (
+              <button
+                key={type}
+                onClick={() => setOrderType(type)}
+                className={cn(
+                  'flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg font-medium text-sm transition-all',
+                  orderType === type
+                    ? 'bg-slate-900 text-white'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                )}
+              >
+                <Icon size={18} />
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Table Selection (for Dine-in) */}
+        {orderType === 'dine-in' && (
+          <div className="p-4 border-b border-slate-200">
+            <button
+              onClick={() => setShowTableSelector(true)}
+              className="w-full flex items-center gap-3 p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-all"
+            >
+              <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
+                <Utensils size={20} className="text-slate-600" />
+              </div>
+              <div className="flex-1 text-left">
+                <p className="font-medium text-slate-900">
+                  {selectedTable ? `Table ${getTableDisplayName(selectedTable)}` : 'Select Table'}
+                </p>
+                <p className="text-sm text-slate-500">
+                  {selectedTable ? `${getTableSeats(selectedTable)} seats` : 'Choose a table'}
+                </p>
+              </div>
+              <ChevronRight size={18} className="text-slate-400" />
+            </button>
+          </div>
+        )}
+
+        {/* Customer */}
+        <div className="p-4 border-b border-slate-200">
+          <button
+            onClick={() => setShowCustomerModal(true)}
+            className="w-full flex items-center gap-3 p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-all"
+          >
+            <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
+              <User size={20} className="text-slate-600" />
+            </div>
+            <div className="flex-1 text-left">
+              <p className="font-medium text-slate-900">
+                {selectedCustomer ? selectedCustomer.full_name : 'Customer'}
+              </p>
+              <p className="text-sm text-slate-500">
+                {selectedCustomer ? selectedCustomer.phone : 'Add customer'}
+              </p>
+            </div>
+            <ChevronRight size={18} className="text-slate-400" />
+          </button>
+        </div>
+
+        {/* Cart Items */}
+        <div className="flex-1 overflow-y-auto p-4">
+          {cart.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-slate-400">
+              <ShoppingCart size={40} strokeWidth={1} />
+              <p className="mt-2 font-medium">Cart is empty</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {cart.map((item) => (
+                <div key={item.id || item._id} className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-slate-900 truncate">{item.name}</p>
+                    <p className="text-sm text-slate-500">${item.price.toFixed(2)}</p>
                   </div>
+                  <div className="flex items-center gap-2 bg-white rounded-lg px-2 py-1">
+                    <button
+                      onClick={() => updateQuantity(item.id || item._id!, -1)}
+                      className="w-6 h-6 flex items-center justify-center rounded hover:bg-slate-100 transition-colors"
+                    >
+                      <Minus size={12} className="text-slate-600" />
+                    </button>
+                    <span className="w-6 text-center text-sm font-medium">{item.quantity}</span>
+                    <button
+                      onClick={() => updateQuantity(item.id || item._id!, 1)}
+                      className="w-6 h-6 flex items-center justify-center rounded hover:bg-slate-100 transition-colors"
+                    >
+                      <Plus size={12} className="text-slate-600" />
+                    </button>
+                  </div>
+                  <p className="w-16 text-right font-semibold text-slate-900">
+                    ${(item.price * item.quantity).toFixed(2)}
+                  </p>
                 </div>
               ))}
             </div>
           )}
         </div>
-      </div>
 
-      {/* Desktop Order Panel */}
-      <aside className="hidden lg:flex w-96 shrink-0 flex-col bg-white border border-slate-100 rounded-[2.5rem] shadow-2xl shadow-slate-200/50 h-full overflow-hidden">
-        <div className="p-6 bg-slate-900 text-white flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-blue-600 rounded-2xl">
-              <ShoppingCart size={24} />
+        {/* Notes */}
+        {cart.length > 0 && (
+          <div className="p-4 border-t border-slate-200">
+            <textarea
+              placeholder="Notes..."
+              className="w-full px-3 py-2 bg-slate-50 border-0 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-slate-300"
+              rows={2}
+              value={orderNotes}
+              onChange={(e) => setOrderNotes(e.target.value)}
+            />
+          </div>
+        )}
+
+        {/* Totals & Action */}
+        <div className="p-4 border-t border-slate-200 bg-slate-50">
+          <div className="space-y-2 mb-4">
+            <div className="flex justify-between text-sm text-slate-600">
+              <span>Subtotal</span>
+              <span>${subtotal.toFixed(2)}</span>
             </div>
-            <div>
-              <h3 className="font-black text-xl leading-tight">Order Details</h3>
-              <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Active Transaction</p>
+            <div className="flex justify-between text-sm text-slate-600">
+              <span>Tax (10%)</span>
+              <span>${tax.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-xl font-bold text-slate-900 pt-2 border-t border-slate-200">
+              <span>Total</span>
+              <span>${total.toFixed(2)}</span>
             </div>
           </div>
+          <Button
+            className="w-full h-12 text-base font-semibold"
+            disabled={cart.length === 0 || saving}
+            onClick={handlePlaceOrder}
+          >
+            {saving ? 'Processing...' : orderId ? 'Update Order' : 'Place Order'}
+          </Button>
         </div>
-        {cartContent}
-      </aside>
-
-      {/* Mobile Sticky Footer */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 p-4 z-40 flex items-center gap-4 shadow-[0_-8px_30px_rgb(0,0,0,0.12)]">
-        <div className="flex-1">
-          <p className="text-[10px] text-slate-500 font-black uppercase tracking-wider">Total Amount</p>
-          <p className="text-2xl font-black text-blue-600">${total.toFixed(2)}</p>
-        </div>
-        <button
-          className="bg-blue-600 text-white px-8 h-14 rounded-2xl flex items-center gap-3 font-black shadow-lg shadow-blue-100 relative active:scale-95 transition-transform"
-          onClick={() => setIsCartDrawerOpen(true)}
-        >
-          <ShoppingCart size={20} />
-          Cart
-          {cart.length > 0 && (
-            <span className="absolute -top-2 -right-2 w-7 h-7 bg-red-500 text-white text-[10px] font-bold flex items-center justify-center rounded-full border-4 border-white">
-              {cart.reduce((acc, item) => acc + item.quantity, 0)}
-            </span>
-          )}
-        </button>
       </div>
 
-      {/* Mobile Cart Drawer */}
-      <Drawer
-        isOpen={isCartDrawerOpen}
-        onClose={() => setIsCartDrawerOpen(false)}
-        title="Current Order"
-      >
-        <div className="h-[calc(100vh-140px)]">
-          {cartContent}
-        </div>
-      </Drawer>
-
+      {/* Table Selector Modal */}
       <Modal
-        isOpen={isCustomerModalOpen}
-        onClose={() => setIsCustomerModalOpen(false)}
-        title="New Customer Registration"
-        footer={
-          <div className="flex gap-3 w-full">
-            <Button variant="outline" className="flex-1 rounded-xl" onClick={() => setIsCustomerModalOpen(false)}>Cancel</Button>
-            <Button className="flex-1 rounded-xl" onClick={async () => {
-              try {
-                await api.customers.create(newCustomer);
-                showNotification("Customer registered successfully!");
-                setIsCustomerModalOpen(false);
-                const custList = await api.customers.getAll();
-                setCustomers(Array.isArray(custList) ? custList : custList.data || []);
-              } catch (error: any) {
-                showNotification(error.message || "Failed to register customer", "error");
-              }
-            }}>Register Customer</Button>
-          </div>
-        }
+        isOpen={showTableSelector}
+        onClose={() => setShowTableSelector(false)}
+        title="Select Table"
+        size="2xl"
       >
-        <div className="space-y-5 py-2">
-          <Input
-            label="Full Name"
-            placeholder="Enter customer name"
-            value={newCustomer.full_name}
-            onChange={(e) => setNewCustomer({ ...newCustomer, full_name: e.target.value })}
-            className="rounded-xl"
-          />
-          <Input
-            label="Phone Number"
-            placeholder="e.g. +251..."
-            value={newCustomer.phone}
-            onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })}
-            className="rounded-xl"
-          />
-          <Input
-            label="Email Address (Optional)"
-            type="email"
-            placeholder="e.g. john@example.com"
-            value={newCustomer.email}
-            onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })}
-            className="rounded-xl"
-          />
+        <div className="grid grid-cols-5 gap-4 p-4">
+          {tables.map((table) => {
+            const isSelected = selectedTable?.id === table.id || selectedTable?._id === table._id;
+            return (
+              <button
+                key={table.id || table._id}
+                onClick={() => {
+                  setSelectedTable(table);
+                  setShowTableSelector(false);
+                }}
+                className={cn(
+                  'p-4 rounded-xl border-2 transition-all text-center',
+                  isSelected
+                    ? 'border-slate-900 bg-slate-50'
+                    : 'border-transparent bg-slate-50 hover:bg-slate-100'
+                )}
+              >
+                <div className={cn(
+                  'w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-2',
+                  table.status === 'available' ? 'bg-emerald-100 text-emerald-600' :
+                  table.status === 'occupied' ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-600'
+                )}>
+                  <Grid size={24} />
+                </div>
+                <p className="font-semibold text-slate-900">Table {getTableDisplayName(table)}</p>
+                <p className="text-sm text-slate-500">{getTableSeats(table)} seats</p>
+              </button>
+            );
+          })}
         </div>
       </Modal>
 
-      <style jsx global>{`
-        .no-scrollbar::-webkit-scrollbar {
-          display: none;
-        }
-        .no-scrollbar {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-      `}</style>
+      {/* Customer Selector Modal */}
+      <Modal
+        isOpen={showCustomerModal}
+        onClose={() => setShowCustomerModal(false)}
+        title="Select Customer"
+        size="lg"
+      >
+        <div className="p-4">
+          <input
+            type="text"
+            placeholder="Search customers..."
+            className="w-full px-4 py-2 bg-slate-50 border-0 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-slate-300"
+          />
+          <div className="space-y-2 max-h-64 overflow-y-auto">
+            {customers.map((customer) => (
+              <button
+                key={customer.id || customer._id}
+                onClick={() => {
+                  setSelectedCustomer(customer);
+                  setShowCustomerModal(false);
+                }}
+                className="w-full flex items-center gap-3 p-3 bg-slate-50 hover:bg-slate-100 rounded-xl transition-all"
+              >
+                <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center font-semibold text-slate-700">
+                  {(customer.full_name || 'U').charAt(0)}
+                </div>
+                <div className="text-left">
+                  <p className="font-medium text-slate-900">{customer.full_name}</p>
+                  <p className="text-sm text-slate-500">{customer.phone || 'No phone'}</p>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };
