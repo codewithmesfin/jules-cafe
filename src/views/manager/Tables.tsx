@@ -8,12 +8,14 @@ import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
 import { useAuth } from '@/context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
+import { usePermission } from '../../hooks/usePermission';
 import { cn } from '../../utils/cn';
 import type { Table, Business } from '../../types';
 
 const Tables: React.FC = () => {
   const { user } = useAuth();
   const { showNotification } = useNotification();
+  const { canCreate, canUpdate } = usePermission();
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
@@ -140,12 +142,14 @@ const Tables: React.FC = () => {
           <h1 className="text-2xl font-bold text-slate-900">Table Management</h1>
           <p className="text-slate-500">Manage your restaurant tables and QR codes</p>
         </div>
-        <Button
-          className="gap-2"
-          onClick={() => handleOpenModal()}
-        >
-          <Plus size={18} /> Add Table
-        </Button>
+        {canCreate('tables') && (
+          <Button
+            className="gap-2"
+            onClick={() => handleOpenModal()}
+          >
+            <Plus size={18} /> Add Table
+          </Button>
+        )}
       </div>
 
       {/* Search */}
@@ -171,9 +175,11 @@ const Tables: React.FC = () => {
         <div className="text-center py-16 bg-white rounded-2xl border border-slate-200">
           <Grid className="mx-auto h-12 w-12 text-slate-200 mb-4" />
           <p className="text-slate-500 font-medium">No tables found</p>
-          <Button variant="outline" className="mt-4" onClick={() => handleOpenModal()}>
-            Add your first table
-          </Button>
+          {canCreate('tables') && (
+            <Button variant="outline" className="mt-4" onClick={() => handleOpenModal()}>
+              Add your first table
+            </Button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
@@ -206,7 +212,9 @@ const Tables: React.FC = () => {
                     className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
                     title="Edit"
                   >
-                    <Edit size={16} />
+                    {canUpdate('tables') && (
+                     <Edit size={16} />
+                   )}
                   </button>
                 </div>
               </div>

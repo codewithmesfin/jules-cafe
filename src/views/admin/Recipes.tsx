@@ -8,11 +8,13 @@ import { Input } from '../../components/ui/Input';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { useNotification } from '../../context/NotificationContext';
+import { usePermission } from '../../hooks/usePermission';
 import { cn } from '../../utils/cn';
 import type { Recipe, Product, Ingredient } from '../../types';
 
 const Recipes: React.FC = () => {
   const { showNotification } = useNotification();
+  const { canCreate, canUpdate } = usePermission();
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
@@ -165,21 +167,25 @@ const Recipes: React.FC = () => {
               </div>
               <div className="flex items-center gap-3">
                 <Button variant="outline" onClick={() => setSelectedProduct(null)} className="rounded-xl font-bold">Cancel</Button>
-                <Button onClick={saveRecipe} className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-6 font-bold flex items-center gap-2 shadow-lg shadow-blue-200">
-                  <Save size={18} /> Save Recipe
-                </Button>
+                {canUpdate('recipes') && (
+                  <Button onClick={saveRecipe} className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-6 font-bold flex items-center gap-2 shadow-lg shadow-blue-200">
+                    <Save size={18} /> Save Recipe
+                  </Button>
+                )}
               </div>
             </div>
 
             <div className="flex-1 overflow-y-auto p-8 space-y-4 custom-scrollbar">
               <div className="flex items-center justify-between mb-4">
                 <h4 className="text-sm font-bold text-slate-400 uppercase tracking-widest">Ingredients List</h4>
-                <button
-                  onClick={addIngredientRow}
-                  className="flex items-center gap-1.5 text-blue-600 font-bold text-sm hover:underline"
-                >
-                  <Plus size={16} /> Add Ingredient
-                </button>
+                {canUpdate('recipes') && (
+                  <button
+                    onClick={addIngredientRow}
+                    className="flex items-center gap-1.5 text-blue-600 font-bold text-sm hover:underline"
+                  >
+                    <Plus size={16} /> Add Ingredient
+                  </button>
+                )}
               </div>
 
               {editingIngredients.length === 0 ? (
@@ -188,7 +194,9 @@ const Recipes: React.FC = () => {
                      <UtensilsCrossed size={32} />
                    </div>
                    <p className="text-slate-500 font-medium">No ingredients added yet.</p>
-                   <button onClick={addIngredientRow} className="text-blue-600 font-bold mt-2 hover:underline">Start adding ingredients</button>
+                   {canUpdate('recipes') && (
+                     <button onClick={addIngredientRow} className="text-blue-600 font-bold mt-2 hover:underline">Start adding ingredients</button>
+                   )}
                 </div>
               ) : (
                 <div className="space-y-3">

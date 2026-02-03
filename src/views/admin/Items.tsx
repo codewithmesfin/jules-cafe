@@ -10,10 +10,12 @@ import { Badge } from "../../components/ui/Badge";
 import { Modal } from "../../components/ui/Modal";
 import { ConfirmationDialog } from "../../components/ui/ConfirmationDialog";
 import { useNotification } from "../../context/NotificationContext";
+import { useAuth } from "@/context/AuthContext";
 import { cn } from "../../utils/cn";
 import type { Product, Category } from "../../types";
 
 const Products = () => {
+  const { user } = useAuth();
   const { showNotification } = useNotification();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -23,6 +25,8 @@ const Products = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+
+  const canManageProducts = user?.role === 'admin' || user?.role === 'manager';
 
   // Form state
   const [formData, setFormData] = useState({
@@ -156,12 +160,14 @@ const Products = () => {
             </select>
           </div>
         </div>
-        <Button
-          onClick={() => openModal()}
-          className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl px-6 py-3 font-bold flex items-center gap-2 shadow-lg shadow-blue-200 transition-all active:scale-95"
-        >
-          <Plus size={20} /> Add Product
-        </Button>
+        {canManageProducts && (
+          <Button
+            onClick={() => openModal()}
+            className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl px-6 py-3 font-bold flex items-center gap-2 shadow-lg shadow-blue-200 transition-all active:scale-95"
+          >
+            <Plus size={20} /> Add Product
+          </Button>
+        )}
       </div>
 
       <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden">
@@ -226,18 +232,22 @@ const Products = () => {
                 header: "Actions",
                 accessor: (p) => (
                   <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => openModal(p)}
-                      className="p-2 hover:bg-slate-50 rounded-xl text-slate-400 hover:text-blue-600 transition-colors"
-                    >
-                      <Edit size={18} />
-                    </button>
-                    <button
-                      onClick={() => setProductToDelete(p)}
-                      className="p-2 hover:bg-red-50 rounded-xl text-slate-400 hover:text-red-600 transition-colors"
-                    >
-                      <Trash2 size={18} />
-                    </button>
+                    {canManageProducts && (
+                      <>
+                        <button
+                          onClick={() => openModal(p)}
+                          className="p-2 hover:bg-slate-50 rounded-xl text-slate-400 hover:text-blue-600 transition-colors"
+                        >
+                          <Edit size={18} />
+                        </button>
+                        <button
+                          onClick={() => setProductToDelete(p)}
+                          className="p-2 hover:bg-red-50 rounded-xl text-slate-400 hover:text-red-600 transition-colors"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </>
+                    )}
                   </div>
                 ),
               },

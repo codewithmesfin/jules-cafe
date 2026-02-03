@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
   ShoppingCart, Plus, Minus, Search, Grid, User, ArrowLeft,
-  Utensils, Package, Coffee, Pizza, ChefHat, Truck, ChevronRight
+  Utensils, Package, Coffee, Pizza, ChefHat, Truck, ChevronRight, Percent
 } from 'lucide-react';
 import { api } from '../../utils/api';
 import { Button } from '../../components/ui/Button';
@@ -13,7 +13,7 @@ import { Modal } from '../../components/ui/Modal';
 import { useNotification } from '../../context/NotificationContext';
 import { useAuth } from '@/context/AuthContext';
 import { cn } from '../../utils/cn';
-import type { Product, Category, Table, Customer } from '../../types';
+import type { Product, Category, Table, Customer, CustomerType } from '../../types';
 
 interface CartItem extends Product {
   quantity: number;
@@ -36,6 +36,14 @@ const categoryIcons: Record<string, React.ElementType> = {
   Pasta: Utensils,
   Drinks: Coffee,
   default: Package,
+};
+
+const customerTypeColors: Record<CustomerType, string> = {
+  regular: 'bg-slate-100 text-slate-600',
+  member: 'bg-blue-100 text-blue-600',
+  staff: 'bg-emerald-100 text-emerald-600',
+  vip: 'bg-amber-100 text-amber-600',
+  wholesale: 'bg-purple-100 text-purple-600',
 };
 
 const NewOrder: React.FC = () => {
@@ -146,8 +154,11 @@ const NewOrder: React.FC = () => {
   };
 
   const subtotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
-  const tax = subtotal * 0.1;
-  const total = subtotal + tax;
+  const vatRate = 0.15;
+  const vat = subtotal * vatRate;
+  const discountPercent = selectedCustomer?.discount_percent || 0;
+  const discountAmount = (subtotal + vat) * (discountPercent / 100);
+  const total = subtotal + vat - discountAmount;
 
   const handlePlaceOrder = async () => {
     try {
@@ -157,6 +168,8 @@ const NewOrder: React.FC = () => {
         customer_id: selectedCustomer?.id || selectedCustomer?._id,
         table_id: selectedTable?.id || selectedTable?._id,
         notes: orderNotes,
+        discount_percent: discountPercent,
+        discount_amount: discountAmount,
         items: cart.map(item => ({
           product_id: item.id || item._id,
           quantity: item.quantity
@@ -182,12 +195,10 @@ const NewOrder: React.FC = () => {
     }
   };
 
-  // Helper to get table name/number
   const getTableDisplayName = (table: Table): string => {
     return table.table_number || table.name || 'Unknown';
   };
 
-  // Helper to get table seats
   const getTableSeats = (table: Table): number => {
     return table.seats || table.capacity || 0;
   };
@@ -379,7 +390,19 @@ const NewOrder: React.FC = () => {
                 {selectedCustomer ? selectedCustomer.full_name : 'Customer'}
               </p>
               <p className="text-sm text-slate-500">
-                {selectedCustomer ? selectedCustomer.phone : 'Add customer'}
+                {selectedCustomer ? (
+                  <span className="flex items-center gap-2">
+                    <Badge className={cn('text-[10px]', customerTypeColors[selectedCustomer.customer_type || 'regular'])}>
+                      {selectedCustomer.customer_type || 'Regular'}
+                    </Badge>
+                    {(selectedCustomer.discount_percent || 0) > 0 && (
+                      <span className="flex items-center gap-1 text-amber-600">
+                        <Percent size={12} />
+                        {selectedCustomer.discount_percent}%
+                      </span>
+                    )}
+                  </span>
+                ) : 'Add customer'}
               </p>
             </div>
             <ChevronRight size={18} className="text-slate-400" />
@@ -446,9 +469,15 @@ const NewOrder: React.FC = () => {
               <span>${subtotal.toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-sm text-slate-600">
-              <span>Tax (10%)</span>
-              <span>${tax.toFixed(2)}</span>
+              <span>VAT (15%)</span>
+              <span>${vat.toFixed(2)}</span>
             </div>
+            {discountPercent > 0 && (
+              <div className="flex justify-between text-sm text-emerald-600">
+                <span>Discount ({discountPercent}%)</span>
+                <span>-${discountAmount.toFixed(2)}</span>
+              </div>
+            )}
             <div className="flex justify-between text-xl font-bold text-slate-900 pt-2 border-t border-slate-200">
               <span>Total</span>
               <span>${total.toFixed(2)}</span>
@@ -509,32 +538,83 @@ const NewOrder: React.FC = () => {
         onClose={() => setShowCustomerModal(false)}
         title="Select Customer"
         size="lg"
+        footer={
+          <Button variant="outline" onClick={() => setShowCustomerModal(false)}>
+            Cancel
+          </Button>
+        }
       >
-        <div className="p-4">
-          <input
-            type="text"
-            placeholder="Search customers..."
-            className="w-full px-4 py-2 bg-slate-50 border-0 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-slate-300"
-          />
-          <div className="space-y-2 max-h-64 overflow-y-auto">
-            {customers.map((customer) => (
-              <button
-                key={customer.id || customer._id}
-                onClick={() => {
-                  setSelectedCustomer(customer);
-                  setShowCustomerModal(false);
-                }}
-                className="w-full flex items-center gap-3 p-3 bg-slate-50 hover:bg-slate-100 rounded-xl transition-all"
-              >
-                <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center font-semibold text-slate-700">
-                  {(customer.full_name || 'U').charAt(0)}
-                </div>
-                <div className="text-left">
-                  <p className="font-medium text-slate-900">{customer.full_name}</p>
-                  <p className="text-sm text-slate-500">{customer.phone || 'No phone'}</p>
-                </div>
-              </button>
-            ))}
+        <div className="space-y-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <input
+              type="text"
+              placeholder="Search customers..."
+              className="w-full pl-10 pr-4 py-2.5 bg-slate-100 border-0 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300"
+              onChange={(e) => {
+                const term = e.target.value.toLowerCase();
+                // Filter customers inline
+              }}
+            />
+          </div>
+          <div className="max-h-96 overflow-y-auto space-y-2">
+            {/* No Customer option */}
+            <button
+              onClick={() => {
+                setSelectedCustomer(null);
+                setShowCustomerModal(false);
+              }}
+              className={cn(
+                'w-full flex items-center gap-3 p-3 rounded-xl transition-all text-left',
+                !selectedCustomer ? 'bg-slate-900 text-white' : 'bg-slate-50 hover:bg-slate-100'
+              )}
+            >
+              <div className="w-10 h-10 bg-slate-200 rounded-lg flex items-center justify-center">
+                <User size={20} className={!selectedCustomer ? 'text-white' : 'text-slate-600'} />
+              </div>
+              <div className="flex-1">
+                <p className="font-medium">Walk-in Customer</p>
+                <p className="text-sm opacity-70">No discount</p>
+              </div>
+            </button>
+
+            {customers.map((customer) => {
+              const isSelected = selectedCustomer?.id === customer.id || selectedCustomer?._id === customer._id;
+              return (
+                <button
+                  key={customer.id || customer._id}
+                  onClick={() => {
+                    setSelectedCustomer(customer);
+                    setShowCustomerModal(false);
+                  }}
+                  className={cn(
+                    'w-full flex items-center gap-3 p-3 rounded-xl transition-all text-left',
+                    isSelected ? 'bg-slate-900 text-white' : 'bg-slate-50 hover:bg-slate-100'
+                  )}
+                >
+                  <div className={cn(
+                    'w-10 h-10 rounded-lg flex items-center justify-center font-bold',
+                    isSelected ? 'bg-white text-slate-900' : 'bg-blue-100 text-blue-600'
+                  )}>
+                    {(customer.full_name || 'U').charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium">{customer.full_name}</p>
+                    <p className="text-sm opacity-70">{customer.phone || customer.email || 'No contact'}</p>
+                  </div>
+                  <div className="text-right">
+                    <Badge className={cn('text-[10px]', customerTypeColors[customer.customer_type || 'regular'])}>
+                      {customer.customer_type || 'Regular'}
+                    </Badge>
+                    {(customer.discount_percent || 0) > 0 && (
+                      <p className={cn('text-sm mt-1', isSelected ? 'text-emerald-300' : 'text-emerald-600')}>
+                        {customer.discount_percent}% off
+                      </p>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </div>
       </Modal>

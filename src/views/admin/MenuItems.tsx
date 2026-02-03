@@ -9,10 +9,12 @@ import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
 import { useNotification } from '../../context/NotificationContext';
 import { useAuth } from '@/context/AuthContext';
+import { usePermission } from '../../hooks/usePermission';
 
 const MenuAvailability: React.FC = () => {
   const { currentBusiness } = useAuth();
   const { showNotification } = useNotification();
+  const { canCreate, canUpdate, canDelete } = usePermission();
   const [menuItems, setMenuItems] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -95,13 +97,15 @@ const MenuAvailability: React.FC = () => {
           <h1 className="text-2xl font-bold text-slate-900">Menu Management</h1>
           <p className="text-slate-500">Manage your public menu items</p>
         </div>
-        <Button onClick={() => { 
-          setEditingMenu(null); 
-          setFormData({ product_id: '', is_available: true, display_order: 0, available_from: '', available_to: '' }); 
-          setIsModalOpen(true); 
-        }}>
-          <Plus size={18} className="mr-2" /> Add Menu Item
-        </Button>
+        {canCreate('menu') && (
+          <Button onClick={() => {
+            setEditingMenu(null);
+            setFormData({ product_id: '', is_available: true, display_order: 0, available_from: '', available_to: '' });
+            setIsModalOpen(true);
+          }}>
+            <Plus size={18} className="mr-2" /> Add Menu Item
+          </Button>
+        )}
       </div>
 
       {/* Search */}
@@ -126,9 +130,11 @@ const MenuAvailability: React.FC = () => {
           <div className="text-center py-12">
             <Clock className="mx-auto h-10 w-10 text-slate-200 mb-3" />
             <p className="text-slate-500">No menu items found</p>
-            <Button variant="outline" className="mt-3" onClick={() => setIsModalOpen(true)}>
-              Add your first menu item
-            </Button>
+            {canCreate('menu') && (
+              <Button variant="outline" className="mt-3" onClick={() => setIsModalOpen(true)}>
+                Add your first menu item
+              </Button>
+            )}
           </div>
         ) : (
           <Table
@@ -173,28 +179,32 @@ const MenuAvailability: React.FC = () => {
                 header: 'Actions',
                 accessor: (m) => (
                   <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => {
-                        setEditingMenu(m);
-                        setFormData({ 
-                          product_id: m.product_id?.id || m.product_id, 
-                          is_available: m.is_available, 
-                          display_order: m.display_order, 
-                          available_from: m.available_from || '', 
-                          available_to: m.available_to || '' 
-                        });
-                        setIsModalOpen(true);
-                      }}
-                      className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-blue-600"
-                    >
-                      <Edit size={16} />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(m.id)}
-                      className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-red-600"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                    {canUpdate('menu') && (
+                      <button
+                        onClick={() => {
+                          setEditingMenu(m);
+                          setFormData({
+                            product_id: m.product_id?.id || m.product_id,
+                            is_available: m.is_available,
+                            display_order: m.display_order,
+                            available_from: m.available_from || '',
+                            available_to: m.available_to || ''
+                          });
+                          setIsModalOpen(true);
+                        }}
+                        className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-blue-600"
+                      >
+                        <Edit size={16} />
+                      </button>
+                    )}
+                    {canDelete('menu') && (
+                      <button
+                        onClick={() => handleDelete(m.id)}
+                        className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-red-600"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
                   </div>
                 )
               }

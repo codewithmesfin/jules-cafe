@@ -9,10 +9,12 @@ import { Table } from '../../components/ui/Table';
 import { Modal } from '../../components/ui/Modal';
 import { Badge } from '../../components/ui/Badge';
 import { useNotification } from '../../context/NotificationContext';
+import { usePermission } from '../../hooks/usePermission';
 import type { Ingredient } from '../../types';
 
 const IngredientsListView: React.FC = () => {
   const { showNotification } = useNotification();
+  const { canCreate, canUpdate, canDelete } = usePermission();
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -99,9 +101,11 @@ const IngredientsListView: React.FC = () => {
           <h1 className="text-2xl font-bold text-slate-900">Ingredients</h1>
           <p className="text-slate-500">Manage your ingredient catalog</p>
         </div>
-        <Button onClick={() => openModal()}>
-          <Plus size={18} className="mr-2" /> Add Ingredient
-        </Button>
+        {canCreate('ingredients') && (
+          <Button onClick={() => openModal()}>
+            <Plus size={18} className="mr-2" /> Add Ingredient
+          </Button>
+        )}
       </div>
 
       {/* Search */}
@@ -126,9 +130,11 @@ const IngredientsListView: React.FC = () => {
           <div className="text-center py-12">
             <Coffee className="mx-auto h-10 w-10 text-slate-200 mb-3" />
             <p className="text-slate-500">No ingredients found</p>
-            <Button variant="outline" className="mt-3" onClick={() => openModal()}>
-              Add your first ingredient
-            </Button>
+            {canCreate('ingredients') && (
+              <Button variant="outline" className="mt-3" onClick={() => openModal()}>
+                Add your first ingredient
+              </Button>
+            )}
           </div>
         ) : (
           <Table
@@ -156,18 +162,22 @@ const IngredientsListView: React.FC = () => {
                 header: 'Actions',
                 accessor: (ing) => (
                   <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => openModal(ing)}
-                      className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-blue-600 transition-colors"
-                    >
-                      <Edit size={16} />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(ing.id || ing._id!)}
-                      className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-red-600 transition-colors"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                    {canUpdate('ingredients') && (
+                      <button
+                        onClick={() => openModal(ing)}
+                        className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-blue-600 transition-colors"
+                      >
+                        <Edit size={16} />
+                      </button>
+                    )}
+                    {canDelete('ingredients') && (
+                      <button
+                        onClick={() => handleDelete(ing.id || ing._id!)}
+                        className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-red-600 transition-colors"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
                   </div>
                 )
               }

@@ -1,6 +1,8 @@
 export type UserRole = 'saas_admin' | 'admin' | 'manager' | 'cashier' | 'waiter';
 export type UserStatus = 'active' | 'inactive' | 'pending' | 'suspended' | 'onboarding';
 
+export type CustomerType = 'regular' | 'member' | 'staff' | 'vip' | 'wholesale';
+
 export interface User {
   id: string;
   _id?: string;
@@ -64,7 +66,6 @@ export interface Inventory {
   business_id: string;
   item_id: string | Ingredient | Product;
   item_type: 'ingredient' | 'product';
-  ingredient_id: string | Ingredient | Product;
   quantity_available: number;
   reorder_level: number;
   created_at: string;
@@ -114,11 +115,13 @@ export interface Order {
   _id?: string;
   business_id: string;
   creator_id: string;
-  customer_id?: string;
+  customer_id?: string | Customer;
   table_id?: string;
   order_type: 'dine-in' | 'takeaway' | 'delivery';
   order_status: 'pending' | 'accepted' | 'preparing' | 'ready' | 'delivered' | 'completed' | 'cancelled';
   total_amount: number;
+  discount_percent: number;
+  discount_amount: number;
   payment_status: 'unpaid' | 'partial' | 'paid';
   payment_method?: 'cash' | 'card' | 'mobile' | 'other';
   notes?: string;
@@ -138,11 +141,19 @@ export interface Customer {
   id: string;
   _id?: string;
   business_id: string;
+  creator_id?: string;
   full_name: string;
   email?: string;
   phone?: string;
+  address?: string;
+  customer_type: CustomerType;
+  discount_percent: number;
   loyalty_points: number;
   total_spent: number;
+  last_visit?: string;
+  notes?: string;
+  is_active: boolean;
+  created_at: string;
 }
 
 export interface Unit {

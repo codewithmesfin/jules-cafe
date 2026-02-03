@@ -83,7 +83,7 @@ export const login = catchAsync(async (req: Request, res: Response, next: NextFu
       message: 'Please complete your business setup to access the dashboard.',
     });
   }
-  const inactiveStatuses = ['inactive', 'pending', 'suspended'];
+  const inactiveStatuses = ['inactive', 'suspended'];
   if (inactiveStatuses.includes(user.status)) {
     return next(new AppError('Your account is not active. Please contact the Administrator.', 423));
   }
@@ -93,7 +93,20 @@ export const login = catchAsync(async (req: Request, res: Response, next: NextFu
   } else if (user.role === 'admin') {
     businesses = await Business.find({ owner_id: user._id }).select('name logo banner slug');
   } else {
-    businesses = await Business.find({ _id: { $in: user.assigned_businesses } }).select('name logo banner slug');
+    // For staff users, get businesses from assigned_businesses
+    const assignedBiz = user.assigned_businesses || [];
+    businesses = await Business.find({ _id: { $in: assignedBiz } }).select('name logo banner slug');
+    // If no businesses assigned but user has default_business_id, add it
+    if (businesses.length === 0 && user.default_business_id) {
+      const defaultBusiness = await Business.findById(user.default_business_id).select('name logo banner slug');
+      if (defaultBusiness) {
+        businesses = [defaultBusiness];
+        // Update user's assigned_businesses for future logins
+        await User.findByIdAndUpdate(user._id, { 
+          $addToSet: { assigned_businesses: user.default_business_id } 
+        });
+      }
+    }
   }
   res.json({
     jwt: generateToken(user._id.toString()),
@@ -120,7 +133,16 @@ export const getMe = catchAsync(async (req: AuthRequest, res: Response, next: Ne
   } else if (user.role === 'admin') {
     businesses = await Business.find({ owner_id: user._id }).select('name logo banner slug');
   } else {
-    businesses = await Business.find({ _id: { $in: user.assigned_businesses } }).select('name logo banner slug');
+    // For staff users, get businesses from assigned_businesses
+    const assignedBiz = user.assigned_businesses || [];
+    businesses = await Business.find({ _id: { $in: assignedBiz } }).select('name logo banner slug');
+    // If no businesses assigned but user has default_business_id, add it
+    if (businesses.length === 0 && user.default_business_id) {
+      const defaultBusiness = await Business.findById(user.default_business_id).select('name logo banner slug');
+      if (defaultBusiness) {
+        businesses = [defaultBusiness];
+      }
+    }
   }
   res.json({
     ...user.toObject(),

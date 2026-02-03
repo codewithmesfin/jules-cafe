@@ -151,25 +151,24 @@ export const addInventoryStock = async (
   userId: string,
   note?: string
 ) => {
-  // Find or create inventory record
-  let inventory = await Inventory.findOne({
-    business_id: businessId,
-    item_id: itemId,
-    item_type: itemType
-  });
-
-  if (inventory) {
-    inventory.quantity_available += quantity;
-    await inventory.save();
-  } else {
-    inventory = await Inventory.create({
-      business_id: businessId,
-      item_id: itemId,
-      item_type: itemType,
-      quantity_available: quantity,
-      reorder_level: 0
-    });
-  }
+  // Use atomic upsert to prevent race conditions
+  const inventory = await Inventory.findOneAndUpdate(
+    { business_id: businessId, item_id: itemId, item_type: itemType },
+    { 
+      $inc: { quantity_available: quantity },
+      $setOnInsert: { 
+        business_id: businessId,
+        item_id: itemId,
+        item_type: itemType,
+        quantity_available: quantity,
+        reorder_level: 0
+      }
+    },
+    { 
+      upsert: true,
+      new: true
+    }
+  );
 
   // Record transaction
   await InventoryTransaction.create({

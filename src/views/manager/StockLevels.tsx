@@ -10,6 +10,7 @@ import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
 import { Card } from '../../components/ui/Card';
 import { useNotification } from '../../context/NotificationContext';
+import { usePermission } from '../../hooks/usePermission';
 import { cn } from '../../utils/cn';
 import type { Inventory, Ingredient, Product } from '../../types';
 
@@ -17,6 +18,7 @@ type InventoryType = 'ingredient' | 'product';
 
 const StockLevelsView: React.FC = () => {
   const { showNotification } = useNotification();
+  const { canCreate, canUpdate } = usePermission();
   const [inventory, setInventory] = useState<Inventory[]>([]);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -25,9 +27,9 @@ const StockLevelsView: React.FC = () => {
   const [activeTab, setActiveTab] = useState<InventoryType>('ingredient');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedInventory, setSelectedInventory] = useState<Inventory | null>(null);
+  const [selectedItemId, setSelectedItemId] = useState<string>('');
 
   const [invForm, setInvForm] = useState({
-    item_id: '',
     quantity_available: 0,
     reorder_level: 0
   });
@@ -83,29 +85,38 @@ const StockLevelsView: React.FC = () => {
     return 'pcs';
   };
 
+  const findInventoryForItem = (itemId: string, type: InventoryType): Inventory | undefined => {
+    return inventory.find(inv => {
+      const invItemId = getItemId(inv);
+      return invItemId === itemId && inv.item_type === type;
+    });
+  };
+
   const handleSaveInventory = async () => {
-    if (!invForm.item_id) {
+    if (!selectedItemId && !selectedInventory) {
       showNotification('Please select an item', 'error');
       return;
     }
 
     try {
-      const data = {
-        item_id: invForm.item_id,
-        item_type: activeTab,
-        quantity_available: invForm.quantity_available,
-        reorder_level: invForm.reorder_level
-      };
-
+      const itemId = selectedInventory ? getItemId(selectedInventory) : selectedItemId;
+      
       if (selectedInventory) {
+        // Update existing inventory
         await api.inventory.update((selectedInventory.id || (selectedInventory as any)._id)!, {
           quantity_available: invForm.quantity_available,
           reorder_level: invForm.reorder_level
         });
         showNotification('Stock updated successfully');
       } else {
-        await api.inventory.create(data);
-        showNotification('Stock entry added successfully');
+        // Use addStock which will create or update inventory
+        await api.inventory.addStock({
+          item_id: itemId,
+          item_type: activeTab,
+          quantity: invForm.quantity_available,
+          note: `Stock adjustment`
+        });
+        showNotification('Stock added successfully');
       }
       setIsModalOpen(false);
       fetchData();
@@ -114,19 +125,54 @@ const StockLevelsView: React.FC = () => {
     }
   };
 
-  const openInvModal = (inv: Inventory | null = null) => {
-    setSelectedInventory(inv);
+  const openInvModal = (inv: Inventory | null = null, itemId: string = '') => {
     if (inv) {
-      const itemId = getItemId(inv);
+      // Edit existing inventory
+      setSelectedInventory(inv);
+      const invItemId = getItemId(inv);
+      setSelectedItemId(invItemId);
       setInvForm({
-        item_id: itemId,
         quantity_available: inv.quantity_available,
         reorder_level: inv.reorder_level
       });
     } else {
-      setInvForm({ item_id: '', quantity_available: 0, reorder_level: 0 });
+      // Add new stock for a specific item
+      setSelectedInventory(null);
+      setSelectedItemId(itemId);
+      
+      // Check if this item already has inventory
+      const existingInv = findInventoryForItem(itemId, activeTab);
+      if (existingInv) {
+        setInvForm({
+          quantity_available: existingInv.quantity_available,
+          reorder_level: existingInv.reorder_level
+        });
+      } else {
+        setInvForm({ quantity_available: 0, reorder_level: 0 });
+      }
     }
     setIsModalOpen(true);
+  };
+
+  // Get items that don't have inventory yet
+  const getAvailableItems = (): (Ingredient | Product)[] => {
+    if (activeTab === 'ingredient') {
+      return ingredients.filter(ing => {
+        const hasInventory = inventory.some(inv => {
+          const invItemId = getItemId(inv);
+          return invItemId === (ing.id || ing._id) && inv.item_type === 'ingredient';
+        });
+        return !hasInventory;
+      });
+    } else {
+      return products.filter(prod => {
+        const hasInventory = inventory.some(inv => {
+          const invItemId = getItemId(inv);
+          return invItemId === (prod.id || prod._id) && inv.item_type === 'product';
+        });
+        return !hasInventory;
+      });
+    }
   };
 
   const filteredInventory = inventory.filter(item => {
@@ -138,6 +184,7 @@ const StockLevelsView: React.FC = () => {
 
   const lowStockCount = filteredInventory.filter(i => (i.quantity_available || 0) <= (i.reorder_level || 0)).length;
   const totalStockValue = filteredInventory.reduce((sum, i) => sum + (i.quantity_available || 0), 0);
+  const availableItems = getAvailableItems();
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -147,9 +194,17 @@ const StockLevelsView: React.FC = () => {
           <h1 className="text-2xl font-bold text-slate-900">Stock Levels</h1>
           <p className="text-slate-500">Monitor inventory quantities and reorder points</p>
         </div>
-        <Button onClick={() => openInvModal()}>
-          <Plus size={18} className="mr-2" /> Add Stock Entry
-        </Button>
+        {canCreate('inventory') && (
+          <Button onClick={() => {
+            if (availableItems.length > 0) {
+              openInvModal(null, availableItems[0].id || availableItems[0]._id);
+            } else {
+              showNotification('All items already have inventory', 'info');
+            }
+          }}>
+            <Plus size={18} className="mr-2" /> Add Stock Entry
+          </Button>
+        )}
       </div>
 
       {/* Tab Switcher */}
@@ -233,9 +288,11 @@ const StockLevelsView: React.FC = () => {
           <div className="text-center py-12">
             <Package className="mx-auto h-10 w-10 text-slate-200 mb-3" />
             <p className="text-slate-500">No stock entries found</p>
-            <Button variant="outline" className="mt-3" onClick={() => openInvModal()}>
-              Add first stock entry
-            </Button>
+            {availableItems.length > 0 && canCreate('inventory') && (
+              <Button variant="outline" className="mt-3" onClick={() => openInvModal(null, availableItems[0].id || availableItems[0]._id)}>
+                Add first stock entry
+              </Button>
+            )}
           </div>
         ) : (
           <Table
@@ -279,12 +336,14 @@ const StockLevelsView: React.FC = () => {
               {
                 header: 'Actions',
                 accessor: (item) => (
-                  <button
-                    onClick={() => openInvModal(item)}
-                    className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-blue-600 transition-colors"
-                  >
-                    <Edit size={16} />
-                  </button>
+                  canUpdate('inventory') && (
+                    <button
+                      onClick={() => openInvModal(item)}
+                      className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-blue-600 transition-colors"
+                    >
+                      <Edit size={16} />
+                    </button>
+                  )
                 )
               }
             ]}
@@ -309,6 +368,7 @@ const StockLevelsView: React.FC = () => {
         }
       >
         <div className="space-y-4 py-2">
+          {/* Item Selection - Only show when creating new */}
           {!selectedInventory && (
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -316,24 +376,51 @@ const StockLevelsView: React.FC = () => {
               </label>
               <select
                 className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={invForm.item_id}
-                onChange={(e) => setInvForm({ ...invForm, item_id: e.target.value })}
+                value={selectedItemId}
+                onChange={(e) => {
+                  setSelectedItemId(e.target.value);
+                  // Check if this item already has inventory
+                  const existingInv = findInventoryForItem(e.target.value, activeTab);
+                  if (existingInv) {
+                    setInvForm({
+                      quantity_available: existingInv.quantity_available,
+                      reorder_level: existingInv.reorder_level
+                    });
+                    setSelectedInventory(existingInv);
+                  } else {
+                    setInvForm({ quantity_available: 0, reorder_level: 0 });
+                    setSelectedInventory(null);
+                  }
+                }}
               >
                 <option value="">Choose...</option>
                 {activeTab === 'ingredient' ? (
-                  ingredients.map(i => (
-                    <option key={i.id || i._id} value={i.id || i._id}>
-                      {i.name} ({i.unit})
-                    </option>
-                  ))
+                  ingredients.map(i => {
+                    const id = i.id || i._id;
+                    if (!id) return null;
+                    const existing = findInventoryForItem(id, 'ingredient');
+                    return (
+                      <option key={String(id)} value={String(id)} disabled={!!existing}>
+                        {i.name} ({i.unit}) {existing ? '(Has Stock)' : ''}
+                      </option>
+                    );
+                  }).filter(Boolean)
                 ) : (
-                  products.map(p => (
-                    <option key={p.id || p._id} value={p.id || p._id}>
-                      {p.name}
-                    </option>
-                  ))
+                  products.map(p => {
+                    const id = p.id || p._id;
+                    if (!id) return null;
+                    const existing = findInventoryForItem(id, 'product');
+                    return (
+                      <option key={String(id)} value={String(id)} disabled={!!existing}>
+                        {p.name} {existing ? '(Has Stock)' : ''}
+                      </option>
+                    );
+                  }).filter(Boolean)
                 )}
               </select>
+              <p className="text-xs text-slate-500 mt-1">
+                {selectedInventory ? 'Editing existing stock entry' : 'Adding new stock entry'}
+              </p>
             </div>
           )}
           <Input

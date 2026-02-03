@@ -27,25 +27,27 @@ export const createInventory = catchAsync(async (req: AuthRequest, res: Response
   const { item_id, item_type, quantity_available, reorder_level } = req.body;
   const businessId = req.user.default_business_id;
 
-  // Check if inventory already exists for this item
-  const existing = await Inventory.findOne({
-    business_id: businessId,
-    item_id: item_id,
-    item_type: item_type
-  });
-
-  if (existing) {
-    return next(new AppError('Inventory entry already exists for this item. Please update it instead.', 400));
-  }
-
-  const inventory = await Inventory.create({
-    creator_id: req.user._id,
-    business_id: businessId,
-    item_id: item_id,
-    item_type: item_type,
-    quantity_available: quantity_available || 0,
-    reorder_level: reorder_level || 0
-  });
+  // Use atomic upsert to prevent race conditions
+  const inventory = await Inventory.findOneAndUpdate(
+    { business_id: businessId, item_id: item_id, item_type: item_type },
+    { 
+      $set: { 
+        quantity_available: quantity_available || 0,
+        reorder_level: reorder_level || 0
+      },
+      $setOnInsert: { 
+        creator_id: req.user._id,
+        business_id: businessId,
+        item_id: item_id,
+        item_type: item_type
+      }
+    },
+    { 
+      upsert: true,
+      new: true,
+      runValidators: true
+    }
+  );
 
   res.status(201).json({
     success: true,
@@ -56,6 +58,50 @@ export const createInventory = catchAsync(async (req: AuthRequest, res: Response
 export const updateInventory = factory.updateOne(Inventory);
 
 export const deleteInventory = factory.deleteOne(Inventory);
+
+export const addStock = catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
+  const { item_id, item_type, quantity, note } = req.body;
+  const businessId = req.user.default_business_id;
+
+  // Use atomic upsert to prevent race conditions
+  const inventory = await Inventory.findOneAndUpdate(
+    { business_id: businessId, item_id: item_id, item_type: item_type },
+    { 
+      $inc: { quantity_available: quantity },
+      $setOnInsert: { 
+        creator_id: req.user._id,
+        business_id: businessId,
+        item_id: item_id,
+        item_type: item_type,
+        reorder_level: 0
+      }
+    },
+    { 
+      upsert: true,
+      new: true
+    }
+  );
+
+  // Record transaction
+  await InventoryTransaction.create({
+    business_id: businessId,
+    item_id: item_id,
+    item_type: item_type,
+    change_quantity: quantity,
+    reference_type: 'purchase',
+    creator_id: req.user._id,
+    note
+  });
+
+  res.status(200).json({
+    success: true,
+    data: {
+      ...inventory.toObject(),
+      id: inventory._id.toString(),
+      transaction: { quantity, note }
+    }
+  });
+});
 
 export const getInventoryTransactions = catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
   const businessId = req.user.default_business_id;
