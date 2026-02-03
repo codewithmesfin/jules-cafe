@@ -9,7 +9,7 @@ import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
 import { ConfirmationDialog } from '../../components/ui/ConfirmationDialog';
 import { useNotification } from '../../context/NotificationContext';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '@/context/AuthContext';
 import type { MenuItem, MenuCategory, Recipe, InventoryItem, Branch, Item } from '../../types';
 
 const MenuItems: React.FC = () => {

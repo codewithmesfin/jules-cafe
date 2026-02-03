@@ -7,7 +7,7 @@ import { Input } from '../../components/ui/Input';
 import { Table } from '../../components/ui/Table';
 import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '@/context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { getSocket, joinManagerRoom } from '../../utils/socket';
 import type { Reservation, ReservationStatus, User as UserType } from '../../types';

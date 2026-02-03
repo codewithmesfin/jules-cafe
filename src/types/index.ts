@@ -9,7 +9,8 @@ export interface User {
   phone?: string;
   role: UserRole;
   status: UserStatus;
-  default_business_id?: string;
+  default_business_id?: string | Business;
+  businesses?: Business[];
   is_active: boolean;
   created_at: string;
 }
@@ -18,12 +19,13 @@ export interface Business {
   id: string;
   _id?: string;
   name: string;
+  slug?: string;
   legal_name?: string;
   description?: string;
   address?: string;
   logo?: string;
   banner?: string;
-  owner_id: string;
+  owner_id?: string;
   created_at: string;
 }
 

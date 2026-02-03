@@ -120,6 +120,14 @@ export const login = catchAsync(async (req: Request, res: Response, next: NextFu
     return next(new AppError('Your account is not active. Please contact the Administrator.', 423));
   }
 
+  // Get all businesses user has access to
+  let businesses: any[] = [];
+  if (user.role === 'saas_admin') {
+    businesses = await Business.find().select('name logo banner');
+  } else if (user.role === 'admin') {
+    businesses = await Business.find({ owner_id: user._id }).select('name logo banner');
+  }
+
   res.json({
     jwt: generateToken(user._id.toString()),
     user: {
@@ -130,6 +138,7 @@ export const login = catchAsync(async (req: Request, res: Response, next: NextFu
       default_business_id: user.default_business_id,
       full_name: user.full_name,
     },
+    businesses,
   });
 });
 
@@ -141,7 +150,22 @@ export const getMe = catchAsync(async (req: AuthRequest, res: Response, next: Ne
     .select('-password')
     .populate('default_business_id');
 
-  res.json(user);
+  if (!user) {
+    return next(new AppError('User not found', 404));
+  }
+
+  // Get all businesses user has access to
+  let businesses: any[] = [];
+  if (user.role === 'saas_admin') {
+    businesses = await Business.find().select('name logo banner');
+  } else if (user.role === 'admin') {
+    businesses = await Business.find({ owner_id: user._id }).select('name logo banner');
+  }
+
+  res.json({
+    ...user.toObject(),
+    businesses
+  });
 });
 
 /**

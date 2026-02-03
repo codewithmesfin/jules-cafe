@@ -2,6 +2,9 @@ import express from 'express';
 import {
   setupBusiness,
   getMyBusiness,
+  getMyBusinesses,
+  switchBusiness,
+  addBusiness,
   getAllBusinesses,
   getBusiness,
   updateBusiness,
@@ -15,8 +18,14 @@ router.use(protect);
 
 router.post('/setup', setupBusiness);
 router.get('/me', getMyBusiness);
+router.get('/my-businesses', getMyBusinesses);
+router.post('/switch', switchBusiness);
 
 // Admin only routes
+router.use(restrictTo('saas_admin', 'admin'));
+router.post('/', addBusiness);
+
+// SaaS Admin only routes
 router.use(restrictTo('saas_admin'));
 router.route('/')
   .get(getAllBusinesses);
