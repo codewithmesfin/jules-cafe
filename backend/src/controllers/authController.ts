@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import User from '../models/User';
-import Company from '../models/Company';
+import Business from '../models/Business';
 import { sendEmail } from '../utils/mailer';
 import catchAsync from '../utils/catchAsync';
 import AppError from '../utils/appError';
@@ -19,11 +19,11 @@ const generateToken = (id: string) => {
 };
 
 /**
- * Register/Signup - Creates a new admin user for a new tenant
- * The user is created in 'onboarding' status and must complete company setup
+ * Register/Signup - Creates a new admin user (Business Owner)
+ * The user is created in 'onboarding' status and must complete business setup
  */
-export const register = catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
-  const { email, password, full_name, phone, role, company_id } = req.body;
+export const register = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+  const { email, password, full_name, phone } = req.body;
 
   // Basic validation
   if (!email || !password || !full_name) {
@@ -39,9 +39,6 @@ export const register = catchAsync(async (req: AuthRequest, res: Response, next:
     return next(new AppError('Password must be at least 6 characters long', 400));
   }
 
-  console.log('Signup request body:', req.body);
-  console.log('Role received:', role);
-
   // Check if user already exists
   const userExists = await User.findOne({ email });
   if (userExists) {
@@ -52,19 +49,14 @@ export const register = catchAsync(async (req: AuthRequest, res: Response, next:
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(password, salt);
 
-  // Determine user role and status
-  const userRole = role === 'admin' ? 'admin' : 'customer';
-  const userStatus = role === 'admin' ? 'onboarding' : 'active';
-
-  // Create user
+  // Create user as an admin in onboarding status
   const user = await User.create({
     email,
     password: hashedPassword,
-    role: userRole,
-    status: userStatus,
+    role: 'admin',
+    status: 'onboarding',
     full_name,
     phone,
-    company_id: company_id || undefined,
     passwordResetRequired: false,
   });
 
@@ -79,14 +71,10 @@ export const register = catchAsync(async (req: AuthRequest, res: Response, next:
       email: user.email,
       role: user.role,
       status: user.status,
-      company_id: user.company_id,
       full_name: user.full_name,
       phone: user.phone,
-      passwordResetRequired: user.passwordResetRequired,
     },
-    message: userRole === 'admin' 
-      ? 'Account created successfully. Please complete your company setup.'
-      : 'Account created successfully!',
+    message: 'Account created successfully. Please complete your business setup.',
   });
 });
 
@@ -102,7 +90,6 @@ export const login = catchAsync(async (req: Request, res: Response, next: NextFu
     return next(new AppError('Invalid email or password', 401));
   }
 
-  // Check if user has a password (some users might be SSO users without password)
   if (!user.password) {
     return next(new AppError('Invalid email or password', 401));
   }
@@ -111,7 +98,7 @@ export const login = catchAsync(async (req: Request, res: Response, next: NextFu
     return next(new AppError('Invalid email or password', 401));
   }
 
-  // Check account status and provide appropriate messages
+  // Check account status
   if (user.status === 'onboarding') {
     return res.json({
       jwt: generateToken(user._id.toString()),
@@ -120,20 +107,25 @@ export const login = catchAsync(async (req: Request, res: Response, next: NextFu
         email: user.email,
         role: user.role,
         status: user.status,
-        branch_id: user.branch_id,
-        company_id: user.company_id,
+        default_business_id: user.default_business_id,
         full_name: user.full_name,
-        phone: user.phone,
-        passwordResetRequired: user.passwordResetRequired,
       },
       requiresOnboarding: true,
-      message: 'Please complete your company setup to access the dashboard.',
+      message: 'Please complete your business setup to access the dashboard.',
     });
   }
 
   const inactiveStatuses = ['inactive', 'pending', 'suspended'];
-  if (user.role !== 'customer' && inactiveStatuses.includes(user.status)) {
+  if (inactiveStatuses.includes(user.status)) {
     return next(new AppError('Your account is not active. Please contact the Administrator.', 423));
+  }
+
+  // Get all businesses user has access to
+  let businesses: any[] = [];
+  if (user.role === 'saas_admin') {
+    businesses = await Business.find().select('name logo banner');
+  } else if (user.role === 'admin') {
+    businesses = await Business.find({ owner_id: user._id }).select('name logo banner');
   }
 
   res.json({
@@ -143,12 +135,10 @@ export const login = catchAsync(async (req: Request, res: Response, next: NextFu
       email: user.email,
       role: user.role,
       status: user.status,
-      branch_id: user.branch_id,
-      company_id: user.company_id,
+      default_business_id: user.default_business_id,
       full_name: user.full_name,
-      phone: user.phone,
-      passwordResetRequired: user.passwordResetRequired,
     },
+    businesses,
   });
 });
 
@@ -158,14 +148,28 @@ export const login = catchAsync(async (req: Request, res: Response, next: NextFu
 export const getMe = catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
   const user = await User.findById(req.user._id)
     .select('-password')
-    .populate('company_id', 'name logo settings setup_completed')
-    .populate('branch_id', 'branch_name location_address');
+    .populate('default_business_id');
 
-  res.json(user);
+  if (!user) {
+    return next(new AppError('User not found', 404));
+  }
+
+  // Get all businesses user has access to
+  let businesses: any[] = [];
+  if (user.role === 'saas_admin') {
+    businesses = await Business.find().select('name logo banner');
+  } else if (user.role === 'admin') {
+    businesses = await Business.find({ owner_id: user._id }).select('name logo banner');
+  }
+
+  res.json({
+    ...user.toObject(),
+    businesses
+  });
 });
 
 /**
- * Forgot Password - Send password reset email
+ * Forgot Password
  */
 export const forgotPassword = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
   const user = await User.findOne({ email: req.body.email });
@@ -174,21 +178,14 @@ export const forgotPassword = catchAsync(async (req: Request, res: Response, nex
     return next(new AppError('There is no user with that email address.', 404));
   }
 
-  // Generate random reset token
   const resetToken = crypto.randomBytes(20).toString('hex');
-
-  // Hash token and set to field
   user.passwordResetToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-
-  // Set expire (10 mins)
   user.passwordResetExpires = new Date(Date.now() + 10 * 60 * 1000);
 
   await user.save({ validateBeforeSave: false });
 
-  // Send email
   const resetUrl = `${req.get('origin')}/reset-password/${resetToken}`;
-
-  const message = `Forgot your password? Submit a PATCH request with your new password and passwordConfirm to: ${resetUrl}.\nIf you didn't forget your password, please ignore this email!`;
+  const message = `Forgot your password? Reset it here: ${resetUrl}.\nIf you didn't forget your password, please ignore this email!`;
 
   try {
     await sendEmail({
@@ -202,13 +199,12 @@ export const forgotPassword = catchAsync(async (req: Request, res: Response, nex
     user.passwordResetToken = undefined;
     user.passwordResetExpires = undefined;
     await user.save({ validateBeforeSave: false });
-
     return next(new AppError('There was an error sending the email. Try again later!', 500));
   }
 });
 
 /**
- * Reset Password - Set new password using reset token
+ * Reset Password
  */
 export const resetPassword = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
   const token = req.params.token as string;
@@ -230,7 +226,6 @@ export const resetPassword = catchAsync(async (req: Request, res: Response, next
   user.passwordResetRequired = false;
   await user.save();
 
-  // Log the user in, send JWT
   res.status(200).json({
     success: true,
     jwt: generateToken(user._id.toString()),
@@ -244,7 +239,7 @@ export const resetPassword = catchAsync(async (req: Request, res: Response, next
 });
 
 /**
- * Update Profile - Update current user's profile
+ * Update Profile
  */
 export const updateProfile = catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
   const { full_name, phone } = req.body;
@@ -262,7 +257,7 @@ export const updateProfile = catchAsync(async (req: AuthRequest, res: Response, 
 });
 
 /**
- * Change Password - Change user's password
+ * Change Password
  */
 export const changePassword = catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
   const { currentPassword, newPassword } = req.body;

@@ -7,7 +7,7 @@ import { Table } from '../../components/ui/Table';
 import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
 import type { Branch } from '../../types';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '@/context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { ConfirmationDialog } from '../../components/ui/ConfirmationDialog';
 

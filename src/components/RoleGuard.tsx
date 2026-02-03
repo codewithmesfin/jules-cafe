@@ -2,7 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '@/context/AuthContext';
 import type { UserRole } from '../types';
 
 interface RoleGuardProps {
@@ -45,12 +45,10 @@ export const RoleGuard: React.FC<RoleGuardProps> = ({
     }
 
     // Check if account is inactive/suspended
-    if (user && user.role !== 'customer') {
-      const inactiveStatuses = ['inactive', 'pending', 'suspended'];
-      if (inactiveStatuses.includes(user.status)) {
-        router.replace('/inactive');
-        return;
-      }
+    const inactiveStatuses = ['inactive', 'pending', 'suspended'];
+    if (user && inactiveStatuses.includes(user.status)) {
+      router.replace('/inactive');
+      return;
     }
   }, [isAuthenticated, user, allowedRoles, router, pathname, loading, requireOnboardingComplete]);
 
@@ -105,8 +103,8 @@ export const OnboardingGuard: React.FC<{ children: React.ReactNode }> = ({ child
 };
 
 /**
- * TenantGuard - Ensures user has an active company
- * Used to protect tenant-scoped routes
+ * TenantGuard - Ensures user has an active business
+ * Used to protect business-scoped routes
  */
 export const TenantGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, isAuthenticated, loading } = useAuth();
@@ -116,8 +114,8 @@ export const TenantGuard: React.FC<{ children: React.ReactNode }> = ({ children 
     if (loading) return;
     if (!isAuthenticated) return;
 
-    // Check if user has a company_id
-    if (!user?.company_id && user?.role === 'admin') {
+    // Check if user has a default_business_id
+    if (!user?.default_business_id && user?.role === 'admin') {
       router.replace('/company-setup');
     }
   }, [isAuthenticated, user, router, loading]);

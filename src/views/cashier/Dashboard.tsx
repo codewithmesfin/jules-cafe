@@ -5,7 +5,7 @@ import { ShoppingBag, Clock, CheckCircle, UserPlus, List, TrendingUp, DollarSign
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { api } from '../../utils/api';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { cn } from '../../utils/cn';
 import type { Order } from '../../types';

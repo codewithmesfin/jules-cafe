@@ -1,28 +1,22 @@
-import { Request, Response, NextFunction } from 'express';
+import { Response } from 'express';
 import Order from '../models/Order';
-import StockEntry from '../models/StockEntry';
-import Branch from '../models/Branch';
-import MenuItem from '../models/MenuItem';
+import OrderItem from '../models/OrderItem';
+import InventoryTransaction from '../models/InventoryTransaction';
 import catchAsync from '../utils/catchAsync';
 import { AuthRequest } from '../middleware/auth';
 import mongoose from 'mongoose';
 
+/**
+ * Get Sales Analytics
+ */
 export const getSalesAnalytics = catchAsync(async (req: AuthRequest, res: Response) => {
-  const { start_date, end_date, branch_id, interval = 'daily' } = req.query;
+  const { start_date, end_date, interval = 'daily' } = req.query;
+  const businessId = req.user.default_business_id;
 
-  const query: any = { status: 'completed' };
-  if (branch_id) query.branch_id = new mongoose.Types.ObjectId(branch_id as string);
-
-  // Tenant isolation
-  if (req.user && req.user.role !== 'customer') {
-    if (req.user.company_id) {
-      query.company_id = req.user.company_id;
-    }
-  }
-
-  if (req.user?.role === 'manager') {
-    query.branch_id = req.user.branch_id;
-  }
+  const query: any = {
+    business_id: businessId,
+    order_status: 'completed'
+  };
 
   if (start_date || end_date) {
     query.created_at = {};
@@ -40,9 +34,9 @@ export const getSalesAnalytics = catchAsync(async (req: AuthRequest, res: Respon
     {
       $group: {
         _id: { $dateToString: { format, date: "$created_at" } },
-        total_revenue: { $sum: "$total_amount" },
-        order_count: { $sum: 1 },
-        avg_order_value: { $avg: "$total_amount" }
+        revenue: { $sum: "$total_amount" },
+        count: { $sum: 1 },
+        avg_value: { $avg: "$total_amount" }
       }
     },
     { $sort: { _id: 1 } }
@@ -51,60 +45,16 @@ export const getSalesAnalytics = catchAsync(async (req: AuthRequest, res: Respon
   res.json(salesData);
 });
 
-export const getStockAnalytics = catchAsync(async (req: AuthRequest, res: Response) => {
-  const { start_date, end_date, branch_id } = req.query;
-
-  const query: any = {};
-  if (branch_id) query.branch_id = new mongoose.Types.ObjectId(branch_id as string);
-
-  // Tenant isolation
-  if (req.user && req.user.role !== 'customer') {
-    if (req.user.company_id) {
-      query.company_id = req.user.company_id;
-    }
-  }
-
-  if (req.user?.role === 'manager') {
-    query.branch_id = req.user.branch_id;
-  }
-
-  if (start_date || end_date) {
-    query.created_at = {};
-    if (start_date) query.created_at.$gte = new Date(start_date as string);
-    if (end_date) query.created_at.$lte = new Date(end_date as string);
-  }
-
-  const stockData = await StockEntry.aggregate([
-    { $match: query },
-    {
-      $group: {
-        _id: "$entry_type",
-        total_quantity: { $sum: "$quantity" },
-        total_value: { $sum: "$total_cost" },
-        entry_count: { $sum: 1 }
-      }
-    }
-  ]);
-
-  res.json(stockData);
-});
-
+/**
+ * Get Product Analytics (Top Selling)
+ */
 export const getProductAnalytics = catchAsync(async (req: AuthRequest, res: Response) => {
-  const { start_date, end_date, branch_id, limit = 10 } = req.query;
+  const { start_date, end_date, limit = 10 } = req.query;
+  const businessId = req.user.default_business_id;
 
-  const query: any = { status: 'completed' };
-  if (branch_id) query.branch_id = new mongoose.Types.ObjectId(branch_id as string);
-
-  // Tenant isolation
-  if (req.user && req.user.role !== 'customer') {
-    if (req.user.company_id) {
-      query.company_id = req.user.company_id;
-    }
-  }
-
-  if (req.user?.role === 'manager') {
-    query.branch_id = req.user.branch_id;
-  }
+  const query: any = {
+    business_id: businessId
+  };
 
   if (start_date || end_date) {
     query.created_at = {};
@@ -112,61 +62,63 @@ export const getProductAnalytics = catchAsync(async (req: AuthRequest, res: Resp
     if (end_date) query.created_at.$lte = new Date(end_date as string);
   }
 
-  const productData = await Order.aggregate([
+  const productData = await OrderItem.aggregate([
     { $match: query },
-    { $unwind: "$items" },
     {
       $group: {
-        _id: "$items.menu_item_id",
-        name: { $first: "$items.menu_item_name" },
-        total_sold: { $sum: "$items.quantity" },
-        total_revenue: { $sum: { $multiply: ["$items.quantity", "$items.unit_price"] } }
+        _id: "$product_id",
+        count: { $sum: "$quantity" },
+        revenue: { $sum: { $multiply: ["$quantity", "$price"] } }
       }
     },
-    { $sort: { total_sold: -1 } },
+    {
+      $lookup: {
+        from: 'products',
+        localField: '_id',
+        foreignField: '_id',
+        as: 'product'
+      }
+    },
+    { $unwind: "$product" },
+    {
+      $project: {
+        name: "$product.name",
+        count: 1,
+        revenue: 1
+      }
+    },
+    { $sort: { count: -1 } },
     { $limit: Number(limit) }
   ]);
 
   res.json(productData);
 });
 
-export const getBranchPerformance = catchAsync(async (req: AuthRequest, res: Response) => {
+/**
+ * Get Stock Movement Analytics
+ */
+export const getStockAnalytics = catchAsync(async (req: AuthRequest, res: Response) => {
   const { start_date, end_date } = req.query;
+  const businessId = req.user.default_business_id;
 
-  const query: any = { status: 'completed' };
+  const query: any = { business_id: businessId };
 
-  // Tenant isolation
-  if (req.user && req.user.role !== 'customer') {
-    if (req.user.company_id) {
-      query.company_id = req.user.company_id;
-    }
-  }
   if (start_date || end_date) {
     query.created_at = {};
     if (start_date) query.created_at.$gte = new Date(start_date as string);
     if (end_date) query.created_at.$lte = new Date(end_date as string);
   }
 
-  const performanceData = await Order.aggregate([
+  const stockData = await InventoryTransaction.aggregate([
     { $match: query },
     {
       $group: {
-        _id: "$branch_id",
-        total_revenue: { $sum: "$total_amount" },
-        order_count: { $sum: 1 }
+        _id: "$reference_type",
+        total_quantity: { $sum: "$change_quantity" },
+        transaction_count: { $sum: 1 }
       }
-    },
-    { $sort: { total_revenue: -1 } }
+    }
   ]);
 
-  // Populate branch names
-  const populatedData = await Promise.all(performanceData.map(async (item) => {
-    const branch = await Branch.findById(item._id);
-    return {
-      ...item,
-      branch_name: branch?.branch_name || 'Unknown'
-    };
-  }));
-
-  res.json(populatedData);
+  res.json(stockData);
 });

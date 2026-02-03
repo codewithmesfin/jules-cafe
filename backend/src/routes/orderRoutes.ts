@@ -1,20 +1,27 @@
 import express from 'express';
-import { getAllOrders, getOrder, createOrder, updateOrder, deleteOrder } from '../controllers/orderController';
-import { protect, authorize, requireOnboardingComplete } from '../middleware/auth';
+import {
+  createOrder,
+  getMyOrders,
+  getOrder,
+  updateOrder,
+  deleteOrder,
+  getOrderItems
+} from '../controllers/orderController';
+import { protect } from '../middleware/auth';
 
 const router = express.Router();
 
-// Apply protect and onboarding check to all routes
 router.use(protect);
-router.use(requireOnboardingComplete);
 
 router.route('/')
-  .get(getAllOrders)
+  .get(getMyOrders)
   .post(createOrder);
 
 router.route('/:id')
   .get(getOrder)
-  .put(updateOrder)
-  .delete(authorize('admin', 'manager'), deleteOrder);
+  .patch(updateOrder)
+  .delete(deleteOrder);
+
+router.get('/:orderId/items', getOrderItems);
 
 export default router;

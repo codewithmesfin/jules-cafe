@@ -1,52 +1,45 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { Save, MapPin } from 'lucide-react';
+import { Save, MapPin, Building, Globe, Mail, Phone, Info } from 'lucide-react';
 import { api } from '../../utils/api';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '@/context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
-import type { Branch } from '../../types';
+import { cn } from '../../utils/cn';
+import type { Business } from '../../types';
 
 const BranchProfile: React.FC = () => {
   const { user } = useAuth();
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = user?.role === 'admin' || user?.role === 'saas_admin';
   const { showNotification } = useNotification();
-  const [branch, setBranch] = useState<Branch | null>(null);
+  const [business, setBusiness] = useState<Business | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   // Form state
   const [name, setName] = useState('');
-  const [location, setLocation] = useState('');
-  const [capacity, setCapacity] = useState(0);
-  const [openTime, setOpenTime] = useState('');
-  const [closeTime, setCloseTime] = useState('');
-
-  // Company is automatically set from the logged-in user's company
-  const userCompanyId = user?.company_id || '';
+  const [legalName, setLegalName] = useState('');
+  const [address, setAddress] = useState('');
+  const [description, setDescription] = useState('');
 
   useEffect(() => {
-    if (user?.branch_id) {
-      fetchBranch();
-    }
-  }, [user?.branch_id]);
+    fetchBusiness();
+  }, []);
 
-  const fetchBranch = async () => {
-    const branchId = user?.branch_id;
-    if (!branchId) return;
+  const fetchBusiness = async () => {
     try {
       setLoading(true);
-      const data = await api.branches.getOne(branchId);
-      setBranch(data);
-      setName(data.branch_name || '');
-      setLocation(data.location_address || '');
-      setCapacity(data.capacity || 0);
-      setOpenTime(data.opening_time || '');
-      setCloseTime(data.closing_time || '');
+      const response = await api.business.getMe();
+      const data = response.data || response;
+      setBusiness(data);
+      setName(data.name || '');
+      setLegalName(data.legal_name || '');
+      setAddress(data.address || '');
+      setDescription(data.description || '');
     } catch (error) {
-      console.error('Failed to fetch branch:', error);
+      console.error('Failed to fetch business:', error);
     } finally {
       setLoading(false);
     }
@@ -54,99 +47,136 @@ const BranchProfile: React.FC = () => {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!branch) return;
+    if (!business) return;
 
     try {
       setSaving(true);
-      await api.branches.update(branch.id, {
-        branch_name: name,
-        location_address: location,
-        capacity,
-        opening_time: openTime,
-        closing_time: closeTime,
+      await api.business.update((business.id || business._id)!, {
+        name,
+        legal_name: legalName,
+        address,
+        description,
       });
-      showNotification('Branch profile updated successfully');
+      showNotification('Business profile updated successfully');
     } catch (error) {
-      showNotification('Failed to update branch', 'error');
+      showNotification('Failed to update business profile', 'error');
     } finally {
       setSaving(false);
     }
   };
 
-  if (!user?.branch_id) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20 space-y-4">
-        <div className="p-4 bg-orange-100 text-[#e60023] rounded-full">
-          <MapPin size={48} />
-        </div>
-        <h2 className="text-xl font-bold text-gray-900">No Branch Associated</h2>
-        <p className="text-gray-500 text-center max-w-md">
-          No branch is associated with this account. Please contact an administrator.
-        </p>
-      </div>
-    );
-  }
-
-  if (loading) return <div className="text-center py-20">Loading branch profile...</div>;
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center h-[50vh] space-y-4">
+      <div className="w-10 h-10 border-4 border-slate-200 border-t-blue-600 rounded-full animate-spin"></div>
+    </div>
+  );
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Branch Profile Settings</h1>
+    <div className="max-w-4xl mx-auto space-y-10 pb-12">
+      <div>
+        <h1 className="text-3xl font-black text-slate-900 tracking-tight">Business Settings</h1>
+        <p className="text-slate-500 font-medium">Manage your brand identity and corporate information</p>
+      </div>
 
-      <form onSubmit={handleSave} className="space-y-6">
-        <Card title="General Information">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4">
+      <form onSubmit={handleSave} className="space-y-8">
+        <Card className="border-slate-100 rounded-[2.5rem] bg-white p-8 border shadow-sm">
+          <div className="flex items-center gap-4 mb-8">
+            <div className="p-4 bg-blue-50 text-blue-600 rounded-2xl">
+              <Building size={24} />
+            </div>
+            <div>
+              <h3 className="font-black text-slate-900 text-lg">General Profile</h3>
+              <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Public Information</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="md:col-span-2">
               <Input
-                label="Branch Name"
+                label="Display Name *"
+                placeholder="e.g. Blue Nile Restaurant"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 disabled={!isAdmin}
-                className={!isAdmin ? 'bg-gray-50' : ''}
+                className={cn("rounded-xl h-12", !isAdmin && "bg-slate-50")}
               />
             </div>
             <div className="md:col-span-2">
               <Input
-                label="Location Address"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
+                label="Legal Business Name"
+                placeholder="e.g. Nile Hospitality Group LLC"
+                value={legalName}
+                onChange={(e) => setLegalName(e.target.value)}
+                disabled={!isAdmin}
+                className={cn("rounded-xl h-12", !isAdmin && "bg-slate-50")}
               />
             </div>
+            <div className="md:col-span-2">
+              <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Business Description</label>
+              <textarea
+                className="w-full rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-slate-700"
+                rows={4}
+                placeholder="Briefly describe your business..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                disabled={!isAdmin}
+              />
+            </div>
+          </div>
+        </Card>
+
+        <Card className="border-slate-100 rounded-[2.5rem] bg-white p-8 border shadow-sm">
+          <div className="flex items-center gap-4 mb-8">
+            <div className="p-4 bg-indigo-50 text-indigo-600 rounded-2xl">
+              <MapPin size={24} />
+            </div>
+            <div>
+              <h3 className="font-black text-slate-900 text-lg">Contact & Location</h3>
+              <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">HQ Details</p>
+            </div>
+          </div>
+
+          <div className="space-y-6">
             <Input
-              label="Total Seating Capacity"
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              value={capacity || ""}
-              onChange={(e) => setCapacity(parseInt(e.target.value) || 0)}
+              label="Physical Address"
+              placeholder="Full street address..."
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              disabled={!isAdmin}
+              className={cn("rounded-xl h-12", !isAdmin && "bg-slate-50")}
             />
           </div>
         </Card>
 
-        <Card title="Operating Hours">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4">
-            <Input
-              label="Opening Time"
-              type="time"
-              value={openTime}
-              onChange={(e) => setOpenTime(e.target.value)}
-            />
-            <Input
-              label="Closing Time"
-              type="time"
-              value={closeTime}
-              onChange={(e) => setCloseTime(e.target.value)}
-            />
-          </div>
-        </Card>
-
-        <div className="flex justify-end">
-          <Button type="submit" size="lg" className="gap-2" disabled={saving}>
+        <div className="flex justify-end gap-4">
+          <Button
+            type="button"
+            variant="outline"
+            className="rounded-xl h-14 px-8 font-black text-slate-400"
+            onClick={() => fetchBusiness()}
+          >
+            Discard Changes
+          </Button>
+          <Button
+            type="submit"
+            size="lg"
+            className="gap-2 rounded-xl h-14 px-10 font-black shadow-xl shadow-blue-100"
+            disabled={saving || !isAdmin}
+          >
             <Save size={20} />
-            {saving ? 'Saving Changes...' : 'Save All Changes'}
+            {saving ? 'Synchronizing...' : 'Save Configuration'}
           </Button>
         </div>
       </form>
+
+      {!isAdmin && (
+        <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl flex gap-4 items-start">
+          <Info className="text-amber-500 shrink-0 mt-0.5" size={20} />
+          <p className="text-sm text-amber-700 font-medium">
+            Some settings are locked. Only the Store Owner or Business Admin can modify core profile data.
+          </p>
+        </div>
+      )}
     </div>
   );
 };

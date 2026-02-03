@@ -1,27 +1,19 @@
 export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
-// Maximum number of retries for rate-limited requests
 const MAX_RETRIES = 3;
-
-// Base delay for exponential backoff (in milliseconds)
 const BASE_DELAY = 1000;
 
-// Calculate delay with exponential backoff and jitter
 const getRetryDelay = (attempt: number): number => {
   const delay = BASE_DELAY * Math.pow(2, attempt);
-  // Add random jitter (±20%)
   const jitter = delay * 0.2 * (Math.random() * 2 - 1);
-  return Math.min(delay + jitter, 30000); // Cap at 30 seconds
+  return Math.min(delay + jitter, 30000);
 };
 
-// Sleep utility for delays
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 const fetcher = async (url: string, options?: RequestInit, retryCount = 0): Promise<any> => {
   const jwt = typeof window !== 'undefined' ? localStorage.getItem('jwt') : null;
-
   const fullUrl = url.startsWith('http') ? url : `${API_URL}${url}`;
-
   const isFormData = options?.body instanceof FormData;
 
   const response = await fetch(fullUrl, {
@@ -33,28 +25,17 @@ const fetcher = async (url: string, options?: RequestInit, retryCount = 0): Prom
     },
   });
 
-  // Handle rate limiting (429) with exponential backoff retry
   if (response.status === 429 && retryCount < MAX_RETRIES) {
     const delay = getRetryDelay(retryCount);
-    console.warn(`Rate limited. Retrying in ${Math.round(delay)}ms... (attempt ${retryCount + 1}/${MAX_RETRIES})`);
     await sleep(delay);
     return fetcher(url, options, retryCount + 1);
   }
 
-  // Handle inactive user status (423) - redirect to inactive page
   if (response.status === 423) {
     if (typeof window !== 'undefined') {
       window.location.href = '/inactive';
     }
-    throw new Error('Account inactive. Please contact Administrator.');
-  }
-
-  // Handle onboarding required status - redirect to company-setup
-  if (response.status === 423 && response.url.includes('onboarding')) {
-    if (typeof window !== 'undefined') {
-      window.location.href = '/company-setup';
-    }
-    throw new Error('Please complete company setup first.');
+    throw new Error('Account inactive.');
   }
 
   if (!response.ok) {
@@ -62,14 +43,7 @@ const fetcher = async (url: string, options?: RequestInit, retryCount = 0): Prom
     try {
       const error = await response.json();
       errorMessage = error.message || error.error || errorMessage;
-    } catch (e) {
-      // Not a JSON error
-      try {
-        errorMessage = await response.text() || errorMessage;
-      } catch (textError) {
-        // Fallback to default message
-      }
-    }
+    } catch (e) {}
     throw new Error(errorMessage);
   }
 
@@ -82,150 +56,101 @@ const fetcher = async (url: string, options?: RequestInit, retryCount = 0): Prom
 };
 
 export const api = {
-  branches: {
-    getAll: () => fetcher('/api/branches'),
-    getOne: (id: string) => fetcher(`/api/branches/${id}`),
-    create: (data: any) => fetcher('/api/branches', { method: 'POST', body: JSON.stringify(data) }),
-    update: (id: string, data: any) => fetcher(`/api/branches/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-    delete: (id: string) => fetcher(`/api/branches/${id}`, { method: 'DELETE' }),
+  public: {
+    getBusiness: (id: string) => fetcher(`/public/business/${id}`),
+    getProducts: (businessId: string) => fetcher(`/public/products?business_id=${businessId}`),
+    getCategories: (businessId: string) => fetcher(`/public/categories?business_id=${businessId}`),
   },
-  tables: {
-    getAll: () => fetcher('/api/tables'),
-    getOne: (id: string) => fetcher(`/api/tables/${id}`),
-    create: (data: any) => fetcher('/api/tables', { method: 'POST', body: JSON.stringify(data) }),
-    update: (id: string, data: any) => fetcher(`/api/tables/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-    delete: (id: string) => fetcher(`/api/tables/${id}`, { method: 'DELETE' }),
+  business: {
+    setup: (data: any) => fetcher('/api/business/setup', { method: 'POST', body: JSON.stringify(data) }),
+    getMe: () => fetcher('/api/business/me'),
+    update: (id: string, data: any) => fetcher(`/api/business/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   },
-  users: {
-    getAll: () => fetcher('/api/users'),
-    getOne: (id: string) => fetcher(`/api/users/${id}`),
-    create: (data: any) => fetcher('/api/users', { method: 'POST', body: JSON.stringify(data) }),
-    update: (id: string, data: any) => fetcher(`/api/users/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-    delete: (id: string) => fetcher(`/api/users/${id}`, { method: 'DELETE' }),
+  products: {
+    getAll: () => fetcher('/api/products'),
+    getOne: (id: string) => fetcher(`/api/products/${id}`),
+    create: (data: any) => fetcher('/api/products', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: string, data: any) => fetcher(`/api/products/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    delete: (id: string) => fetcher(`/api/products/${id}`, { method: 'DELETE' }),
   },
   categories: {
     getAll: () => fetcher('/api/categories'),
     getOne: (id: string) => fetcher(`/api/categories/${id}`),
     create: (data: any) => fetcher('/api/categories', { method: 'POST', body: JSON.stringify(data) }),
-    update: (id: string, data: any) => fetcher(`/api/categories/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    update: (id: string, data: any) => fetcher(`/api/categories/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     delete: (id: string) => fetcher(`/api/categories/${id}`, { method: 'DELETE' }),
   },
-  menuItems: {
-    getAll: () => fetcher('/api/menu-items'),
-    getOne: (id: string) => fetcher(`/api/menu-items/${id}`),
-    create: (data: any) => fetcher('/api/menu-items', {
-      method: 'POST',
-      body: data instanceof FormData ? data : JSON.stringify(data)
-    }),
-    update: (id: string, data: any) => fetcher(`/api/menu-items/${id}`, {
-      method: 'PUT',
-      body: data instanceof FormData ? data : JSON.stringify(data)
-    }),
-    delete: (id: string) => fetcher(`/api/menu-items/${id}`, { method: 'DELETE' }),
-  },
-  orders: {
-    getAll: () => fetcher('/api/orders'),
-    getOne: (id: string) => fetcher(`/api/orders/${id}`),
-    create: (data: any) => fetcher('/api/orders', { method: 'POST', body: JSON.stringify(data) }),
-    update: (id: string, data: any) => fetcher(`/api/orders/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-    delete: (id: string) => fetcher(`/api/orders/${id}`, { method: 'DELETE' }),
-  },
-  reservations: {
-    getAll: (params?: string) => fetcher(`/api/reservations${params ? `?${params}` : ''}`),
-    getOne: (id: string) => fetcher(`/api/reservations/${id}`),
-    create: (data: any) => fetcher('/api/reservations', { method: 'POST', body: JSON.stringify(data) }),
-    update: (id: string, data: any) => fetcher(`/api/reservations/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-    delete: (id: string) => fetcher(`/api/reservations/${id}`, { method: 'DELETE' }),
-  },
-  inventory: {
-    getAll: () => fetcher('/api/inventory'),
-    getOne: (id: string) => fetcher(`/api/inventory/${id}`),
-    create: (data: any) => fetcher('/api/inventory', { method: 'POST', body: JSON.stringify(data) }),
-    update: (id: string, data: any) => fetcher(`/api/inventory/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-    delete: (id: string) => fetcher(`/api/inventory/${id}`, { method: 'DELETE' }),
+  ingredients: {
+    getAll: () => fetcher('/api/ingredients'),
+    getOne: (id: string) => fetcher(`/api/ingredients/${id}`),
+    create: (data: any) => fetcher('/api/ingredients', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: string, data: any) => fetcher(`/api/ingredients/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    delete: (id: string) => fetcher(`/api/ingredients/${id}`, { method: 'DELETE' }),
   },
   recipes: {
     getAll: () => fetcher('/api/recipes'),
     getOne: (id: string) => fetcher(`/api/recipes/${id}`),
     create: (data: any) => fetcher('/api/recipes', { method: 'POST', body: JSON.stringify(data) }),
-    update: (id: string, data: any) => fetcher(`/api/recipes/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    update: (id: string, data: any) => fetcher(`/api/recipes/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     delete: (id: string) => fetcher(`/api/recipes/${id}`, { method: 'DELETE' }),
   },
-  branchMenuItems: {
-    getAll: () => fetcher('/api/branch-menu-items'),
-    getOne: (id: string) => fetcher(`/api/branch-menu-items/${id}`),
-    create: (data: any) => fetcher('/api/branch-menu-items', { method: 'POST', body: JSON.stringify(data) }),
-    update: (id: string, data: any) => fetcher(`/api/branch-menu-items/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-    delete: (id: string) => fetcher(`/api/branch-menu-items/${id}`, { method: 'DELETE' }),
+  inventory: {
+    getAll: () => fetcher('/api/inventory'),
+    getTransactions: () => fetcher('/api/inventory/transactions'),
+    create: (data: any) => fetcher('/api/inventory', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: string, data: any) => fetcher(`/api/inventory/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   },
-  stats: {
-    getDashboard: (params?: string) => fetcher(`/api/stats${params ? `?${params}` : ''}`),
+  orders: {
+    getAll: () => fetcher('/api/orders'),
+    getOne: (id: string) => fetcher(`/api/orders/${id}`),
+    getItems: (id: string) => fetcher(`/api/orders/${id}/items`),
+    create: (data: any) => fetcher('/api/orders', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: string, data: any) => fetcher(`/api/orders/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  },
+  users: {
+    getAll: () => fetcher('/api/users'),
+    getOne: (id: string) => fetcher(`/api/users/${id}`),
+    createStaff: (data: any) => fetcher('/api/users/staff', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: string, data: any) => fetcher(`/api/users/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    delete: (id: string) => fetcher(`/api/users/${id}`, { method: 'DELETE' }),
+  },
+  tables: {
+    getAll: () => fetcher('/api/tables'),
+    create: (data: any) => fetcher('/api/tables', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: string, data: any) => fetcher(`/api/tables/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    delete: (id: string) => fetcher(`/api/tables/${id}`, { method: 'DELETE' }),
+  },
+  customers: {
+    getAll: () => fetcher('/api/customers'),
+    create: (data: any) => fetcher('/api/customers', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: string, data: any) => fetcher(`/api/customers/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    delete: (id: string) => fetcher(`/api/customers/${id}`, { method: 'DELETE' }),
+  },
+  tasks: {
+    getAll: () => fetcher('/api/tasks'),
+    create: (data: any) => fetcher('/api/tasks', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: string, data: any) => fetcher(`/api/tasks/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    delete: (id: string) => fetcher(`/api/tasks/${id}`, { method: 'DELETE' }),
+  },
+  cashSessions: {
+    getAll: () => fetcher('/api/cash-sessions'),
+    create: (data: any) => fetcher('/api/cash-sessions', { method: 'POST', body: JSON.stringify(data) }),
+    close: (id: string, data: any) => fetcher(`/api/cash-sessions/${id}/close`, { method: 'POST', body: JSON.stringify(data) }),
+  },
+  shifts: {
+    getAll: () => fetcher('/api/shifts'),
+    clockIn: () => fetcher('/api/shifts/clock-in', { method: 'POST' }),
+    clockOut: () => fetcher('/api/shifts/clock-out', { method: 'POST' }),
+  },
+  analytics: {
     getSales: (params?: string) => fetcher(`/api/analytics/sales${params ? `?${params}` : ''}`),
-    getStock: (params?: string) => fetcher(`/api/analytics/stock${params ? `?${params}` : ''}`),
     getProducts: (params?: string) => fetcher(`/api/analytics/products${params ? `?${params}` : ''}`),
-    getBranches: (params?: string) => fetcher(`/api/analytics/branches${params ? `?${params}` : ''}`),
-  },
-  items: {
-    getAll: () => fetcher('/api/items'),
-    getOne: (id: string) => fetcher(`/api/items/${id}`),
-    getByType: (type: string) => fetcher(`/api/items/type/${type}`),
-    create: (data: any) => fetcher('/api/items', { method: 'POST', body: JSON.stringify(data) }),
-    update: (id: string, data: any) => fetcher(`/api/items/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-    delete: (id: string) => fetcher(`/api/items/${id}`, { method: 'DELETE' }),
-  },
-  companies: {
-    // Setup company during onboarding
-    setup: (data: any) => fetcher('/api/companies/setup', { method: 'POST', body: JSON.stringify(data) }),
-    
-    // Get current company
-    getMe: () => fetcher('/api/companies/me'),
-    
-    // Update company
-    update: (data: any) => fetcher('/api/companies', { method: 'PUT', body: JSON.stringify(data) }),
-    
-    // Get company statistics
-    getStats: () => fetcher('/api/companies/stats'),
-    
-    // Delete company (owner only)
-    delete: () => fetcher('/api/companies', { method: 'DELETE' }),
-    
-    // Branch management
-    getBranches: () => fetcher('/api/companies/branches'),
-    createBranch: (data: any) => fetcher('/api/companies/branches', { method: 'POST', body: JSON.stringify(data) }),
+    getStock: (params?: string) => fetcher(`/api/analytics/stock${params ? `?${params}` : ''}`),
   },
   auth: {
-    signup: (data: any) => fetcher('/api/auth/signup', { method: 'POST', body: JSON.stringify(data) }),
-    forgotPassword: (email: string) => fetcher('/api/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) }),
-    resetPassword: (token: string, data: any) => fetcher(`/api/auth/reset-password/${token}`, { method: 'POST', body: JSON.stringify(data) }),
+    login: (data: any) => fetcher('/api/auth/login', { method: 'POST', body: JSON.stringify(data) }),
+    signup: (data: any) => fetcher('/api/auth/register', { method: 'POST', body: JSON.stringify(data) }),
     getProfile: () => fetcher('/api/auth/me'),
     updateProfile: (data: any) => fetcher('/api/auth/profile', { method: 'PUT', body: JSON.stringify(data) }),
-    changePassword: (data: any) => fetcher('/api/auth/change-password', { method: 'PUT', body: JSON.stringify(data) }),
-  },
-  public: {
-    // Public menu endpoints - no authentication required
-    menuItems: {
-      getAll: (companyId?: string) => fetcher(`/public/menu-items${companyId ? `?company_id=${companyId}` : ''}`),
-      getOne: (id: string) => fetcher(`/public/menu-items/${id}`),
-    },
-    categories: {
-      getAll: (companyId?: string) => fetcher(`/public/categories${companyId ? `?company_id=${companyId}` : ''}`),
-      getOne: (id: string) => fetcher(`/public/categories/${id}`),
-    },
-    branches: {
-      getAll: (companyId?: string) => fetcher(`/public/branches${companyId ? `?company_id=${companyId}` : ''}`),
-      getOne: (id: string) => fetcher(`/public/branches/${id}`),
-    },
-    branchMenuItems: {
-      getAll: (companyId?: string) => fetcher(`/public/branch-menu-items${companyId ? `?company_id=${companyId}` : ''}`),
-      getOne: (id: string) => fetcher(`/public/branch-menu-items/${id}`),
-    },
-    menuVariants: {
-      getAll: () => fetcher('/public/menu-variants'),
-      getOne: (id: string) => fetcher(`/public/menu-variants/${id}`),
-    },
-    company: {
-      getOne: (id: string) => fetcher(`/public/company/${id}`),
-      getAll: () => fetcher('/public/companies'),
-    },
   }
 };

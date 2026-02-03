@@ -7,7 +7,7 @@ import { Input } from '../../components/ui/Input';
 import { Card } from '../../components/ui/Card';
 import { api } from '../../utils/api';
 import { useNotification } from '../../context/NotificationContext';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '@/context/AuthContext';
 import type { Company, Branch } from '../../types';
 
 const CompanyManagement: React.FC = () => {

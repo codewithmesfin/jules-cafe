@@ -1,44 +1,36 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { Search, Eye, CheckCircle, XCircle, ShoppingBag } from 'lucide-react';
+import { Search, Eye, CheckCircle, XCircle, ShoppingBag, Clock, DollarSign, Calendar } from 'lucide-react';
 import { api } from '../../utils/api';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import { Table } from '../../components/ui/Table';
 import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
-import { useAuth } from '../../context/AuthContext';
+import { Card } from '../../components/ui/Card';
+import { useAuth } from '@/context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
-import type { Order, User } from '../../types';
+import { cn } from '../../utils/cn';
+import type { Order } from '../../types';
 
 const Orders: React.FC = () => {
   const { user } = useAuth();
   const { showNotification } = useNotification();
   const [searchTerm, setSearchTerm] = useState('');
   const [orders, setOrders] = useState<Order[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
 
   useEffect(() => {
-    fetchData();
-  }, [user?.branch_id]);
+    fetchOrders();
+  }, []);
 
-  const fetchData = async () => {
+  const fetchOrders = async () => {
     try {
       setLoading(true);
-      const [ordData, userData] = await Promise.all([
-        api.orders.getAll(),
-        api.users.getAll(),
-      ]);
-    setOrders(ordData.filter((o: Order) => {
-      const branchId = typeof o.branch_id === 'string' ? o.branch_id : (o.branch_id as any)?.id;
-      const userBId = typeof user?.branch_id === "string" ? user?.branch_id : (user?.branch_id as any)?.id;
-      return branchId === userBId;
-    }));
-      setUsers(userData);
+      const response = await api.orders.getAll();
+      setOrders(Array.isArray(response) ? response : response.data || []);
     } catch (error) {
-      console.error('Failed to fetch manager orders:', error);
+      console.error('Failed to fetch orders:', error);
     } finally {
       setLoading(false);
     }
@@ -46,8 +38,14 @@ const Orders: React.FC = () => {
 
   const handleViewDetails = async (order: Order) => {
     try {
-      const details = await api.orders.getOne(order.id);
-      setSelectedOrder(details);
+      const response = await api.orders.getOne(order.id || order._id!);
+      const details = response.data || response;
+
+      // Fetch items separately as well for detailed view
+      const itemsResponse = await api.orders.getItems(order.id || order._id!);
+      const items = Array.isArray(itemsResponse) ? itemsResponse : itemsResponse.data || [];
+
+      setSelectedOrder({ ...details, items });
     } catch (error) {
       console.error('Failed to fetch order details:', error);
     }
@@ -55,40 +53,31 @@ const Orders: React.FC = () => {
 
   const handleUpdateStatus = async (id: string, status: string) => {
     try {
-      await api.orders.update(id, { status });
+      await api.orders.update(id, { order_status: status });
+      showNotification(`Order status updated to ${status}`);
       setSelectedOrder(null);
-      fetchData();
+      fetchOrders();
     } catch (error) {
       showNotification('Failed to update order status', 'error');
     }
   };
 
   const filteredOrders = orders.filter(order =>
-    order.order_number.toLowerCase().includes(searchTerm.toLowerCase())
+    (order.id || order._id)?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  if (!user?.branch_id) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20 space-y-4">
-        <div className="p-4 bg-orange-100 text-[#e60023] rounded-full">
-          <ShoppingBag size={48} />
-        </div>
-        <h2 className="text-xl font-bold text-gray-900">No Branch Associated</h2>
-        <p className="text-gray-500 text-center max-w-md">
-          Please associate this account with a branch to manage orders.
-        </p>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="relative w-full sm:w-96">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-          <Input
-            placeholder="Search branch orders..."
-            className="pl-10"
+    <div className="space-y-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Order Archives</h1>
+          <p className="text-slate-500 font-medium">Review history and manage transaction records</p>
+        </div>
+        <div className="relative w-full md:w-96 group">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors w-5 h-5" />
+          <input
+            placeholder="Search by Order ID..."
+            className="w-full pl-12 pr-4 py-3 bg-white border border-slate-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -96,116 +85,148 @@ const Orders: React.FC = () => {
       </div>
 
       {loading ? (
-        <div className="text-center py-10">Loading orders...</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3, 4, 5, 6].map(i => (
+            <div key={i} className="bg-white border border-slate-100 rounded-[2.5rem] h-48 animate-pulse" />
+          ))}
+        </div>
+      ) : filteredOrders.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-32 bg-white rounded-[2.5rem] border-2 border-dashed border-slate-100">
+          <div className="p-6 bg-slate-50 rounded-full text-slate-300 mb-4">
+            <ShoppingBag size={48} />
+          </div>
+          <p className="text-slate-400 font-bold text-lg">No records found</p>
+        </div>
       ) : (
-        <Table
-          data={filteredOrders}
-          columns={[
-            { header: 'Order ID', accessor: 'order_number', className: 'font-bold' },
-            {
-              header: 'Customer',
-              accessor: (order) => {
-                const customerId = typeof order.customer_id === 'string' ? order.customer_id : (order.customer_id as any)?.id;
-                return users.find(u => u.id === customerId)?.full_name || 'Walk-in';
-              }
-            },
-            { header: 'Amount', accessor: (order) => `ETB ${order.total_amount.toFixed(2)}` },
-            {
-              header: 'Status',
-              accessor: (order) => (
-                <Badge
-                  variant={
-                    order.status === 'completed' ? 'success' :
-                    order.status === 'cancelled' ? 'error' : 'warning'
-                  }
-                  className="capitalize"
-                >
-                  {order.status}
-                </Badge>
-              )
-            },
-            {
-              header: 'Actions',
-              accessor: (order) => (
-                <Button variant="ghost" size="sm" onClick={() => handleViewDetails(order)}>
-                  <Eye size={16} className="mr-2" /> Details
-                </Button>
-              )
-            }
-          ]}
-        />
+        <div className="bg-white border border-slate-100 rounded-[2.5rem] overflow-hidden shadow-sm">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-100">
+                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Order ID</th>
+                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Customer</th>
+                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Date</th>
+                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Amount</th>
+                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Status</th>
+                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {filteredOrders.map((order) => (
+                <tr key={order.id || order._id} className="hover:bg-slate-50/50 transition-colors group">
+                  <td className="px-6 py-5">
+                    <span className="font-black text-slate-900 text-sm">#{(order.id || order._id)?.slice(-8).toUpperCase()}</span>
+                  </td>
+                  <td className="px-6 py-5">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-black text-xs">
+                        {((order.customer_id as any)?.full_name || 'G').charAt(0)}
+                      </div>
+                      <span className="font-bold text-slate-700 text-sm">{(order.customer_id as any)?.full_name || 'Guest'}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-5 text-sm text-slate-500 font-medium">
+                    {new Date(order.created_at).toLocaleDateString()}
+                  </td>
+                  <td className="px-6 py-5">
+                    <span className="font-black text-slate-900">${order.total_amount.toFixed(2)}</span>
+                  </td>
+                  <td className="px-6 py-5">
+                    <Badge
+                      variant={
+                        order.order_status === 'completed' ? 'success' :
+                        order.order_status === 'cancelled' ? 'error' : 'neutral'
+                      }
+                      className="capitalize font-black text-[10px] rounded-lg px-2.5 py-1"
+                    >
+                      {order.order_status}
+                    </Badge>
+                  </td>
+                  <td className="px-6 py-5">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="rounded-xl font-bold text-blue-600 hover:bg-blue-50 h-10 px-4"
+                      onClick={() => handleViewDetails(order)}
+                    >
+                      <Eye size={16} className="mr-2" /> Details
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
 
       {selectedOrder && (
         <Modal
           isOpen={!!selectedOrder}
           onClose={() => setSelectedOrder(null)}
-          title={`Order ${selectedOrder.order_number}`}
+          title="Order Summary"
+          className="max-w-xl"
           footer={
-            <div className="flex justify-between w-full">
+            <div className="flex gap-3 w-full">
               <Button
                 variant="outline"
-                className="text-red-600 border-red-200 hover:bg-red-50"
-                onClick={() => handleUpdateStatus(selectedOrder.id, 'cancelled')}
+                className="flex-1 rounded-xl h-12 text-red-500 border-red-100 hover:bg-red-50 font-black"
+                onClick={() => handleUpdateStatus((selectedOrder.id || selectedOrder._id)!, 'cancelled')}
               >
-                <XCircle size={18} className="mr-2" /> Cancel Order
+                <XCircle size={18} className="mr-2" /> Cancel Record
               </Button>
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setSelectedOrder(null)}>Close</Button>
-                {selectedOrder.status !== 'completed' && selectedOrder.status !== 'cancelled' && (
-                  <Button className="gap-2" onClick={() => handleUpdateStatus(selectedOrder.id, 'completed')}>
-                    <CheckCircle size={18} /> Mark as Completed
-                  </Button>
-                )}
-              </div>
+              <Button
+                className="flex-1 rounded-xl h-12 shadow-lg shadow-blue-100 font-black"
+                onClick={() => handleUpdateStatus((selectedOrder.id || selectedOrder._id)!, 'completed')}
+                disabled={selectedOrder.order_status === 'completed'}
+              >
+                <CheckCircle size={18} className="mr-2" /> Mark Completed
+              </Button>
             </div>
           }
         >
           <div className="space-y-6">
-            <div className="bg-gray-50 p-4 rounded-lg flex justify-between">
-              <div>
-                <p className="text-xs text-gray-500 uppercase font-bold">Status</p>
-                <p className="font-medium capitalize">{selectedOrder.status}</p>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-4 bg-slate-50 rounded-2xl">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Status</p>
+                <Badge className="bg-white border-slate-100 text-blue-600 font-black rounded-lg capitalize">
+                  {selectedOrder.order_status}
+                </Badge>
               </div>
-              <div className="text-right">
-                <p className="text-xs text-gray-500 uppercase font-bold">Type</p>
-                <p className="font-medium capitalize">{selectedOrder.type}</p>
+              <div className="p-4 bg-slate-50 rounded-2xl">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Payment</p>
+                <Badge className="bg-white border-slate-100 text-slate-600 font-black rounded-lg capitalize">
+                  {selectedOrder.payment_status}
+                </Badge>
               </div>
             </div>
 
             <div>
-              <h4 className="font-bold text-gray-900 mb-4">Order Items</h4>
-              <div className="space-y-3">
-                {selectedOrder.items?.map((item: any) => (
-                  <div key={item.id} className="flex justify-between text-sm">
-                    <span>{item.menu_item_name} x {item.quantity}</span>
-                    <span className="font-medium">ETB {(item.unit_price * item.quantity).toFixed(2)}</span>
+              <h4 className="font-black text-slate-900 uppercase tracking-widest text-[10px] mb-4 px-2">Line Items</h4>
+              <div className="bg-slate-50/50 rounded-2xl p-6 space-y-4">
+                {selectedOrder.items?.map((item: any, idx: number) => (
+                  <div key={idx} className="flex justify-between text-sm font-bold text-slate-700">
+                    <span className="flex items-center gap-2">
+                      <span className="text-blue-600">{item.quantity}x</span>
+                      {item.product_id?.name || 'Item deleted'}
+                    </span>
+                    <span>${(item.price * item.quantity).toFixed(2)}</span>
                   </div>
                 ))}
               </div>
             </div>
 
-            <hr />
-
-            <div>
-              <h4 className="font-bold text-gray-900 mb-2">Summary</h4>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm text-gray-600">
-                  <span>Subtotal</span>
-                  <span>ETB {(selectedOrder.total_amount + (selectedOrder.discount_amount || 0)).toFixed(2)}</span>
-                </div>
-                {selectedOrder.discount_amount > 0 && (
-                  <div className="flex justify-between text-sm text-green-600">
-                    <span>Discount</span>
-                    <span>-ETB {selectedOrder.discount_amount.toFixed(2)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between font-bold text-lg pt-2 border-t">
-                  <span>Total</span>
-                  <span>ETB {selectedOrder.total_amount.toFixed(2)}</span>
-                </div>
+            <div className="pt-6 border-t border-slate-100">
+              <div className="flex justify-between items-center px-2">
+                <span className="font-black text-slate-900 uppercase tracking-widest text-xs">Total Revenue</span>
+                <span className="text-3xl font-black text-blue-600">${selectedOrder.total_amount.toFixed(2)}</span>
               </div>
             </div>
+
+            {selectedOrder.notes && (
+              <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4">
+                <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1">Internal Audit Notes</p>
+                <p className="text-sm text-slate-700 font-medium">{selectedOrder.notes}</p>
+              </div>
+            )}
           </div>
         </Modal>
       )}

@@ -1,33 +1,31 @@
 import mongoose from 'mongoose';
 import Recipe from '../models/Recipe';
-import RecipeIngredient from '../models/RecipeIngredient';
-import InventoryItem from '../models/InventoryItem';
-import StockEntry from '../models/StockEntry';
-import { IOrder } from '../models/Order';
+import Inventory from '../models/Inventory';
+import InventoryTransaction from '../models/InventoryTransaction';
+import OrderItem from '../models/OrderItem';
 import AppError from './appError';
 
 /**
- * Checks if there is enough stock for an order.
+ * Checks if there is enough stock for a list of order items.
  */
-export const checkInventoryForOrder = async (order: IOrder) => {
+export const checkInventoryForOrderItems = async (businessId: string, items: any[]) => {
   const missingIngredients: string[] = [];
 
-  for (const item of order.items) {
-    const recipe = await Recipe.findOne({ menu_item_id: item.menu_item_id, is_default: true, is_active: true });
-    if (recipe) {
-      const ingredients = await RecipeIngredient.find({ recipe_id: recipe._id });
-      for (const ingredient of ingredients) {
-        const requiredQuantity = (ingredient.quantity * item.quantity) / (recipe.yield_quantity || 1);
+  for (const item of items) {
+    // Find all recipe entries for this product
+    const recipes = await Recipe.find({ product_id: item.product_id }).populate('ingredient_id');
 
-        const inventoryItem = await InventoryItem.findOne({
-          branch_id: order.branch_id,
-          item_id: ingredient.item_id
-        }).populate('item_id');
+    for (const recipe of recipes) {
+      const requiredQuantity = recipe.quantity_required * item.quantity;
 
-        if (!inventoryItem || inventoryItem.current_quantity < requiredQuantity) {
-          const itemName = (inventoryItem?.item_id as any)?.item_name || 'Unknown Ingredient';
-          missingIngredients.push(`${itemName} (Required: ${requiredQuantity}, Available: ${inventoryItem?.current_quantity || 0})`);
-        }
+      const inventory = await Inventory.findOne({
+        business_id: businessId,
+        ingredient_id: recipe.ingredient_id
+      }).populate('ingredient_id');
+
+      if (!inventory || inventory.quantity_available < requiredQuantity) {
+        const ingredientName = (recipe.ingredient_id as any)?.name || 'Unknown Ingredient';
+        missingIngredients.push(`${ingredientName} (Required: ${requiredQuantity}, Available: ${inventory?.quantity_available || 0})`);
       }
     }
   }
@@ -39,56 +37,44 @@ export const checkInventoryForOrder = async (order: IOrder) => {
 };
 
 /**
- * Deducts stock from inventory based on order items and their recipes.
+ * Deducts stock from inventory based on order items.
  */
-export const deductInventoryForOrder = async (order: IOrder, userId: string, session?: mongoose.ClientSession) => {
-  for (const item of order.items) {
-    const recipe = await Recipe.findOne({ menu_item_id: item.menu_item_id, is_default: true, is_active: true });
-    if (recipe) {
-      const ingredients = await RecipeIngredient.find({ recipe_id: recipe._id });
-      for (const ingredient of ingredients) {
-        const deductionQuantity = (ingredient.quantity * item.quantity) / (recipe.yield_quantity || 1);
+export const deductInventoryForOrder = async (
+  businessId: string,
+  orderId: string,
+  items: any[],
+  userId: string,
+  session?: mongoose.ClientSession
+) => {
+  for (const item of items) {
+    const recipes = await Recipe.find({ product_id: item.product_id });
 
-        const inventoryItem = await InventoryItem.findOne({
-          branch_id: order.branch_id,
-          item_id: ingredient.item_id
-        });
+    for (const recipe of recipes) {
+      const deductionQuantity = recipe.quantity_required * item.quantity;
 
-        if (inventoryItem) {
-          const previousQuantity = inventoryItem.current_quantity;
-          inventoryItem.current_quantity -= deductionQuantity;
+      const inventory = await Inventory.findOne({
+        business_id: businessId,
+        ingredient_id: recipe.ingredient_id
+      });
 
-          if (session) {
-            await inventoryItem.save({ session });
-            await StockEntry.create([{
-              branch_id: order.branch_id,
-              company_id: order.company_id,
-              item_id: ingredient.item_id,
-              entry_type: 'sale',
-              quantity: deductionQuantity,
-              previous_quantity: previousQuantity,
-              new_quantity: inventoryItem.current_quantity,
-              reference_type: 'Order',
-              reference_id: order._id,
-              performed_by: userId,
-              notes: `Stock deducted for order ${order.order_number}`,
-            }], { session });
-          } else {
-            await inventoryItem.save();
-            await StockEntry.create({
-              branch_id: order.branch_id,
-              company_id: order.company_id,
-              item_id: ingredient.item_id,
-              entry_type: 'sale',
-              quantity: deductionQuantity,
-              previous_quantity: previousQuantity,
-              new_quantity: inventoryItem.current_quantity,
-              reference_type: 'Order',
-              reference_id: order._id,
-              performed_by: userId,
-              notes: `Stock deducted for order ${order.order_number}`,
-            });
-          }
+      if (inventory) {
+        inventory.quantity_available -= deductionQuantity;
+
+        const transactionData = {
+          business_id: businessId,
+          ingredient_id: recipe.ingredient_id,
+          change_quantity: -deductionQuantity,
+          reference_type: 'sale',
+          reference_id: orderId,
+          creator_id: userId,
+        };
+
+        if (session) {
+          await inventory.save({ session });
+          await InventoryTransaction.create([transactionData], { session });
+        } else {
+          await inventory.save();
+          await InventoryTransaction.create(transactionData);
         }
       }
     }
@@ -96,56 +82,44 @@ export const deductInventoryForOrder = async (order: IOrder, userId: string, ses
 };
 
 /**
- * Reverts stock to inventory (adds back) for an order (e.g. on cancellation or edit).
+ * Reverts stock to inventory for an order.
  */
-export const revertInventoryForOrder = async (order: IOrder, userId: string, session?: mongoose.ClientSession) => {
-  for (const item of order.items) {
-    const recipe = await Recipe.findOne({ menu_item_id: item.menu_item_id, is_default: true, is_active: true });
-    if (recipe) {
-      const ingredients = await RecipeIngredient.find({ recipe_id: recipe._id });
-      for (const ingredient of ingredients) {
-        const revertQuantity = (ingredient.quantity * item.quantity) / (recipe.yield_quantity || 1);
+export const revertInventoryForOrder = async (
+  businessId: string,
+  orderId: string,
+  items: any[],
+  userId: string,
+  session?: mongoose.ClientSession
+) => {
+  for (const item of items) {
+    const recipes = await Recipe.find({ product_id: item.product_id });
 
-        const inventoryItem = await InventoryItem.findOne({
-          branch_id: order.branch_id,
-          item_id: ingredient.item_id
-        });
+    for (const recipe of recipes) {
+      const revertQuantity = recipe.quantity_required * item.quantity;
 
-        if (inventoryItem) {
-          const previousQuantity = inventoryItem.current_quantity;
-          inventoryItem.current_quantity += revertQuantity;
+      const inventory = await Inventory.findOne({
+        business_id: businessId,
+        ingredient_id: recipe.ingredient_id
+      });
 
-          if (session) {
-            await inventoryItem.save({ session });
-            await StockEntry.create([{
-              branch_id: order.branch_id,
-              company_id: order.company_id,
-              item_id: ingredient.item_id,
-              entry_type: 'return',
-              quantity: revertQuantity,
-              previous_quantity: previousQuantity,
-              new_quantity: inventoryItem.current_quantity,
-              reference_type: 'Order',
-              reference_id: order._id,
-              performed_by: userId,
-              notes: `Stock reverted for order ${order.order_number}`,
-            }], { session });
-          } else {
-            await inventoryItem.save();
-            await StockEntry.create({
-              branch_id: order.branch_id,
-              company_id: order.company_id,
-              item_id: ingredient.item_id,
-              entry_type: 'return',
-              quantity: revertQuantity,
-              previous_quantity: previousQuantity,
-              new_quantity: inventoryItem.current_quantity,
-              reference_type: 'Order',
-              reference_id: order._id,
-              performed_by: userId,
-              notes: `Stock reverted for order ${order.order_number}`,
-            });
-          }
+      if (inventory) {
+        inventory.quantity_available += revertQuantity;
+
+        const transactionData = {
+          business_id: businessId,
+          ingredient_id: recipe.ingredient_id,
+          change_quantity: revertQuantity,
+          reference_type: 'adjustment', // Reverting is technically an adjustment or reverse sale
+          reference_id: orderId,
+          creator_id: userId,
+        };
+
+        if (session) {
+          await inventory.save({ session });
+          await InventoryTransaction.create([transactionData], { session });
+        } else {
+          await inventory.save();
+          await InventoryTransaction.create(transactionData);
         }
       }
     }

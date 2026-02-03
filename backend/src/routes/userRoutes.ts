@@ -1,20 +1,25 @@
 import express from 'express';
-import { getAllUsers, getUser, createUser, updateUser, deleteUser } from '../controllers/userController';
-import { protect, authorize, requireOnboardingComplete } from '../middleware/auth';
+import {
+  createStaff,
+  getAllUsers,
+  getUser,
+  updateUser,
+  deleteUser
+} from '../controllers/userController';
+import { protect, restrictTo } from '../middleware/auth';
 
 const router = express.Router();
 
-// Apply protect and onboarding check to all routes
 router.use(protect);
-router.use(requireOnboardingComplete);
+
+router.post('/staff', restrictTo('admin', 'manager'), createStaff);
 
 router.route('/')
-  .get(authorize('admin', 'manager', 'cashier'), getAllUsers)
-  .post(authorize('admin', 'manager', 'cashier'), createUser);
+  .get(restrictTo('admin', 'manager', 'saas_admin'), getAllUsers);
 
 router.route('/:id')
   .get(getUser)
-  .put(authorize('admin', 'manager'), updateUser)
-  .delete(authorize('admin'), deleteUser);
+  .patch(updateUser)
+  .delete(restrictTo('admin', 'saas_admin'), deleteUser);
 
 export default router;

@@ -1,358 +1,397 @@
 "use client";
 
-import React, { useState, useEffect, useLayoutEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard,
-  Menu as MenuIcon,
-  X,
-  Users,
   ShoppingBag,
-  Calendar,
-  LogOut,
-  ChevronLeft,
-  ChevronRight,
-  Utensils,
-  Settings,
-  MapPin,
-  BarChart3,
-  PlusSquare,
-  ListOrdered,
-  Grid,
   Package,
   Database,
+  Users,
+  ClipboardList,
+  DollarSign,
+  BarChart3,
+  Settings,
+  Search,
+  Bell,
+  Moon,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  LogOut,
+  ChefHat,
+  Utensils,
+  FileText,
+  Truck,
+  Boxes,
+  ClipboardCheck,
   Building2
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
-import { Button } from '../../components/ui/Button';
-import { useAuth } from '../../context/AuthContext';
-import type { UserRole } from '../../types';
+import { useAuth } from '@/context/AuthContext';
 
 interface MenuItem {
   icon: React.ElementType;
   label: string;
-  path: string;
+  path?: string;
+  submenu?: { label: string; path: string }[];
+  roles?: string[];
 }
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
-  const { user, logout, loading } = useAuth();
-  const [storedUser, setStoredUser] = useState<any>(null);
-  const [checkedStorage, setCheckedStorage] = useState(false);
+  const { user, logout, loading, switchBusiness, businesses, currentBusiness } = useAuth();
+  const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [showBusinessSelector, setShowBusinessSelector] = useState(false);
 
-  // Check localStorage only on client side after mount
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const savedUser = localStorage.getItem('user');
-        if (savedUser) {
-          setStoredUser(JSON.parse(savedUser));
-        }
-      } catch (e) {
-        // Ignore errors
-      }
-      setCheckedStorage(true);
-    }
-  }, []);
-
-  // Check if user is in onboarding status
-  const isStoredUserOnboarding = () => {
-    if (!storedUser) return false;
-    return storedUser.status === 'onboarding';
-  };
-
-  const isStoredUserInactive = () => {
-    if (!storedUser) return false;
-    if (storedUser.role === 'customer') return false;
-    return storedUser.status === 'inactive' || storedUser.status === 'pending' || storedUser.status === 'suspended';
-  };
-
-  // Immediate redirect for inactive/onboarding users - runs before any rendering
-  useLayoutEffect(() => {
-    // Check stored user first for onboarding
-    if (storedUser && isStoredUserOnboarding()) {
-      // Allow access to company-setup page
-      if (pathname === '/company-setup') {
-        return;
-      }
-      // Redirect onboarding users to company setup
-      router.replace('/company-setup');
-      return;
-    }
-
-    // Check stored user for inactive status
-    if (storedUser && isStoredUserInactive()) {
-      router.replace('/inactive');
-      return;
-    }
-  }, [storedUser, pathname, router]);
-
-  // Main redirect effect
-  useEffect(() => {
-    // Wait for loading to complete
     if (loading) return;
 
-    // If no user, redirect to login
     if (!user) {
       router.push('/login');
       return;
     }
 
-    // If user is onboarding
     if (user.status === 'onboarding') {
-      // Allow access to company-setup page
-      if (pathname !== '/company-setup') {
-        router.push('/company-setup');
-      }
+      router.push('/company-setup');
       return;
     }
 
-    // If user is inactive
-    if (user.role !== 'customer' && 
-        (user.status === 'inactive' || user.status === 'pending' || user.status === 'suspended')) {
+    const inactiveStatuses = ['inactive', 'pending', 'suspended'];
+    if (inactiveStatuses.includes(user.status)) {
       router.push('/inactive');
       return;
     }
-  }, [user, pathname, router, loading]);
 
-  // Show loading until we've checked storage and auth is loaded
-  if (!checkedStorage || (loading && !storedUser)) {
+    // Redirect to default business workspace
+    if (!user.default_business_id && user.role !== 'saas_admin') {
+      router.push('/company-setup');
+    }
+  }, [user, loading, router]);
+
+  const handleSwitchBusiness = async (businessId: string) => {
+    await switchBusiness(businessId);
+    setShowBusinessSelector(false);
+    router.refresh();
+  };
+
+  if (loading || !user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#e60023]"></div>
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
-  // Early returns for inactive/onboarding users (don't render dashboard)
-  if (storedUser && isStoredUserInactive()) {
-    return null;
-  }
+  const allMenuItems: MenuItem[] = [
+    { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', roles: ['admin', 'manager', 'cashier', 'waiter'] },
+    {
+      icon: ShoppingBag,
+      label: 'Orders',
+      path: '/orders',
+      roles: ['admin', 'manager', 'cashier']
+    },
+    {
+      icon: Package,
+      label: 'Products',
+      roles: ['admin', 'manager', 'cashier'],
+      submenu: [
+        { label: 'Products', path: '/products' },
+        { label: 'Categories', path: '/products/categories' },
+        { label: 'Menu', path: '/products/menu' },
+      ]
+    },
+    {
+      icon: Database,
+      label: 'Ingredients',
+      roles: ['admin', 'manager', 'cashier'],
+      submenu: [
+        { label: 'Ingredients', path: '/ingredients' },
+        { label: 'Inventory', path: '/ingredients/inventory' },
+        { label: 'Transactions', path: '/ingredients/transactions' },
+      ]
+    },
+    { icon: ChefHat, label: 'Recipes', path: '/recipes', roles: ['admin', 'manager'] },
+    { icon: Utensils, label: 'Tables', path: '/tables', roles: ['admin', 'manager', 'cashier'] },
+    { icon: Users, label: 'Customers', path: '/customers', roles: ['admin', 'manager', 'cashier'] },
+    { icon: BarChart3, label: 'Reports', path: '/reports', roles: ['admin', 'manager', 'saas_admin'] },
+    {
+      icon: Settings,
+      label: 'Settings',
+      roles: ['admin', 'manager', 'cashier'],
+      submenu: [
+        { label: 'Users & Roles', path: '/settings/users' },
+        { label: 'Units & Conversions', path: '/settings/units' },
+        { label: 'Business Info', path: '/settings/business' },
+      ]
+    },
+  ];
 
-  if (storedUser && isStoredUserOnboarding()) {
-    // Only render company-setup page
-    if (pathname === '/company-setup') {
-      return <>{children}</>;
-    }
-    return null;
-  }
+  const filteredMenuItems = allMenuItems.filter(item =>
+    !item.roles || item.roles.includes(user.role) || user.role === 'saas_admin'
+  );
 
-  if (!loading && user && user.status === 'inactive') {
-    return null;
-  }
-
-  // No user, don't render dashboard
-  if (!user && !storedUser) {
-    return null;
-  }
-
-  const currentUser = user || storedUser;
-
-  // Check if user can access sidebar navigation
-  const canAccessNavigation = () => {
-    if (!currentUser) return false;
-    // Onboarding users shouldn't see navigation
-    if (currentUser.status === 'onboarding') return false;
-    // Customers don't get dashboard navigation in the same way
-    if (currentUser.role === 'customer') return false;
-    return true;
+  const toggleSubmenu = (label: string) => {
+    setOpenSubmenu(openSubmenu === label ? null : label);
   };
-
-  const getMenuItems = (role: UserRole): MenuItem[] => {
-    switch (role) {
-      case 'admin':
-        return [
-          { icon: LayoutDashboard, label: 'Dashboard', path: '/admin' },
-          { icon: Building2, label: 'Company', path: '/admin/company' },
-          { icon: Users, label: 'Users', path: '/admin/users' },
-          { icon: MapPin, label: 'Branches', path: '/admin/branches' },
-          { icon: Settings, label: 'Categories', path: '/admin/categories' },
-          { icon: Database, label: 'Items', path: '/admin/items' },
-          { icon: Utensils, label: 'Menu Items', path: '/admin/menu-items' },
-          { icon: ShoppingBag, label: 'Orders', path: '/admin/orders' },
-          { icon: Calendar, label: 'Reservations', path: '/admin/reservations' },
-          { icon: BarChart3, label: 'Reports', path: '/admin/reports' },
-          { icon: Utensils, label: 'Recipes', path: '/admin/recipes' },
-        ];
-      case 'manager':
-        return [
-          { icon: LayoutDashboard, label: 'Dashboard', path: '/manager' },
-          { icon: Building2, label: 'Branch Profile', path: '/manager/profile' },
-          { icon: Settings, label: 'Categories', path: '/manager/categories' },
-          { icon: Utensils, label: 'Menu Items', path: '/manager/menu-items' },
-          { icon: Package, label: 'Inventory', path: '/manager/inventory' },
-          { icon: ShoppingBag, label: 'Orders', path: '/manager/orders' },
-          { icon: Utensils, label: 'Recipes', path: '/manager/recipes' },
-          { icon: Calendar, label: 'Reservations', path: '/manager/reservations' },
-          { icon: Grid, label: 'Tables', path: '/manager/tables' },
-          { icon: Users, label: 'Staff', path: '/manager/staff' },
-          { icon: Users, label: 'Customers', path: '/manager/customers' },
-        ];
-      case 'cashier':
-      case 'staff':
-        return [
-          { icon: LayoutDashboard, label: 'Dashboard', path: '/cashier' },
-          { icon: PlusSquare, label: 'New Order', path: '/cashier/new-order' },
-          { icon: ListOrdered, label: 'Order Queue', path: '/cashier/queue' },
-        ];
-      default:
-        return [];
-    }
-  };
-
-  const menuItems = getMenuItems(currentUser?.role as UserRole);
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
-      {/* Sidebar - Desktop */}
-      <aside
-        className={cn(
-          'hidden md:flex bg-gray-900 text-gray-300 transition-all duration-300 flex-col',
-          isSidebarCollapsed ? 'w-20' : 'w-64'
-        )}
-      >
-        <div className="p-6 flex items-center justify-between">
-          {!isSidebarCollapsed && (
-            <span className="text-white font-bold text-xl tracking-tight capitalize">
-              {currentUser?.role} Panel
-            </span>
-          )}
-          <button
-            onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-            className="p-1 hover:bg-gray-800 rounded"
+    <div className="flex h-screen bg-gray-50 overflow-hidden font-sans">
+      {/* Sidebar */}
+      <aside className={cn(
+        "bg-white text-slate-700 flex flex-col shrink-0 border-r border-slate-200 shadow-sm transition-all duration-300",
+        sidebarCollapsed ? "w-20" : "w-72"
+      )}>
+        {/* Workspace Switcher */}
+        <div className="p-4 border-b border-slate-200">
+          <div 
+            className="flex items-center justify-between p-3 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100 transition-all border border-slate-200 group"
+            onClick={() => setShowBusinessSelector(!showBusinessSelector)}
           >
-            {isSidebarCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-200 font-bold">
+                {currentBusiness?.name?.charAt(0) || user.full_name?.charAt(0) || 'B'}
+              </div>
+              {!sidebarCollapsed && (
+                <div className="flex flex-col min-w-0">
+                  <span className="text-sm font-bold text-slate-900 truncate">
+                    {currentBusiness?.name || 'Select Business'}
+                  </span>
+                  <span className="text-[10px] text-slate-500 font-medium uppercase tracking-widest">Active Workspace</span>
+                </div>
+              )}
+            </div>
+            {!sidebarCollapsed && (
+              <ChevronDown size={16} className={cn(
+                "text-slate-400 transition-transform", 
+                showBusinessSelector && "rotate-180"
+              )} />
+            )}
+          </div>
+
+          {/* Business Selector Dropdown */}
+          {showBusinessSelector && !sidebarCollapsed && (
+            <div className="mt-2 p-2 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+              {businesses?.map((business: any) => (
+                <button
+                  key={business._id}
+                  onClick={() => handleSwitchBusiness(business._id)}
+                  className={cn(
+                    "w-full flex items-center gap-3 p-2 rounded-lg text-left transition-colors",
+                    currentBusiness?._id === business._id 
+                      ? "bg-blue-50 text-blue-600" 
+                      : "hover:bg-slate-50"
+                  )}
+                >
+                  <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center text-slate-600 font-bold text-xs">
+                    {business.name?.charAt(0)}
+                  </div>
+                  <span className="text-sm font-medium truncate">{business.name}</span>
+                </button>
+              ))}
+              {user.role === 'admin' && (
+                <button
+                  onClick={() => router.push('/settings/business')}
+                  className="w-full flex items-center gap-3 p-2 rounded-lg text-left text-blue-600 hover:bg-blue-50 transition-colors mt-1 border-t border-slate-100"
+                >
+                  <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <Building2 size={16} />
+                  </div>
+                  <span className="text-sm font-medium">Add New Business</span>
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Navigation */}
+        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto custom-scrollbar">
+          {filteredMenuItems.map((item) => {
+            const isActive = pathname === item.path || 
+              (item.path && pathname.startsWith(item.path)) ||
+              (item.submenu?.some(sub => pathname.startsWith(sub.path)));
+
+            return (
+              <div key={item.label}>
+                {item.submenu ? (
+                  <>
+                    <div
+                      className={cn(
+                        "flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-200 group",
+                        isActive ? "bg-blue-50 text-blue-600" : "hover:bg-slate-100 hover:text-slate-900"
+                      )}
+                      onClick={() => toggleSubmenu(item.label)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <item.icon size={20} className={cn(
+                          isActive ? "text-blue-600" : "text-slate-400 group-hover:text-slate-600"
+                        )} />
+                        {!sidebarCollapsed && (
+                          <span className="font-medium text-sm tracking-tight">{item.label}</span>
+                        )}
+                      </div>
+                      {!sidebarCollapsed && (
+                        <ChevronDown 
+                          size={14} 
+                          className={cn(
+                            "text-slate-400 transition-transform",
+                            openSubmenu === item.label && "rotate-180"
+                          )} 
+                        />
+                      )}
+                    </div>
+                    {/* Submenu */}
+                    {!sidebarCollapsed && openSubmenu === item.label && item.submenu && (
+                      <div className="ml-9 mt-1 space-y-1">
+                        {item.submenu.map((sub) => {
+                          const isSubActive = pathname === sub.path || pathname.startsWith(sub.path + '/');
+                          return (
+                            <Link
+                              key={sub.path}
+                              href={sub.path}
+                              className={cn(
+                                "block px-3 py-2 rounded-lg text-sm transition-colors",
+                                isSubActive 
+                                  ? "text-blue-600 font-medium" 
+                                  : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
+                              )}
+                            >
+                              {sub.label}
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <Link
+                    href={item.path || '#'}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-200 group",
+                      isActive ? "bg-blue-50 text-blue-600" : "hover:bg-slate-100 hover:text-slate-900"
+                    )}
+                  >
+                    <item.icon size={20} className={cn(
+                      isActive ? "text-blue-600" : "text-slate-400 group-hover:text-slate-600"
+                    )} />
+                    {!sidebarCollapsed && (
+                      <span className="font-medium text-sm tracking-tight">{item.label}</span>
+                    )}
+                  </Link>
+                )}
+              </div>
+            );
+          })}
+        </nav>
+
+        {/* Collapse Toggle */}
+        <div className="p-3 border-t border-slate-200">
+          <button
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            className="w-full flex items-center justify-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-100 transition-colors text-slate-600"
+          >
+            {sidebarCollapsed ? (
+              <ChevronRight size={20} />
+            ) : (
+              <>
+                <ChevronLeft size={20} />
+                <span className="text-sm font-medium">Collapse</span>
+              </>
+            )}
           </button>
         </div>
 
-        <nav className="flex-1 px-4 py-4 space-y-2 overflow-y-auto">
-          {menuItems.map((item) => (
-            <Link
-              key={item.path}
-              href={item.path}
-              className={cn(
-                'flex items-center gap-3 px-3 py-2 rounded-lg transition-colors',
-                pathname === item.path
-                  ? 'bg-[#e60023] text-white'
-                  : 'hover:bg-gray-800 hover:text-white'
-              )}
-            >
-              <item.icon size={20} />
-              {!isSidebarCollapsed && <span>{item.label}</span>}
-            </Link>
-          ))}
-        </nav>
-
-        <div className="p-4 border-t border-gray-800">
-          <div className={cn('flex items-center gap-3 px-3 py-2', isSidebarCollapsed && 'justify-center')}>
-            {!isSidebarCollapsed && (
+        {/* User & Logout */}
+        <div className="p-4 mt-auto border-t border-slate-200 bg-slate-50">
+          <div className={cn("flex items-center gap-3 mb-3", sidebarCollapsed && "justify-center")}>
+            <div className="w-10 h-10 bg-slate-200 rounded-xl flex items-center justify-center text-slate-700 font-bold text-sm shadow-md">
+              {user.full_name?.split(' ').map(n => n[0]).join('') || user.email[0].toUpperCase()}
+            </div>
+            {!sidebarCollapsed && (
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white truncate">{currentUser?.full_name}</p>
-                <p className="text-xs text-gray-500 truncate capitalize">{currentUser?.role}</p>
+                <p className="text-sm font-bold text-slate-900 truncate">{user.full_name || 'User'}</p>
+                <p className="text-[10px] text-slate-500 font-medium uppercase tracking-widest">{user.role}</p>
               </div>
             )}
-            <button
-              onClick={logout}
-              className="p-1 hover:bg-gray-800 rounded text-gray-400 hover:text-red-500"
-              title="Logout"
-            >
-              <LogOut size={20} />
-            </button>
           </div>
-        </div>
-      </aside>
-
-      {/* Mobile Sidebar Overlay */}
-      {isMobileMenuOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-50 md:hidden"
-          onClick={() => setIsMobileMenuOpen(false)}
-        />
-      )}
-
-      {/* Sidebar - Mobile */}
-      <aside
-        className={cn(
-          'fixed inset-y-0 left-0 bg-gray-900 text-gray-300 transition-transform duration-300 flex flex-col z-50 w-64 md:hidden',
-          isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-        )}
-      >
-        <div className="p-6 flex items-center justify-between">
-          <span className="text-white font-bold text-xl tracking-tight capitalize">
-            {currentUser?.role} Panel
-          </span>
           <button
-            onClick={() => setIsMobileMenuOpen(false)}
-            className="p-1 hover:bg-gray-800 rounded"
+            onClick={logout}
+            className={cn(
+              "w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-white hover:bg-rose-50 hover:text-rose-600 border border-slate-200 transition-all text-slate-600 text-xs uppercase tracking-widest",
+              sidebarCollapsed && "px-2"
+            )}
           >
-            <X size={24} />
+            <LogOut size={16} />
+            {!sidebarCollapsed && <span>Sign Out</span>}
           </button>
-        </div>
-
-        <nav className="flex-1 px-4 py-4 space-y-2 overflow-y-auto">
-          {menuItems.map((item) => (
-            <Link
-              key={item.path}
-              href={item.path}
-              onClick={() => setIsMobileMenuOpen(false)}
-              className={cn(
-                'flex items-center gap-3 px-3 py-2 rounded-lg transition-colors',
-                pathname === item.path
-                  ? 'bg-[#e60023] text-white'
-                  : 'hover:bg-gray-800 hover:text-white'
-              )}
-            >
-              <item.icon size={20} />
-              <span>{item.label}</span>
-            </Link>
-          ))}
-        </nav>
-
-        <div className="p-4 border-t border-gray-800">
-          <div className="flex items-center gap-3 px-3 py-2">
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate">{currentUser?.full_name}</p>
-              <p className="text-xs text-gray-500 truncate capitalize">{currentUser?.role}</p>
-            </div>
-            <button
-              onClick={logout}
-              className="p-1 hover:bg-gray-800 rounded text-gray-400 hover:text-red-500"
-            >
-              <LogOut size={20} />
-            </button>
-          </div>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col overflow-hidden w-full">
-        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-8 shrink-0">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setIsMobileMenuOpen(true)}
-              className="p-1 md:hidden text-gray-600 hover:bg-gray-100 rounded"
-            >
-              <MenuIcon size={24} />
-            </button>
-            <h2 className="text-lg md:text-xl font-semibold text-gray-800 truncate">
-              {menuItems.find(i => i.path === pathname)?.label || 'Dashboard'}
-            </h2>
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Header */}
+        <header className="h-16 bg-white border-b border-slate-100 flex items-center justify-between px-6 shrink-0 sticky top-0 z-20">
+          <div className="flex items-center gap-4 flex-1 max-w-xl">
+            <div className="relative w-full group">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={18} />
+              <input
+                type="text"
+                placeholder="Search..."
+                className="w-full pl-10 pr-4 py-2 bg-slate-50 border-none rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500/10 transition-all"
+              />
+            </div>
           </div>
+
           <div className="flex items-center gap-4">
-            <Link href="/">
-              <Button variant="outline" size="sm">View Site</Button>
+            <div className="hidden sm:flex items-center gap-3 text-slate-400 border-r border-slate-100 pr-6">
+              <button className="p-2 hover:bg-slate-50 rounded-xl transition-all relative">
+                <Bell size={18} />
+                <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2 border-white shadow-sm"></span>
+              </button>
+              <button className="p-2 hover:bg-slate-50 rounded-xl transition-all">
+                <Moon size={18} />
+              </button>
+            </div>
+
+            <Link 
+              href="/settings/profile"
+              className="flex items-center gap-3 cursor-pointer group"
+            >
+              <div className="w-9 h-9 bg-slate-100 rounded-xl flex items-center justify-center text-slate-700 font-bold text-sm shadow-md transition-transform group-hover:scale-105">
+                {user.full_name?.split(' ').map(n => n[0]).join('') || user.email[0].toUpperCase()}
+              </div>
+              <div className="hidden md:block flex-col">
+                <span className="text-sm font-bold text-slate-900 leading-tight">{user.full_name || 'User'}</span>
+                <span className="text-[10px] text-blue-600 font-medium uppercase tracking-widest">{user.role}</span>
+              </div>
             </Link>
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-8">
+        {/* Page Content */}
+        <main className="flex-1 overflow-y-auto bg-gray-50 p-6 custom-scrollbar">
           {children}
-        </div>
-      </main>
+        </main>
+      </div>
+
+      <style jsx global>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(0,0,0,0.08);
+          border-radius: 8px;
+        }
+        .custom-scrollbar:hover::-webkit-scrollbar-thumb {
+          background: rgba(0,0,0,0.15);
+        }
+      `}</style>
     </div>
   );
 }

@@ -6,7 +6,7 @@ import { Input } from '../../components/ui/Input';
 import { Table } from '../../components/ui/Table';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '@/context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import type { MenuItem, MenuCategory, BranchMenuItem } from '../../types';
 
