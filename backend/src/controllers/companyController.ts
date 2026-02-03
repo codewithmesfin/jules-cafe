@@ -153,7 +153,7 @@ export const updateCompany = catchAsync(async (req: AuthRequest, res: Response, 
   }
 
   const allowedFields = [
-    'name', 'legal_name', 'address', 'phone', 'email', 'website',
+    'name', 'legal_name', 'description', 'category', 'address', 'phone', 'email', 'website',
     'logo', 'favicon', 'primary_color', 'settings'
   ];
 

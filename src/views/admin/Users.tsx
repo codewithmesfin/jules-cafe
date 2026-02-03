@@ -370,8 +370,10 @@ const Users: React.FC = () => {
               </div>
               <Input
                 label="Discount Rate (%)"
-                type="number"
-                value={formDiscountRate}
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={formDiscountRate || ""}
                 onChange={(e) => setFormDiscountRate(parseFloat(e.target.value) || 0)}
               />
             </div>

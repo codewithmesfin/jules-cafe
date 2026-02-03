@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Building2, MapPin, Phone, Globe, Mail, Settings, Building, Edit, Trash2, Plus } from 'lucide-react';
+import { Building2, MapPin, Phone, Globe, Mail, Settings, Building, Edit, Trash2, Plus, XCircle } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Card } from '../../components/ui/Card';
@@ -23,11 +23,14 @@ const CompanyManagement: React.FC = () => {
   const [companyForm, setCompanyForm] = useState({
     name: '',
     legal_name: '',
+    description: '',
+    category: '',
     address: '',
     phone: '',
     email: '',
     website: '',
-    expected_branches: 1,
+    logo: '',
+    expected_branches: '1',
   });
 
   useEffect(() => {
@@ -86,11 +89,14 @@ const CompanyManagement: React.FC = () => {
       setCompanyForm({
         name: companyData.name || '',
         legal_name: companyData.legal_name || '',
+        description: companyData.description || '',
+        category: companyData.category || '',
+        logo: companyData.logo || '',
         address: companyData.address || '',
         phone: companyData.phone || '',
         email: companyData.email || '',
         website: companyData.website || '',
-        expected_branches: companyData.subscription?.max_branches || 1,
+        expected_branches: String(companyData.subscription?.max_branches || 1),
       });
     } catch (error: any) {
       console.error('Failed to load company data:', error);
@@ -109,12 +115,15 @@ const CompanyManagement: React.FC = () => {
       const updateData = {
         name: companyForm.name,
         legal_name: companyForm.legal_name,
+        description: companyForm.description,
+        category: companyForm.category,
         address: companyForm.address,
         phone: companyForm.phone,
         email: companyForm.email,
         website: companyForm.website,
+        logo: companyForm.logo,
         subscription: {
-          max_branches: companyForm.expected_branches,
+          max_branches: parseInt(companyForm.expected_branches, 10),
         },
       };
       await api.companies.update(updateData);
@@ -204,6 +213,45 @@ const CompanyManagement: React.FC = () => {
             {editingCompany ? (
               <form onSubmit={handleUpdateCompany} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Company Logo</label>
+                    <div className="flex items-center gap-4">
+                      {companyForm.logo ? (
+                        <div className="relative w-20 h-20">
+                          <img src={companyForm.logo} alt="Company Logo" className="w-20 h-20 object-contain rounded-lg border border-gray-200" />
+                          <button
+                            type="button"
+                            onClick={() => setCompanyForm({ ...companyForm, logo: '' })}
+                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                          >
+                            <XCircle size={16} />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center border border-gray-200">
+                          <Building2 size={32} className="text-gray-400" />
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onloadend = () => {
+                                setCompanyForm({ ...companyForm, logo: reader.result as string });
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                          className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100"
+                        />
+                        <p className="mt-1 text-xs text-gray-500">Upload a logo (max 5MB)</p>
+                      </div>
+                    </div>
+                  </div>
                   <Input
                     label="Company Name"
                     value={companyForm.name}
@@ -215,6 +263,32 @@ const CompanyManagement: React.FC = () => {
                     value={companyForm.legal_name}
                     onChange={(e) => setCompanyForm({ ...companyForm, legal_name: e.target.value })}
                   />
+                  <div className="space-y-1">
+                    <label className="block text-sm font-medium text-gray-700">Category</label>
+                    <select
+                      className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#e60023] transition-all"
+                      value={companyForm.category}
+                      onChange={(e) => setCompanyForm({ ...companyForm, category: e.target.value })}
+                    >
+                      <option value="">Select Category</option>
+                      <option value="cafe">Cafe</option>
+                      <option value="restaurant">Restaurant</option>
+                      <option value="coffee_shop">Coffee Shop</option>
+                      <option value="bar">Bar</option>
+                      <option value="bakery">Bakery</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <textarea
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#e60023] focus:border-transparent"
+                      rows={3}
+                      placeholder="Tell us about your company..."
+                      value={companyForm.description}
+                      onChange={(e) => setCompanyForm({ ...companyForm, description: e.target.value })}
+                    />
+                  </div>
                   <Input
                     label="Email"
                     type="email"
@@ -239,9 +313,15 @@ const CompanyManagement: React.FC = () => {
                   <Input
                     label="Expected Branches"
                     type="number"
-                    min="1"
+                    min={1}
                     value={companyForm.expected_branches}
-                    onChange={(e) => setCompanyForm({ ...companyForm, expected_branches: parseInt(e.target.value) || 1 })}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      // Only allow numeric values
+                      if (val === '' || /^[0-9]+$/.test(val)) {
+                        setCompanyForm({ ...companyForm, expected_branches: val });
+                      }
+                    }}
                     required
                   />
                 </div>

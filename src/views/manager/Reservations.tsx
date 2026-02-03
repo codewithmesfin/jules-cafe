@@ -10,7 +10,7 @@ import { Modal } from '../../components/ui/Modal';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { getSocket, joinManagerRoom } from '../../utils/socket';
-import type { Reservation, User as UserType } from '../../types';
+import type { Reservation, ReservationStatus, User as UserType } from '../../types';
 
 const Reservations: React.FC = () => {
   const { user } = useAuth();
@@ -53,7 +53,7 @@ const Reservations: React.FC = () => {
     });
     
     // Listen for reservation status updates
-    socket.on('reservation-status-update', (data: { reservationId: string; status: string }) => {
+    socket.on('reservation-status-update', (data: { reservationId: string; status: ReservationStatus }) => {
       setReservations(prev => prev.map(res => 
         res.id === data.reservationId ? { ...res, status: data.status } : res
       ));
@@ -319,8 +319,10 @@ const Reservations: React.FC = () => {
           <div className="grid grid-cols-2 gap-4">
             <Input
               label="Number of Guests"
-              type="number"
-              value={formGuests}
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={formGuests || ""}
               onChange={(e) => setFormGuests(parseInt(e.target.value) || 0)}
             />
             <div className="w-full">

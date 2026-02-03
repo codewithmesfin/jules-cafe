@@ -553,6 +553,7 @@ const NewOrder: React.FC = () => {
                   full_name: newCustomer.name,
                   role: 'customer',
                   status: 'active',
+                  branch_id: user?.branch_id,
                   password: 'password123'
                 });
                 showNotification("Customer added successfully!");
@@ -607,8 +608,10 @@ const NewOrder: React.FC = () => {
             </div>
             <Input
               label="Custom Discount (%)"
-              type="number"
-              value={newCustomer.discount}
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={newCustomer.discount || ""}
               onChange={(e) => setNewCustomer({ ...newCustomer, discount: parseFloat(e.target.value) || 0 })}
             />
           </div>

@@ -243,9 +243,11 @@ const Reservations: React.FC = () => {
           </div>
           <Input
             label="Guests Count"
-            type="number"
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
             min="1"
-            value={guestsCount}
+            value={guestsCount || ""}
             onChange={(e) => setGuestsCount(parseInt(e.target.value) || 0)}
           />
           <div className="w-full">

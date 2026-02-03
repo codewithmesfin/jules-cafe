@@ -213,9 +213,11 @@ const Tables: React.FC = () => {
           />
           <Input
             label="Capacity"
-            type="number"
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
             placeholder="4"
-            value={formCapacity}
+            value={formCapacity || ""}
             onChange={(e) => setFormCapacity(parseInt(e.target.value) || 0)}
           />
           <div className="w-full">

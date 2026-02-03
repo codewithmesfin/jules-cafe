@@ -23,6 +23,8 @@ export interface Company {
   _id?: string;
   name: string;
   legal_name?: string;
+  description?: string;
+  category?: 'cafe' | 'restaurant' | 'coffee_shop' | 'bar' | 'bakery' | 'other';
   address?: string;
   phone?: string;
   email?: string;

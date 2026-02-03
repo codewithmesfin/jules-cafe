@@ -41,7 +41,7 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
                 <span className="hidden sm:inline">QuickServe</span>
               </Link>
               <div className="hidden lg:flex items-center gap-8 font-semibold text-black">
-                <Link href={getBaseLink('/services')} className="hover:text-gray-600 transition-colors">Explore</Link>
+                <Link href={getBaseLink('/companies')} className="hover:text-gray-600 transition-colors">Explore</Link>
               </div>
             </div>
 

@@ -353,10 +353,12 @@ const MenuItems: React.FC = () => {
           </div>
           <Input
             label="Price"
-            type="number"
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
             step="0.01"
             placeholder="0.00"
-            value={formBasePrice}
+            value={formBasePrice || ""}
             onChange={(e) => setFormBasePrice(parseFloat(e.target.value) || 0)}
           />
           {/* Branch Selector: Only show for admins, managers auto-set to their branch */}

@@ -8,6 +8,8 @@ export interface ICompany extends Document {
   // Core identification
   name: string;
   legal_name?: string;
+  description?: string;
+  category?: 'cafe' | 'restaurant' | 'coffee_shop' | 'bar' | 'bakery' | 'other';
   
   // Contact information
   address?: string;
@@ -54,6 +56,11 @@ export interface ICompany extends Document {
 const CompanySchema: Schema = new Schema({
   name: { type: String, required: true, trim: true },
   legal_name: { type: String, trim: true },
+  description: { type: String },
+  category: { 
+    type: String,
+    enum: ['cafe', 'restaurant', 'coffee_shop', 'bar', 'bakery', 'other']
+  },
   
   address: { type: String },
   phone: { type: String },

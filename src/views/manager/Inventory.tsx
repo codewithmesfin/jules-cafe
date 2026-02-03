@@ -310,9 +310,11 @@ const Inventory: React.FC = () => {
           ) : null}
           <Input
             label={selectedItem ? "Add/Remove Quantity" : "Initial Quantity"}
-            type="number"
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
             placeholder="0"
-            value={formQuantity}
+            value={formQuantity || ""}
             onChange={(e) => setFormQuantity(parseFloat(e.target.value) || 0)}
           />
           {selectedItem && (
@@ -322,8 +324,10 @@ const Inventory: React.FC = () => {
           )}
           <Input
             label="Minimum Stock Level"
-            type="number"
-            value={formMinStock}
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            value={formMinStock || ""}
             onChange={(e) => setFormMinStock(parseFloat(e.target.value) || 0)}
           />
         </div>

@@ -10,7 +10,7 @@ router.use(requireOnboardingComplete);
 
 router.route('/')
   .get(authorize('admin', 'manager', 'cashier'), getAllUsers)
-  .post(authorize('admin', 'manager'), createUser);
+  .post(authorize('admin', 'manager', 'cashier'), createUser);
 
 router.route('/:id')
   .get(getUser)
