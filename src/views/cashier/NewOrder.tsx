@@ -9,7 +9,7 @@ import { Modal } from '../../components/ui/Modal';
 import { Drawer } from '../../components/ui/Drawer';
 import { Badge } from '../../components/ui/Badge';
 import { useNotification } from '../../context/NotificationContext';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import { cn } from '../../utils/cn';
 import type { Product, Category, Table, User as UserType, Customer } from '../../types';
 

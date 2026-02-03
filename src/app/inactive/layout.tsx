@@ -2,7 +2,7 @@
 
 import React, { useEffect, useLayoutEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 
 /**
  * Layout for the inactive page - does not include sidebar

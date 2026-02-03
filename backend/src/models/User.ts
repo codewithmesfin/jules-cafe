@@ -7,13 +7,14 @@ import mongoose, { Schema, Document } from 'mongoose';
  * - manager: Business manager
  * - cashier: Cashier for processing payments
  * - waiter: Staff for taking orders
+ * - customer: Optional logged-in customer
  */
 export interface IUser extends Document {
   email: string;
   password?: string;
   full_name?: string;
   phone?: string;
-  role: 'saas_admin' | 'admin' | 'manager' | 'cashier' | 'waiter';
+  role: 'saas_admin' | 'admin' | 'manager' | 'cashier' | 'waiter' | 'customer';
   is_active: boolean;
   status: 'active' | 'inactive' | 'pending' | 'suspended' | 'onboarding';
   
@@ -41,7 +42,7 @@ const UserSchema: Schema = new Schema({
   phone: { type: String, trim: true },
   role: {
     type: String,
-    enum: ['saas_admin', 'admin', 'manager', 'cashier', 'waiter'],
+    enum: ['saas_admin', 'admin', 'manager', 'cashier', 'waiter', 'customer'],
     default: 'admin'
   },
   is_active: { type: Boolean, default: true },

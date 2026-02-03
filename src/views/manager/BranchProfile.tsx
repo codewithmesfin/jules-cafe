@@ -5,7 +5,7 @@ import { api } from '../../utils/api';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { cn } from '../../utils/cn';
 import type { Business } from '../../types';

@@ -1,0 +1,255 @@
+"use client";
+
+import React, { useState, useContext, useEffect } from 'react';
+import Link from 'next/link';
+import { useParams } from 'next/navigation';
+import { MenuIcon, ShoppingCart, User, UtensilsCrossed, X } from 'lucide-react';
+import { useCart } from '../../context/CartContext';
+import { useAuth } from '../../context/AuthContext';
+import { Button } from '@/components/ui/Button';
+import { api } from '@/utils/api';
+import TenantGuard, { TenantContext } from '@/components/TenantGuard';
+
+export default function CustomerLayout({ children }: { children: React.ReactNode }) {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [brand, setBrand] = useState({ logo: "", name: "Abc Cafe" })
+  const { cartItems } = useCart();
+  const { user, logout } = useAuth();
+  const params = useParams();
+  const tenantId = params?.tenant_id as string;
+  const companyData = useContext(TenantContext);
+
+  // Fetch company data directly from database
+  useEffect(() => {
+    if (!tenantId) return;
+
+    const fetchCompanyData = async () => {
+      try {
+        const company = await api.public.company.getOne(tenantId);
+        // Handle both response formats: company.data.name or company.name
+        const companyName = company.data?.name || company.name;
+        const companyLogo = company.data?.logo || company.logo || "";
+        setBrand({ logo: companyLogo, name: companyName })
+      } catch (e) {
+        // Ignore errors - will use fallback
+      }
+    };
+
+    fetchCompanyData();
+  }, [tenantId]);
+
+  // Get company name from context or fallback
+  const companyName = companyData?.name || brand.name || 'Abc Cafe';
+
+  // Get company logo from context or fallback
+  const companyLogo = companyData?.logo || brand.logo || null;
+
+  const getBaseLink = (path: string) => {
+    if (tenantId) {
+      // Handle the 'card' vs 'cart' requirement
+      const actualPath = path === '/cart' ? '/card' : path;
+      if (actualPath === '/') return `/${tenantId}`;
+      return `/${tenantId}${actualPath}`;
+    }
+    return path;
+  };
+
+  const totalItems = cartItems.reduce((acc, item) => acc + item.quantity, 0);
+
+  return (
+    <div className="flex flex-col min-h-screen">
+      {/* Main Navbar - When no tenant_id */}
+      {!tenantId && (
+        <nav className="sticky top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm px-4 md:px-6 lg:px-8 py-4">
+          <div className='flex items-center justify-between w-full max-w-7xl mx-auto'>
+            <div className="flex items-center gap-2 md:gap-4 lg:gap-8">
+              <Link href={getBaseLink('/')} className="flex items-center gap-2 text-[#e60023] font-bold text-xl">
+                {companyLogo ? (
+                  <img src={companyLogo} alt={companyName} className="w-10 h-10 object-contain rounded-lg" />
+                ) : (
+                  <UtensilsCrossed className="w-8 h-8" />
+                )}
+                <span className="hidden sm:inline">Abc Cafe</span>
+              </Link>
+              <div className="hidden lg:flex items-center gap-8 font-semibold text-black">
+                <Link href={getBaseLink('/companies')} className="hover:text-gray-600 transition-colors">Explore</Link>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 md:gap-6 lg:gap-8 font-semibold text-black">
+              <div className="hidden md:flex items-center gap-4 lg:gap-8">
+                <Link href={getBaseLink('/services')} className="hover:text-gray-600 transition-colors">Services</Link>
+                <Link href={getBaseLink('/feature')} className="hover:text-gray-600 transition-colors">Feature</Link>
+                <Link href={getBaseLink('/use-cases')} className="hover:text-gray-600 transition-colors">Use Cases</Link>
+              </div>
+              <div className="flex items-center gap-2">
+                {user ? (
+                  <div className="hidden md:flex items-center gap-2">
+                    {user.status !== 'onboarding' && (
+                      <Link href={getBaseLink('/profile')}>
+                        <Button variant="ghost" size="sm" className="gap-2">
+                          <User className="w-5 h-5" />
+                          <span>{(user.full_name || user.username || 'User').split(' ')[0]}</span>
+                        </Button>
+                      </Link>
+                    )}
+                    {user.role !== 'customer' && (
+                      <Link href={user.status === 'onboarding' ? '/company-setup' : (user.role === 'admin' ? '/admin' : user.role === 'manager' ? '/manager' : '/cashier')}>
+                        <Button variant="outline" size="sm" className="capitalize">
+                          {user.status === 'onboarding' ? 'Complete Setup' : `${user.role} Panel`}
+                        </Button>
+                      </Link>
+                    )}
+                    <Button variant="ghost" size="sm" onClick={logout}>Logout</Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 lg:gap-3 ml-3">
+                    <Link href={getBaseLink("/login")} className="bg-[#e60023] text-white px-4 md:px-5 py-2.5 rounded-full hover:bg-[#ad081b] transition-colors text-sm md:text-base font-bold">
+                      Log in
+                    </Link>
+                    <Link href={getBaseLink("/signup")} className="bg-[#efefef] text-black px-4 md:px-5 py-2.5 rounded-full hover:bg-[#e2e2e2] transition-colors text-sm md:text-base font-bold whitespace-nowrap">
+                      Sign up
+                    </Link>
+                  </div>
+                )}
+
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="md:hidden"
+                  onClick={() => setIsMenuOpen(!isMenuOpen)}
+                >
+                  {isMenuOpen ? <X className="w-6 h-6" /> : <MenuIcon className="w-6 h-6" />}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </nav>
+      )}
+
+      {/* Tenant-Specific Navbar - When tenant_id is present */}
+      {tenantId && (
+        <nav className="sticky top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm px-4 md:px-6 lg:px-8 py-4">
+          <div className='flex items-center justify-between w-full max-w-7xl mx-auto'>
+            <div className="flex items-center gap-2 md:gap-4 lg:gap-8">
+              <Link href={getBaseLink('/')} className="flex items-center gap-2 text-[#e60023] font-bold text-xl" suppressHydrationWarning>
+                {brand.logo && brand.logo !== "" ? (
+                  <img src={brand.logo} alt={companyName} className="w-10 h-10 object-contain rounded-lg" suppressHydrationWarning />
+                ) : (
+                  <UtensilsCrossed className="w-8 h-8" />
+                )}
+                <span className="hidden sm:inline">{brand.name}</span>
+              </Link>
+              <div className="hidden lg:flex items-center gap-8 font-semibold text-black">
+                <Link href={getBaseLink('/menu')} className="hover:text-gray-600 transition-colors">Explore</Link>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 md:gap-6 lg:gap-8 font-semibold text-black">
+              <div className="hidden md:flex items-center gap-4 lg:gap-8">
+                <Link href={getBaseLink('/menu')} className="hover:text-gray-600 transition-colors">Menu</Link>
+                <Link href={getBaseLink('/reservations')} className="hover:text-gray-600 transition-colors">Reservations</Link>
+                <Link href={getBaseLink('/orders')} className="hover:text-gray-600 transition-colors">Orders</Link>
+              </div>
+              <div className="flex items-center gap-2">
+                <Link href={getBaseLink('/cart')}>
+                  <Button variant="ghost" size="sm" className="relative">
+                    <ShoppingCart className="w-5 h-5" />
+                    {totalItems > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-[#e60023] text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center">
+                        {totalItems}
+                      </span>
+                    )}
+                  </Button>
+                </Link>
+
+                {user ? (
+                  <div className="hidden md:flex items-center gap-2">
+                    {user.status !== 'onboarding' && (
+                      <Link href={getBaseLink('/profile')}>
+                        <Button variant="ghost" size="sm" className="gap-2">
+                          <User className="w-5 h-5" />
+                          <span>{(user.full_name || user.username || 'User').split(' ')[0]}</span>
+                        </Button>
+                      </Link>
+                    )}
+                    {user.role !== 'customer' && (
+                      <Link href={user.status === 'onboarding' ? '/company-setup' : (user.role === 'admin' ? '/admin' : user.role === 'manager' ? '/manager' : '/cashier')}>
+                        <Button variant="outline" size="sm" className="capitalize">
+                          {user.status === 'onboarding' ? 'Complete Setup' : `${user.role} Panel`}
+                        </Button>
+                      </Link>
+                    )}
+                    <Button variant="ghost" size="sm" onClick={logout}>Logout</Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 lg:gap-3 ml-3">
+                    <Link href={getBaseLink("/login")} className="bg-[#e60023] text-white px-4 md:px-5 py-2.5 rounded-full hover:bg-[#ad081b] transition-colors text-sm md:text-base font-bold">
+                      Log in
+                    </Link>
+                    <Link href={getBaseLink("/signup")} className="bg-[#efefef] text-black px-4 md:px-5 py-2.5 rounded-full hover:bg-[#e2e2e2] transition-colors text-sm md:text-base font-bold whitespace-nowrap">
+                      Sign up
+                    </Link>
+                  </div>
+                )}
+
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="md:hidden"
+                  onClick={() => setIsMenuOpen(!isMenuOpen)}
+                >
+                  {isMenuOpen ? <X className="w-6 h-6" /> : <MenuIcon className="w-6 h-6" />}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </nav>
+      )}
+
+      <div className="flex-1">
+        {tenantId ? (
+          <TenantGuard>
+            {children}
+          </TenantGuard>
+        ) : (
+          children
+        )}
+      </div>
+
+      <footer className="bg-gray-900 text-gray-400 py-12">
+        <div className="container mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div>
+            <div className="flex items-center gap-2 text-white font-bold text-xl mb-4">
+              <UtensilsCrossed className="w-6 h-6 text-[#e60023]" />
+              <span>Abc Cafe</span>
+            </div>
+            <p className="text-sm">
+              Providing modern self-service solutions for small restaurant companies.
+              Fast, reliable, and delicious.
+            </p>
+          </div>
+          <div>
+            <h4 className="text-white font-semibold mb-4">Quick Links</h4>
+            <ul className="space-y-2 text-sm">
+              <li><Link href={getBaseLink("/menu")}>Our Menu</Link></li>
+              <li><Link href={getBaseLink("/reservations")}>Book a Table</Link></li>
+              {!tenantId && <li><Link href="/signup?role=admin" className="text-[#e60023] font-semibold">Register Business</Link></li>}
+            </ul>
+          </div>
+          <div>
+            <h4 className="text-white font-semibold mb-4">Contact Us</h4>
+            <ul className="space-y-2 text-sm">
+              <li>123 Foodie Street, Gourmet City</li>
+              <li>Phone: (555) 123-4567</li>
+              <li>Email: hello@abccafe.com</li>
+            </ul>
+          </div>
+        </div>
+        <div className="container mx-auto px-4 mt-12 pt-8 border-t border-gray-800 text-center text-xs">
+          © {new Date().getFullYear()} Abc Cafe Restaurant Management. All rights reserved.
+        </div>
+      </footer>
+    </div>
+  );
+}

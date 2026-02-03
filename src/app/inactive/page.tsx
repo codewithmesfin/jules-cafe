@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/Button';
 import { AlertTriangle, Mail, User, Clock, CheckCircle, ArrowRight } from 'lucide-react';
 import Link from 'next/link';

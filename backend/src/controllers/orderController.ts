@@ -13,9 +13,15 @@ import { checkInventoryForOrderItems, deductInventoryForOrder } from '../utils/i
  * Create Order with Items
  */
 export const createOrder = catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
-  const { items, customer_id, table_id, notes, payment_method } = req.body;
-  const businessId = req.user.default_business_id;
+  const { items, customer_id, table_id, notes, payment_method, business_id } = req.body;
   const userId = req.user._id;
+
+  // Use business_id from body if provided (for customers), otherwise use user's default
+  const businessId = business_id || req.user.default_business_id;
+
+  if (!businessId) {
+    return next(new AppError('No business context provided', 400));
+  }
 
   if (!items || !Array.isArray(items) || items.length === 0) {
     return next(new AppError('Order must have at least one item', 400));
@@ -58,7 +64,7 @@ export const createOrder = catchAsync(async (req: AuthRequest, res: Response, ne
       table_id: table_id || undefined,
       notes,
       total_amount: totalAmount,
-      payment_method,
+      payment_method: payment_method || 'cash',
       order_status: 'pending'
     }], { session });
 
@@ -99,24 +105,33 @@ export const createOrder = catchAsync(async (req: AuthRequest, res: Response, ne
 export const getMyOrders = catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
   const businessId = req.user.default_business_id;
 
-  // Basic query
-  const orders = await Order.find({ business_id: businessId })
+  const query: any = {};
+  if (req.user.role === 'customer') {
+    query.customer_id = req.user._id;
+  } else if (businessId) {
+    query.business_id = businessId;
+  } else if (req.user.role !== 'saas_admin') {
+    return res.status(200).json({ success: true, data: [] });
+  }
+
+  const orders = await Order.find(query)
     .populate('customer_id')
     .populate('table_id')
-    .sort({ created_at: -1 });
+    .sort({ created_at: -1 })
+    .lean();
 
-  // If we want items too, we'd have to aggregate or map
-  // For simplicity and efficiency, let's just return orders.
-  // Frontend can fetch items for specific order if needed,
-  // or we can aggregate here.
+  const orderIds = orders.map(o => o._id);
+  const allItems = await OrderItem.find({ order_id: { $in: orderIds } })
+    .populate('product_id')
+    .lean();
 
-  const ordersWithItems = await Promise.all(orders.map(async (order) => {
-    const items = await OrderItem.find({ order_id: order._id }).populate('product_id');
+  const ordersWithItems = orders.map(order => {
     return {
-      ...order.toObject(),
-      items
+      ...order,
+      id: order._id.toString(),
+      items: allItems.filter(item => item.order_id.toString() === order._id.toString())
     };
-  }));
+  });
 
   res.status(200).json({
     success: true,
@@ -127,8 +142,17 @@ export const getMyOrders = catchAsync(async (req: AuthRequest, res: Response, ne
 export const getOrder = factory.getOne(Order, { populate: ['customer_id', 'table_id'] });
 
 export const updateOrder = catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
+  const query: any = { _id: req.params.id };
+  if (req.user.role !== 'saas_admin') {
+     if (req.user.default_business_id) {
+       query.business_id = req.user.default_business_id;
+     } else if (req.user.role === 'customer') {
+       query.customer_id = req.user._id;
+     }
+  }
+
   const order = await Order.findOneAndUpdate(
-    { _id: req.params.id, business_id: req.user.default_business_id },
+    query,
     req.body,
     { new: true, runValidators: true }
   );
