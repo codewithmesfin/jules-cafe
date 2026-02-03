@@ -23,7 +23,10 @@ const IngredientsListView: React.FC = () => {
 
   const [formData, setFormData] = useState({
     name: '',
-    unit: ''
+    unit: '',
+    cost_per_unit: 0,
+    sku: '',
+    is_active: true
   });
 
   useEffect(() => {
@@ -58,7 +61,7 @@ const IngredientsListView: React.FC = () => {
       }
       setIsModalOpen(false);
       setEditingIngredient(null);
-      setFormData({ name: '', unit: '' });
+      setFormData({ name: '', unit: '', cost_per_unit: 0, sku: '', is_active: true });
       fetchIngredients();
     } catch (error: any) {
       showNotification(error.message || 'Failed to save ingredient', 'error');
@@ -80,10 +83,16 @@ const IngredientsListView: React.FC = () => {
   const openModal = (ingredient?: Ingredient) => {
     if (ingredient) {
       setEditingIngredient(ingredient);
-      setFormData({ name: ingredient.name, unit: ingredient.unit });
+      setFormData({
+        name: ingredient.name,
+        unit: ingredient.unit,
+        cost_per_unit: (ingredient as any).cost_per_unit || 0,
+        sku: (ingredient as any).sku || '',
+        is_active: (ingredient as any).is_active !== false
+      });
     } else {
       setEditingIngredient(null);
-      setFormData({ name: '', unit: '' });
+      setFormData({ name: '', unit: '', cost_per_unit: 0, sku: '', is_active: true });
     }
     setIsModalOpen(true);
   };
@@ -156,7 +165,11 @@ const IngredientsListView: React.FC = () => {
               },
               {
                 header: 'Status',
-                accessor: () => <Badge variant="success">Active</Badge>
+                accessor: (ing) => (
+                   <Badge variant={(ing as any).is_active !== false ? 'success' : 'neutral'}>
+                     {(ing as any).is_active !== false ? 'Active' : 'Inactive'}
+                   </Badge>
+                 )
               },
               {
                 header: 'Actions',
@@ -209,12 +222,40 @@ const IngredientsListView: React.FC = () => {
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           />
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Unit"
+              placeholder="e.g., kg, liters, pieces"
+              value={formData.unit}
+              onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+            />
+            <Input
+              label="Cost per Unit"
+              type="number"
+              step="0.01"
+              placeholder="0.00"
+              value={formData.cost_per_unit || ""}
+              onChange={(e) => setFormData({ ...formData, cost_per_unit: parseFloat(e.target.value) || 0 })}
+            />
+          </div>
           <Input
-            label="Unit"
-            placeholder="e.g., kg, liters, pieces, grams"
-            value={formData.unit}
-            onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+            label="SKU"
+            placeholder="e.g., COFFEE-BEANS-001"
+            value={formData.sku}
+            onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
           />
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="is_active"
+              className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+              checked={formData.is_active}
+              onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+            />
+            <label htmlFor="is_active" className="text-sm font-medium text-slate-700">
+              Active
+            </label>
+          </div>
         </div>
       </Modal>
     </div>

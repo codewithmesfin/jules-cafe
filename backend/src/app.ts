@@ -20,6 +20,7 @@ import analyticsRoutes from './routes/analyticsRoutes';
 import publicRoutes from './routes/publicRoutes';
 import menuRoutes from './routes/menuRoutes';
 import unitRoutes from './routes/unitRoutes';
+import uploadRoutes from './routes/uploadRoutes';
 
 import errorHandler from './middleware/errorHandler';
 
@@ -81,6 +82,7 @@ app.use('/api/customers', customerRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/menu', menuRoutes);
 app.use('/api/settings', unitRoutes);
+app.use('/api/upload', uploadRoutes);
 
 app.use('/', publicRoutes);
 

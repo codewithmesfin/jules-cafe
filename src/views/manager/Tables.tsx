@@ -26,6 +26,7 @@ const Tables: React.FC = () => {
 
   // Form state - matching backend model
   const [formName, setFormName] = useState('');
+  const [formTableNumber, setFormTableNumber] = useState('');
   const [formSeats, setFormSeats] = useState(4);
   const [formLocation, setFormLocation] = useState('');
   const [formIsActive, setFormIsActive] = useState(true);
@@ -61,12 +62,14 @@ const Tables: React.FC = () => {
   const handleOpenModal = (table: Table | null = null) => {
     setSelectedTable(table);
     if (table) {
-      setFormName(table.table_number || table.name || '');
+      setFormName(table.name || '');
+      setFormTableNumber(table.table_number || '');
       setFormSeats(table.capacity || table.seats || 4);
       setFormLocation((table as any).location || '');
       setFormIsActive((table as any).is_active !== false);
     } else {
       setFormName('');
+      setFormTableNumber('');
       setFormSeats(4);
       setFormLocation('');
       setFormIsActive(true);
@@ -81,7 +84,7 @@ const Tables: React.FC = () => {
 
   const handleSave = async () => {
     if (!formName) {
-      showNotification('Please enter a table name/number', 'error');
+      showNotification('Please enter a table name', 'error');
       return;
     }
 
@@ -89,6 +92,7 @@ const Tables: React.FC = () => {
       // Map frontend fields to backend model
       const tableData = {
         name: formName,
+        table_number: formTableNumber || formName,
         seats: formSeats,
         location: formLocation || undefined,
         is_active: formIsActive
@@ -269,10 +273,16 @@ const Tables: React.FC = () => {
       >
         <div className="space-y-4 py-2">
           <Input
-            label="Table Name/Number *"
-            placeholder="e.g., A1, 10, Terrace-1"
+            label="Table Name *"
+            placeholder="e.g., Main Dining"
             value={formName}
             onChange={(e) => setFormName(e.target.value)}
+          />
+          <Input
+            label="Table Number"
+            placeholder="e.g., A1, 10"
+            value={formTableNumber}
+            onChange={(e) => setFormTableNumber(e.target.value)}
           />
           <Input
             label="Seating Capacity"

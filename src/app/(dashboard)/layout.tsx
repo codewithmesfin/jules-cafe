@@ -51,7 +51,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const handleSwitchBusiness = async (businessId: string) => {
     await switchBusiness(businessId);
     setShowBusinessSelector(false);
-    router.refresh();
+    // Trigger full page reload to refresh all data
+    window.location.reload();
   };
 
   if (loading || !user) {
@@ -120,14 +121,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Logo & Business Selector */}
         <div className="p-4 border-b border-slate-100 relative">
           <div ref={dropdownRef} className="relative">
-            <div
-              className={cn(
-                'flex items-center gap-3 p-3 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100 transition-all border border-slate-200',
-                !sidebarCollapsed && 'justify-between'
-              )}
-              onClick={() => setShowBusinessSelector(!showBusinessSelector)}
-            >
-              <div className="flex items-center gap-3 min-w-0">
+            <div className="flex items-center justify-between gap-2">
+              <div
+                className={cn(
+                  'flex items-center gap-3 p-2 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100 transition-all border border-slate-200 flex-1',
+                  !sidebarCollapsed && 'justify-start'
+                )}
+                onClick={() => setShowBusinessSelector(!showBusinessSelector)}
+              >
                 <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white flex-shrink-0">
                   <ChefHat size={20} />
                 </div>
@@ -138,13 +139,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   </div>
                 )}
               </div>
-              {!sidebarCollapsed && (
-                <ChevronDown size={16} className={cn('text-slate-400 transition-transform flex-shrink-0', showBusinessSelector && 'rotate-180')} />
-              )}
             </div>
 
             {/* Business Selector Dropdown */}
-            {showBusinessSelector && !sidebarCollapsed && (
+            {showBusinessSelector && (
               <div className="absolute top-full left-0 right-0 mt-2 py-2 bg-white border border-slate-200 rounded-xl shadow-lg z-50">
                 <div className="px-3 pb-2 mb-2 border-b border-slate-100">
                   <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Your Businesses</p>
@@ -254,16 +252,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           })}
         </nav>
 
-        {/* Collapse Button */}
-        <div className="px-3 py-2 border-t border-slate-100">
-          <button
-            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="w-full flex items-center justify-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-50 transition-all text-slate-500 hover:text-slate-700"
-          >
-            {sidebarCollapsed ? <ChevronRight size={20} /> : <><ChevronLeft size={20} /><span className="text-sm font-medium">Collapse</span></>}
-          </button>
-        </div>
-
         {/* User Profile */}
         <div className="p-4 mt-auto border-t border-slate-100 bg-slate-50/50">
           <div className={cn('flex items-center gap-3', sidebarCollapsed && 'justify-center')}>
@@ -293,6 +281,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
         <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-6 shrink-0 sticky top-0 z-20">
+          {/* Collapse Sidebar Button */}
+          <button
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            className="p-2.5 hover:bg-slate-100 rounded-xl transition-all text-slate-500 hover:text-slate-700 mr-2"
+            title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {sidebarCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
+          </button>
+          
           {/* Search */}
           <div className="flex items-center gap-4 flex-1 max-w-xl">
             <div className="relative w-full group">
@@ -307,7 +304,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
           {/* Actions */}
           <div className="flex items-center gap-3">
-            <BellIcon className="p-2.5 hover:bg-slate-100 rounded-xl transition-all text-slate-500 hover:text-slate-700 cursor-pointer" size={20} />
             <div className="hidden sm:block w-px h-8 bg-slate-200 mx-2"></div>
             <Link href="/settings/profile" className="flex items-center gap-3 cursor-pointer group">
               <div className="w-9 h-9 bg-slate-100 rounded-xl flex items-center justify-center text-slate-700 font-semibold text-sm transition-transform group-hover:scale-105">

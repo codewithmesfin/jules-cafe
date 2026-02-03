@@ -135,5 +135,23 @@ export const api = {
     createConversion: (data: any) => fetcher('/api/settings/conversions', { method: 'POST', body: JSON.stringify(data) }),
     updateConversion: (id: string, data: any) => fetcher(`/api/settings/conversions/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     deleteConversion: (id: string) => fetcher(`/api/settings/conversions/${id}`, { method: 'DELETE' }),
+  },
+  upload: {
+    uploadImage: async (file: File) => {
+      const formData = new FormData();
+      formData.append('image', file);
+      const jwt = typeof window !== 'undefined' ? localStorage.getItem('jwt') : null;
+      const response = await fetch(`${API_URL}/api/upload`, {
+        method: 'POST',
+        headers: {
+          ...(jwt ? { 'Authorization': `Bearer ${jwt}` } : {}),
+        },
+        body: formData,
+      });
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+      return response.json();
+    },
   }
 };

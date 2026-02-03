@@ -81,9 +81,13 @@ const MenuAvailability: React.FC = () => {
   };
 
   const filteredMenu = menuItems.filter(m => {
-    const prodId = m.product_id?.id || m.product_id;
-    const prod = products.find(p => p.id === prodId);
-    const prodName = prod?.name?.toLowerCase() || '';
+    // Handle both object and string product_id formats
+    const prodId = m.product_id?.id || m.product_id?._id || m.product_id;
+    let prod = products.find(p => p.id === prodId);
+    if (!prod) {
+      prod = products.find(p => p._id === prodId);
+    }
+    const prodName = prod?.name?.toLowerCase() || m.product_id?.name?.toLowerCase() || '';
     return prodName.includes(searchTerm.toLowerCase());
   });
 
@@ -143,8 +147,17 @@ const MenuAvailability: React.FC = () => {
               {
                 header: 'Product',
                 accessor: (m) => {
-                  const prodId = m.product_id?.id || m.product_id;
-                  const prod = products.find(p => p.id === prodId);
+                  // Handle both object and string product_id formats
+                  const prodId = m.product_id?.id || m.product_id?._id || m.product_id;
+                  // Try to find by id first, then by _id
+                  let prod = products.find(p => p.id === prodId);
+                  if (!prod) {
+                    prod = products.find(p => p._id === prodId);
+                  }
+                  // If still not found and menu item has nested product data
+                  if (!prod && m.product_id?.name) {
+                    prod = m.product_id;
+                  }
                   return (
                     <div>
                       <p className="font-medium text-slate-900">{prod?.name || 'Unknown'}</p>
@@ -184,7 +197,7 @@ const MenuAvailability: React.FC = () => {
                         onClick={() => {
                           setEditingMenu(m);
                           setFormData({
-                            product_id: m.product_id?.id || m.product_id,
+                            product_id: m.product_id?.id || m.product_id?._id || m.product_id,
                             is_available: m.is_available,
                             display_order: m.display_order,
                             available_from: m.available_from || '',
@@ -231,25 +244,23 @@ const MenuAvailability: React.FC = () => {
         }
       >
         <div className="space-y-4 py-2">
-          {!editingMenu && (
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Product
-              </label>
-              <select
-                className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={formData.product_id}
-                onChange={(e) => setFormData({ ...formData, product_id: e.target.value })}
-              >
-                <option value="">Select product...</option>
-                {products.map(p => (
-                  <option key={p.id || p._id} value={p.id || p._id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              Product
+            </label>
+            <select
+              className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={formData.product_id}
+              onChange={(e) => setFormData({ ...formData, product_id: e.target.value })}
+            >
+              <option value="">Select product...</option>
+              {products.map(p => (
+                <option key={p.id || p._id} value={p.id || p._id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </div>
 
           <Input
             label="Display Order"

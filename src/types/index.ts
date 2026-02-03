@@ -36,10 +36,14 @@ export interface Product {
   _id?: string;
   business_id: string;
   category_id: string;
+  creator_id?: string;
   name: string;
   description?: string;
   price: number;
+  cost?: number;
   image_url?: string;
+  sku?: string;
+  status?: 'draft' | 'published' | 'out_of_stock';
   is_active: boolean;
 }
 
@@ -47,8 +51,12 @@ export interface Ingredient {
   id: string;
   _id?: string;
   business_id: string;
+  creator_id?: string;
   name: string;
   unit: string;
+  cost_per_unit?: number;
+  sku?: string;
+  is_active?: boolean;
 }
 
 export interface Category {

@@ -31,6 +31,7 @@ const Customers: React.FC = () => {
   const [formCustomerType, setFormCustomerType] = useState<CustomerType>('regular');
   const [formDiscount, setFormDiscount] = useState(0);
   const [formNotes, setFormNotes] = useState('');
+  const [formIsActive, setFormIsActive] = useState(true);
 
   const customerTypeOptions: { value: CustomerType; label: string; color: string }[] = [
     { value: 'regular', label: 'Regular', color: 'bg-slate-100 text-slate-600' },
@@ -78,7 +79,8 @@ const Customers: React.FC = () => {
         address: formAddress || undefined,
         customer_type: formCustomerType,
         discount_percent: formDiscount,
-        notes: formNotes || undefined
+        notes: formNotes || undefined,
+        is_active: formIsActive
       };
 
       if (editingCustomer) {
@@ -119,6 +121,7 @@ const Customers: React.FC = () => {
     setFormCustomerType('regular');
     setFormDiscount(0);
     setFormNotes('');
+    setFormIsActive(true);
   };
 
   const getTypeInfo = (type: CustomerType) => {
@@ -200,6 +203,7 @@ const Customers: React.FC = () => {
                           setFormCustomerType(customer.customer_type);
                           setFormDiscount(customer.discount_percent || 0);
                           setFormNotes(customer.notes || '');
+                          setFormIsActive(customer.is_active !== false);
                           setIsModalOpen(true);
                         }}
                         className="p-2 hover:bg-slate-100 rounded-lg text-slate-500"
@@ -339,6 +343,16 @@ const Customers: React.FC = () => {
               value={formNotes}
               onChange={(e) => setFormNotes(e.target.value)}
             />
+          </div>
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="is_active"
+              className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+              checked={formIsActive}
+              onChange={(e) => setFormIsActive(e.target.checked)}
+            />
+            <label htmlFor="is_active" className="text-sm font-medium text-slate-700">Active customer</label>
           </div>
         </div>
       </Modal>

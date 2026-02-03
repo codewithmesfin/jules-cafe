@@ -17,7 +17,7 @@ const BusinessManagement: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBusiness, setEditingBusiness] = useState<Business | null>(null);
-  const [formData, setFormData] = useState({ name: '', legal_name: '', address: '', description: '' });
+  const [formData, setFormData] = useState({ name: '', legal_name: '', address: '', description: '', logo: '', banner: '' });
 
   const handleSave = async () => {
     try {
@@ -30,9 +30,9 @@ const BusinessManagement: React.FC = () => {
 
   const openModal = (biz: Business | null = null) => {
     if (biz) {
-      setEditingBusiness(biz); setFormData({ name: biz.name || '', legal_name: biz.legal_name || '', address: biz.address || '', description: biz.description || '' });
+      setEditingBusiness(biz); setFormData({ name: biz.name || '', legal_name: biz.legal_name || '', address: biz.address || '', description: biz.description || '', logo: (biz as any).logo || '', banner: (biz as any).banner || '' });
     } else {
-      setEditingBusiness(null); setFormData({ name: '', legal_name: '', address: '', description: '' });
+      setEditingBusiness(null); setFormData({ name: '', legal_name: '', address: '', description: '', logo: '', banner: '' });
     }
     setIsModalOpen(true);
   };
@@ -66,7 +66,17 @@ const BusinessManagement: React.FC = () => {
         </div>
       </div>
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Workspace Details" className="max-w-md" footer={<div className="flex gap-3 w-full"><Button variant="outline" onClick={() => setIsModalOpen(false)} className="flex-1 rounded-xl h-12">Cancel</Button><Button onClick={handleSave} disabled={loading} className="flex-1 rounded-xl h-12 bg-blue-600 text-white font-black">{loading ? '...' : 'Save'}</Button></div>}>
-        <div className="space-y-4 pt-4"><Input label="Name *" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="rounded-xl h-12" /><Input label="Legal Name" value={formData.legal_name} onChange={e => setFormData({...formData, legal_name: e.target.value})} className="rounded-xl h-12" /><Input label="Address" value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} className="rounded-xl h-12" /></div>
+        <div className="space-y-4 pt-4">
+          <Input label="Name *" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="rounded-xl h-12" />
+          <Input label="Legal Name" value={formData.legal_name} onChange={e => setFormData({...formData, legal_name: e.target.value})} className="rounded-xl h-12" />
+          <Input label="Address" value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} className="rounded-xl h-12" />
+          <Input label="Logo URL" value={formData.logo} onChange={e => setFormData({...formData, logo: e.target.value})} className="rounded-xl h-12" placeholder="https://..." />
+          <Input label="Banner URL" value={formData.banner} onChange={e => setFormData({...formData, banner: e.target.value})} className="rounded-xl h-12" placeholder="https://..." />
+          <div>
+            <label className="block text-sm font-bold text-slate-700 mb-2">Description</label>
+            <textarea className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 min-h-[80px]" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} placeholder="Describe your business..." />
+          </div>
+        </div>
       </Modal>
     </div>
   );

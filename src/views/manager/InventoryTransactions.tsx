@@ -11,24 +11,50 @@ import { cn } from '../../utils/cn';
 const InventoryTransactionsView: React.FC = () => {
   const { showNotification } = useNotification();
   const [transactions, setTransactions] = useState<any[]>([]);
+  const [ingredients, setIngredients] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
 
   useEffect(() => {
-    fetchTransactions();
+    fetchData();
   }, []);
 
-  const fetchTransactions = async () => {
+  const fetchData = async () => {
     try {
       setLoading(true);
-      const response = await api.inventory.getTransactions();
-      setTransactions(Array.isArray(response) ? response : response.data || []);
+      const [transRes, ingRes, prodRes] = await Promise.all([
+        api.inventory.getTransactions(),
+        api.ingredients.getAll(),
+        api.products.getAll()
+      ]);
+      setTransactions(Array.isArray(transRes) ? transRes : transRes.data || []);
+      setIngredients(Array.isArray(ingRes) ? ingRes : ingRes.data || []);
+      setProducts(Array.isArray(prodRes) ? prodRes : prodRes.data || []);
     } catch (error: any) {
       showNotification('Failed to fetch transactions', 'error');
     } finally {
       setLoading(false);
     }
+  };
+
+  const getItemName = (transaction: any) => {
+    const itemId = transaction.item_id?._id || transaction.item_id;
+    if (!itemId) return 'Unknown Item';
+    
+    // Try to get from populated item_id object
+    if (transaction.item_id?.name) return transaction.item_id.name;
+    
+    // Look up in ingredients
+    const ingredient = ingredients.find(i => (i.id || i._id) === itemId);
+    if (ingredient?.name) return ingredient.name;
+    
+    // Look up in products
+    const product = products.find(p => (p.id || p._id) === itemId);
+    if (product?.name) return product.name;
+    
+    return 'Unknown Item';
   };
 
   const getTypeIcon = (type: string) => {
@@ -48,7 +74,7 @@ const InventoryTransactionsView: React.FC = () => {
   };
 
   const filteredTransactions = transactions.filter(t => {
-    const itemName = (t.item_id as any)?.name || 'Unknown';
+    const itemName = getItemName(t);
     const matchesSearch = itemName.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = filterType === 'all' || t.reference_type === filterType;
     return matchesSearch && matchesFilter;
@@ -149,7 +175,7 @@ const InventoryTransactionsView: React.FC = () => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-slate-900 truncate">
-                      {(t.item_id as any)?.name || 'Unknown Item'}
+                      {getItemName(t)}
                     </p>
                     <div className="flex items-center gap-2 mt-1">
                       <Badge className="text-[10px]" variant="neutral">

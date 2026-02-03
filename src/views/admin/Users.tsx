@@ -29,6 +29,7 @@ const Users: React.FC = () => {
   const [formPassword, setFormPassword] = useState('');
   const [formRole, setFormRole] = useState<string>('waiter');
   const [formStatus, setFormStatus] = useState<string>('active');
+  const [formIsActive, setFormIsActive] = useState<boolean>(true);
 
   useEffect(() => { fetchUsers(); }, [currentBusiness]);
 
@@ -83,7 +84,7 @@ const Users: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4"><Input label="Professional Email *" type="email" value={formEmail} onChange={(e) => setFormEmail(e.target.value)} className="rounded-xl h-12" /><Input label="Phone Number" value={formPhone} onChange={(e) => setFormPhone(e.target.value)} className="rounded-xl h-12" /></div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="w-full"><label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Permission Group *</label><select className="w-full rounded-xl border border-slate-100 bg-slate-50 px-4 py-3.5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer" value={formRole} onChange={(e) => setFormRole(e.target.value)}><option value="waiter">Waiter (View Only)</option><option value="cashier">Cashier (Operational)</option><option value="manager">Manager (Elevated)</option></select></div>
-            <div className="w-full"><label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Account Status</label><select className="w-full rounded-xl border border-slate-100 bg-slate-50 px-4 py-3.5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer" value={formStatus} onChange={(e) => setFormStatus(e.target.value)}><option value="active">Active</option><option value="inactive">Inactive</option><option value="suspended">Suspended</option></select></div>
+            <div className="w-full"><label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Account Status</label><select className="w-full rounded-xl border border-slate-100 bg-slate-50 px-4 py-3.5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer" value={formStatus} onChange={(e) => setFormStatus(e.target.value)}><option value="active">Active</option><option value="pending">Pending</option><option value="inactive">Inactive</option><option value="suspended">Suspended</option><option value="onboarding">Onboarding</option></select></div>
           </div>
           {formRole !== 'waiter' && <Input type="password" label="Access Password" placeholder={editingUser ? "Leave blank to keep" : "••••••••"} value={formPassword} onChange={(e) => setFormPassword(e.target.value)} className="rounded-xl h-12" />}
         </div>
