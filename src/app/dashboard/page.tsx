@@ -61,7 +61,17 @@ export default function DashboardPage() {
       
       // Fetch orders - handle both array and {data: array} format
       const ordersResponse = await api.orders.getAll();
-      const ordersData = Array.isArray(ordersResponse) ? ordersResponse : (ordersResponse.data || []);
+      const rawOrders = Array.isArray(ordersResponse) ? ordersResponse : (ordersResponse.data || []);
+      
+      // Map backend fields to frontend format
+      const ordersData = rawOrders.map((order: any) => ({
+        id: order._id || order.id,
+        customer_name: order.customer_id?.name || (typeof order.customer_id === 'string' ? order.customer_id : 'Guest'),
+        table_id: order.table_id,
+        total: order.total_amount || order.total || 0,
+        status: order.order_status || order.status || 'pending',
+        created_at: order.created_at || order.createdAt,
+      }));
       
       // Fetch products - handle both array and {data: array} format
       const productsResponse = await api.products.getAll();
@@ -119,14 +129,17 @@ export default function DashboardPage() {
       cancelled: 'error',
       delivered: 'success',
     };
+    if (!status) return 'neutral';
     return styles[status] || 'neutral';
   };
 
   const formatStatus = (status: string) => {
+    if (!status) return '';
     return status.charAt(0).toUpperCase() + status.slice(1);
   };
 
   const formatTime = (dateString: string) => {
+    if (!dateString) return '';
     const date = new Date(dateString);
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
@@ -249,9 +262,9 @@ export default function DashboardPage() {
                     <tbody className="divide-y divide-slate-100">
                       {recentOrders.map((order) => (
                         <tr key={order.id} className="hover:bg-slate-50 transition-colors">
-                          <td className="px-6 py-4 font-semibold text-slate-900">{order.id}</td>
+                          <td className="px-6 py-4 font-semibold text-slate-900">{order.id?.slice(-6).toUpperCase() || 'N/A'}</td>
                           <td className="px-6 py-4">{order.customer_name || 'Guest'}</td>
-                          <td className="px-6 py-4 font-semibold">${order.total.toFixed(2)}</td>
+                          <td className="px-6 py-4 font-semibold">${(order.total ?? 0).toFixed(2)}</td>
                           <td className="px-6 py-4">
                             <Badge variant={getStatusBadge(order.status)} size="sm">
                               {formatStatus(order.status)}

@@ -28,7 +28,7 @@ export default function CompanySetup() {
       await api.business.setup(formData);
       await refreshUser();
       showNotification('Business setup complete!');
-      router.push('/');
+      router.push('/dashboard');
     } catch (error: any) {
       showNotification(error.message || 'Setup failed', 'error');
     } finally {

@@ -73,34 +73,34 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   // Simplified sidebar menu
   const allMenuItems: MenuItem[] = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/', roles: ['admin', 'manager', 'cashier', 'waiter'] },
-    { icon: Receipt, label: 'Orders', path: '/orders', roles: ['admin', 'manager', 'cashier'] },
+    { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', roles: ['admin', 'manager', 'cashier', 'waiter'] },
+    { icon: Receipt, label: 'Orders', path: '/dashboard/orders', roles: ['admin', 'manager', 'cashier'] },
     {
       icon: Package, label: 'Products', roles: ['admin', 'manager', 'cashier'],
       submenu: [
-        { label: 'Products', path: '/products' },
-        { label: 'Categories', path: '/products/categories' },
-        { label: 'Menu', path: '/products/menu' },
+        { label: 'Products', path: '/dashboard/products' },
+        { label: 'Categories', path: '/dashboard/products/categories' },
+        { label: 'Menu', path: '/dashboard/products/menu' },
       ]
     },
     {
       icon: Database, label: 'Inventory', roles: ['admin', 'manager', 'cashier'],
       submenu: [
-        { label: 'Ingredients', path: '/ingredients' },
-        { label: 'Stock Levels', path: '/ingredients/inventory' },
-        { label: 'Transactions', path: '/ingredients/transactions' },
+        { label: 'Ingredients', path: '/dashboard/ingredients' },
+        { label: 'Stock Levels', path: '/dashboard/ingredients/inventory' },
+        { label: 'Transactions', path: '/dashboard/ingredients/transactions' },
       ]
     },
-    { icon: ChefHat, label: 'Recipes', path: '/recipes', roles: ['admin', 'manager'] },
-    { icon: Utensils, label: 'Tables', path: '/tables', roles: ['admin', 'manager', 'cashier'] },
-    { icon: Users, label: 'Customers', path: '/customers', roles: ['admin', 'manager', 'cashier'] },
-    { icon: ClipboardList, label: 'Reports', path: '/reports', roles: ['admin', 'manager', 'saas_admin'] },
+    { icon: ChefHat, label: 'Recipes', path: '/dashboard/recipes', roles: ['admin', 'manager'] },
+    { icon: Utensils, label: 'Tables', path: '/dashboard/tables', roles: ['admin', 'manager', 'cashier'] },
+    { icon: Users, label: 'Customers', path: '/dashboard/customers', roles: ['admin', 'manager', 'cashier'] },
+    { icon: ClipboardList, label: 'Reports', path: '/dashboard/reports', roles: ['admin', 'manager', 'saas_admin'] },
     {
       icon: Settings, label: 'Settings', roles: ['admin', 'manager', 'cashier', 'waiter'],
       submenu: [
-        { label: 'Users & Roles', path: '/settings/users' },
-        { label: 'Units & Conversions', path: '/settings/units' },
-        { label: 'Business Info', path: '/settings/business' },
+        { label: 'Users & Roles', path: '/dashboard/settings/users' },
+        { label: 'Units & Conversions', path: '/dashboard/settings/units' },
+        { label: 'Business Info', path: '/dashboard/settings/business' },
       ]
     },
   ];
@@ -173,7 +173,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 {user.role === 'admin' && (
                   <div className="pt-2 mt-2 border-t border-slate-100">
                     <button
-                      onClick={() => router.push('/settings/business')}
+                      onClick={() => router.push('/dashboard/settings/business')}
                       className="w-full flex items-center gap-3 px-3 py-2 mx-2 rounded-lg text-left text-slate-600 hover:bg-slate-50 transition-all"
                     >
                       <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -305,7 +305,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {/* Actions */}
           <div className="flex items-center gap-3">
             <div className="hidden sm:block w-px h-8 bg-slate-200 mx-2"></div>
-            <Link href="/settings/profile" className="flex items-center gap-3 cursor-pointer group">
+            <Link href="/dashboard/settings/profile" className="flex items-center gap-3 cursor-pointer group">
               <div className="w-9 h-9 bg-slate-100 rounded-xl flex items-center justify-center text-slate-700 font-semibold text-sm transition-transform group-hover:scale-105">
                 {userInitials}
               </div>

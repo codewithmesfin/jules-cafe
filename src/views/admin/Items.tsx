@@ -73,9 +73,9 @@ const Products = () => {
 
   const navigateToProduct = (product: Product | null = null) => {
     if (product) {
-      router.push(`/products/${product.id}`);
+      router.push(`/dashboard/products/${product.id}`);
     } else {
-      router.push('/products/new');
+      router.push('/dashboard/products/new');
     }
   };
 

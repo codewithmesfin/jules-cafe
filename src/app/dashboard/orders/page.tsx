@@ -20,7 +20,7 @@ function OrdersContent() {
     const params = new URLSearchParams(searchParams);
     params.set('mode', newMode);
     params.delete('id');
-    router.push(`/orders?${params.toString()}`);
+    router.push(`/dashboard/orders?${params.toString()}`);
   };
 
   return (

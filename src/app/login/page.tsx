@@ -24,7 +24,7 @@ export default function LoginPage() {
       if (data.requiresOnboarding) {
         router.push('/company-setup');
       } else {
-        router.push('/');
+        router.push('/dashboard');
       }
     } catch (err: any) {
       setError(err.message || 'Failed to login');

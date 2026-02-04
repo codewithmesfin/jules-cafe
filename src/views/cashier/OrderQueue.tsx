@@ -253,7 +253,7 @@ const OrderQueue: React.FC = () => {
                           <CheckCircle size={14} /> Complete
                         </Button>
                       )}
-                      <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); router.push(`/orders?mode=new&id=${order.id || order._id}`); }}>
+                      <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/orders?mode=new&id=${order.id || order._id}`); }}>
                         <Edit2 size={16} />
                       </Button>
                     </>

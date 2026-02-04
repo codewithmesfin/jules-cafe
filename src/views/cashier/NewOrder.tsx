@@ -1,50 +1,25 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
-  ShoppingCart, Plus, Minus, Search, Grid, User, ArrowLeft,
-  Utensils, Package, Coffee, Pizza, ChefHat, Truck, ChevronRight, Percent
+  ShoppingCart, Plus, Minus, Search, Grid, User, ArrowLeft, UserPlus
 } from 'lucide-react';
 import { api } from '../../utils/api';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
+import { Drawer } from '../../components/ui/Drawer';
+import { Input } from '../../components/ui/Input';
 import { useNotification } from '../../context/NotificationContext';
 import { useAuth } from '@/context/AuthContext';
 import { cn } from '../../utils/cn';
-import type { Product, Category, Table, Customer, CustomerType } from '../../types';
+import type { Product, Category, Table, User as AppUser, Customer } from '../../types';
 
 interface CartItem extends Product {
   quantity: number;
+  base_price: number;
 }
-
-type OrderType = 'dine-in' | 'takeaway' | 'delivery';
-
-const categoryColors: Record<string, string> = {
-  Pizza: 'bg-amber-100 text-amber-700',
-  Burger: 'bg-orange-100 text-orange-700',
-  Pasta: 'bg-yellow-100 text-yellow-700',
-  Drinks: 'bg-blue-100 text-blue-700',
-  Dessert: 'bg-pink-100 text-pink-700',
-  default: 'bg-slate-100 text-slate-700',
-};
-
-const categoryIcons: Record<string, React.ElementType> = {
-  Pizza: Pizza,
-  Burger: ChefHat,
-  Pasta: Utensils,
-  Drinks: Coffee,
-  default: Package,
-};
-
-const customerTypeColors: Record<CustomerType, string> = {
-  regular: 'bg-slate-100 text-slate-600',
-  member: 'bg-blue-100 text-blue-600',
-  staff: 'bg-emerald-100 text-emerald-600',
-  vip: 'bg-amber-100 text-amber-600',
-  wholesale: 'bg-purple-100 text-purple-600',
-};
 
 const NewOrder: React.FC = () => {
   const { user } = useAuth();
@@ -56,39 +31,62 @@ const NewOrder: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [orderType, setOrderType] = useState<OrderType>('dine-in');
-  const [selectedTable, setSelectedTable] = useState<Table | null>(null);
-  const [showTableSelector, setShowTableSelector] = useState(false);
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
-  const [showCustomerModal, setShowCustomerModal] = useState(false);
+  
+  const [selectedTable, setSelectedTable] = useState('');
+  const [selectedWaiter, setSelectedWaiter] = useState('');
+  const [selectedCustomer, setSelectedCustomer] = useState('');
+
   const [orderNotes, setOrderNotes] = useState('');
 
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [tables, setTables] = useState<Table[]>([]);
+  const [users, setUsers] = useState<AppUser[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [orderLoading, setOrderLoading] = useState(false);
+
+  const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
+  const [isCartDrawerOpen, setIsCartDrawerOpen] = useState(false);
+  const [newCustomer, setNewCustomer] = useState({ name: '', phone: '', email: '', type: 'regular' as 'regular' | 'vip' | 'member', discount: 0 });
+
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [dynamicHeight, setDynamicHeight] = useState('100%');
+
+  useEffect(() => {
+    if (rootRef.current) {
+      const topOffset = rootRef.current.getBoundingClientRect().top;
+      const bottomPadding = 24; // p-6 on main element
+      setDynamicHeight(`calc(100vh - ${topOffset + bottomPadding}px)`);
+    }
+  }, [orderId]); // Re-calculate if orderId changes (tabs appear/disappear)
+
+
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [prodList, catList, tblList, custList] = await Promise.all([
+        const [prodList, catList, tblList, usrList, custList] = await Promise.all([
           api.products.getAll(),
           api.categories.getAll(),
           api.tables.getAll(),
+          api.users.getAll(),
           api.customers.getAll(),
         ]);
 
-        setProducts(Array.isArray(prodList) ? prodList : prodList.data || []);
-        setCategories(Array.isArray(catList) ? catList : catList.data || []);
-        setTables(Array.isArray(tblList) ? tblList : tblList.data || []);
-        setCustomers(Array.isArray(custList) ? custList : custList.data || []);
+        const getArray = (response: any) => Array.isArray(response) ? response : response.data || [];
+
+        setProducts(getArray(prodList));
+        setCategories(getArray(catList));
+        setTables(getArray(tblList));
+        setUsers(getArray(usrList));
+        setCustomers(getArray(custList));
 
         if (orderId) {
-          fetchOrderDetails(orderId, Array.isArray(prodList) ? prodList : prodList.data || []);
+          fetchOrderDetails(orderId, getArray(prodList));
         }
       } catch (error: any) {
         console.error('Failed to fetch data:', error);
@@ -106,8 +104,9 @@ const NewOrder: React.FC = () => {
       const orderResponse = await api.orders.getOne(id);
       const order = orderResponse.data || orderResponse;
 
-      setOrderType((order.order_type as OrderType) || 'dine-in');
-      setSelectedCustomer(order.customer_id as any);
+      setSelectedTable(order.table_id?._id || order.table_id || '');
+      setSelectedCustomer(order.customer_id?._id || order.customer_id || '');
+      setSelectedWaiter(order.waiter_id?._id || order.waiter_id || '');
       setOrderNotes(order.notes || '');
 
       const itemsResponse = await api.orders.getItems(id);
@@ -116,20 +115,22 @@ const NewOrder: React.FC = () => {
       const cartItems: CartItem[] = items.map((item: any) => {
         const product = allProducts.find(p => p.id === (item.product_id?._id || item.product_id) || p._id === (item.product_id?._id || item.product_id));
         if (!product) return null;
-        return { ...product, quantity: item.quantity, price: item.price };
+        return { ...product, quantity: item.quantity, base_price: item.price };
       }).filter(Boolean) as CartItem[];
 
       setCart(cartItems);
     } catch (error: any) {
-      showNotification('Failed to load order', 'error');
+      showNotification('Failed to load order: ' + error.message, 'error');
     } finally {
       setOrderLoading(false);
     }
   };
 
   const filteredItems = products.filter(item => {
-    const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || item.category_id === selectedCategory;
+    const searchLower = searchTerm.toLowerCase();
+    const matchesSearch = item.name.toLowerCase().includes(searchLower) || item.description?.toLowerCase().includes(searchLower);
+    const matchesCategory = selectedCategory === 'all' || item.category_id === selectedCategory || (item.category_id as any)?._id === selectedCategory;
+    
     return matchesSearch && matchesCategory && item.is_active;
   });
 
@@ -139,7 +140,7 @@ const NewOrder: React.FC = () => {
       if (existing) {
         return prev.map(i => (i.id === product.id || i._id === product._id) ? { ...i, quantity: i.quantity + 1 } : i);
       }
-      return [...prev, { ...product, quantity: 1 }];
+      return [...prev, { ...product, quantity: 1, base_price: product.price }];
     });
   };
 
@@ -152,40 +153,60 @@ const NewOrder: React.FC = () => {
       return item;
     }).filter(item => item.quantity > 0));
   };
+  
+  const customerData = useMemo(() => {
+    if (!selectedCustomer) return null;
+    const customer = customers.find(c => c.id === selectedCustomer || c._id === selectedCustomer);
+    if (!customer) return null;
+    
+    return {
+        ...customer,
+        customer_type: customer.customer_type,
+        discount_rate: customer.discount_percent
+    };
+  }, [selectedCustomer, customers]);
 
-  const subtotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
-  const vatRate = 0.15;
-  const vat = subtotal * vatRate;
-  const discountPercent = selectedCustomer?.discount_percent || 0;
-  const discountAmount = (subtotal + vat) * (discountPercent / 100);
-  const total = subtotal + vat - discountAmount;
+  const subtotal = cart.reduce((acc, item) => acc + item.base_price * item.quantity, 0);
+  const discountRate = customerData?.discount_rate || 0;
+  const discountAmount = subtotal * (discountRate / 100);
+  const total = subtotal - discountAmount;
+
 
   const handlePlaceOrder = async () => {
+    if (!selectedCustomer) {
+        showNotification("Please select a customer.", "error");
+        return;
+    }
     try {
       setSaving(true);
-      const orderData = {
-        order_type: orderType,
-        customer_id: selectedCustomer?.id || selectedCustomer?._id,
-        table_id: selectedTable?.id || selectedTable?._id,
+      const orderData: any = {
+        customer_id: selectedCustomer,
         notes: orderNotes,
-        discount_percent: discountPercent,
+        discount_percent: discountRate,
         discount_amount: discountAmount,
+        total_price: total,
         items: cart.map(item => ({
           product_id: item.id || item._id,
-          quantity: item.quantity
+          quantity: item.quantity,
+          price: item.base_price,
         }))
       };
+
+      if (selectedTable) orderData.table_id = selectedTable;
+      if (selectedWaiter) orderData.waiter_id = selectedWaiter;
+
 
       if (orderId) {
         await api.orders.update(orderId, orderData);
         showNotification('Order updated successfully!');
-        router.push('/orders?mode=queue');
+        router.push('/dashboard/orders?mode=queue');
       } else {
         await api.orders.create(orderData);
         showNotification('Order placed successfully!');
         setCart([]);
-        setSelectedTable(null);
-        setSelectedCustomer(null);
+        setSelectedTable('');
+        setSelectedCustomer('');
+        setSelectedWaiter('');
         setOrderNotes('');
       }
     } catch (error: any) {
@@ -195,429 +216,447 @@ const NewOrder: React.FC = () => {
     }
   };
 
-  const getTableDisplayName = (table: Table): string => {
-    return table.table_number || table.name || 'Unknown';
+  const handleRegisterCustomer = async () => {
+    try {
+      const { name, phone, email, type, discount } = newCustomer;
+      if (!name || !phone) {
+        showNotification("Full Name and Phone are required.", "error");
+        return;
+      }
+
+      await api.customers.create({
+        full_name: name,
+        phone,
+        email,
+        customer_type: type === 'vip' ? 'vip' : type === 'member' ? 'member' : 'regular',
+        discount_percent: discount,
+      });
+
+      showNotification("Customer added successfully!");
+      setIsCustomerModalOpen(false);
+      setNewCustomer({ name: '', phone: '', email: '', type: 'regular', discount: 0 });
+      const custs = await api.customers.getAll();
+      setCustomers(Array.isArray(custs) ? custs : custs.data || []);
+    } catch (error: any) {
+      showNotification(error.message || "Failed to add customer", "error");
+    }
   };
 
-  const getTableSeats = (table: Table): number => {
-    return table.seats || table.capacity || 0;
-  };
-
-  if (orderLoading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-slate-200 border-t-slate-900 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-slate-500">Loading order...</p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex h-full bg-slate-50">
-      {/* Left Side - Products */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Header */}
-        <div className="bg-white border-b border-slate-200 px-6 py-4">
-          <div className="flex items-center gap-4 mb-4">
-            {orderId && (
-              <button
-                onClick={() => router.push('/orders?mode=queue')}
-                className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+  const cartContent = (
+    <div className="flex flex-col h-full bg-white lg:rounded-b-3xl">
+      {/* Form fields and cart items */}
+      <div className="flex-1 overflow-y-auto p-5 space-y-5">
+        <div className="space-y-4">
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs font-semibold text-gray-600 flex items-center gap-1 mb-1.5">
+                <Grid size={12} className="text-[#e60023]" /> Table
+              </label>
+              <select
+                className="w-full text-sm border border-gray-200 rounded-xl bg-white px-3 py-2.5 focus:ring-2 focus:ring-[#e60023] focus:border-transparent transition-all shadow-sm"
+                value={selectedTable}
+                onChange={(e) => setSelectedTable(e.target.value)}
               >
-                <ArrowLeft size={20} className="text-slate-600" />
-              </button>
-            )}
-            <h1 className="text-2xl font-bold text-slate-900">
-              {orderId ? `Edit Order #${orderId.slice(-4)}` : 'New Order'}
-            </h1>
-          </div>
-
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-            <input
-              type="text"
-              placeholder="Search products..."
-              className="w-full pl-10 pr-4 py-3 bg-slate-100 border-0 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300 transition-all"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-        </div>
-
-        {/* Categories */}
-        <div className="px-6 py-4 bg-white border-b border-slate-200">
-          <div className="flex gap-3 overflow-x-auto pb-2">
-            <button
-              onClick={() => setSelectedCategory('all')}
-              className={cn(
-                'flex-shrink-0 px-4 py-2 rounded-full font-medium text-sm transition-all',
-                selectedCategory === 'all'
-                  ? 'bg-slate-900 text-white'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              )}
-            >
-              All
-            </button>
-            {categories.map((cat) => {
-              const Icon = categoryIcons[cat.name] || categoryIcons.default;
-              const style = categoryColors[cat.name] || categoryColors.default;
-              return (
-                <button
-                  key={cat.id || cat._id}
-                  onClick={() => setSelectedCategory(cat.id || cat._id!)}
-                  className={cn(
-                    'flex-shrink-0 px-4 py-2 rounded-full font-medium text-sm transition-all flex items-center gap-2',
-                    selectedCategory === (cat.id || cat._id)
-                      ? 'bg-slate-900 text-white'
-                      : `${style} hover:opacity-80`
-                  )}
-                >
-                  <Icon size={16} />
-                  {cat.name}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Products Grid */}
-        <div className="flex-1 overflow-y-auto p-6">
-          {loading ? (
-            <div className="grid grid-cols-4 gap-4">
-              {[...Array(12)].map((_, i) => (
-                <div key={i} className="bg-white rounded-xl h-36 animate-pulse" />
-              ))}
+                <option value="">Select Table</option>
+                {tables.map(t => (
+                  <option key={t.id || t._id} value={t.id || t._id}>{t.name} ({t.capacity} seats)</option>
+                ))}
+              </select>
             </div>
-          ) : filteredItems.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-64 text-slate-400">
-              <Search size={48} strokeWidth={1} />
-              <p className="mt-4 font-medium">No products found</p>
+
+            <div>
+              <label className="text-xs font-semibold text-gray-600 flex items-center gap-1 mb-1.5">
+                <User size={12} className="text-gray-500" /> Waiter
+              </label>
+              <select
+                className="w-full text-sm border border-gray-200 rounded-xl bg-white px-3 py-2.5 focus:ring-2 focus:ring-[#e60023] focus:border-transparent transition-all shadow-sm"
+                value={selectedWaiter}
+                onChange={(e) => setSelectedWaiter(e.target.value)}
+              >
+                <option value="">Assign Waiter</option>
+                {users.filter(u => u.role === 'waiter').map(u => (
+                  <option key={u.id || u._id} value={u.id || u._id}>{u.full_name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-[#e60023] flex items-center gap-1 mb-1.5">
+                <User size={12} /> Customer *
+              </label>
+              <div className="flex items-center gap-2">
+                <select
+                  className="flex-1 text-sm border border-gray-200 rounded-xl bg-white px-3 py-2.5 focus:ring-2 focus:ring-[#e60023] focus:border-transparent transition-all shadow-sm font-medium"
+                  value={selectedCustomer}
+                  onChange={(e) => setSelectedCustomer(e.target.value)}
+                >
+                  <option value="">Select Customer</option>
+                  {customers.map(c => (
+                    <option key={c.id || c._id} value={c.id || c._id}>{c.full_name} ({c.phone})</option>
+                  ))}
+                </select>
+                <button
+                  onClick={() => setIsCustomerModalOpen(true)}
+                  className="p-2.5 bg-[#e60023] text-white hover:bg-[#cc0000] rounded-xl shadow-md transition-all hover:scale-105 active:scale-95"
+                  title="Add New Customer"
+                >
+                  <UserPlus size={18} />
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <textarea
+                className="w-full text-sm border border-gray-200 rounded-xl bg-white px-3 py-2.5 focus:ring-2 focus:ring-[#e60023] focus:border-transparent transition-all shadow-sm placeholder:text-gray-400"
+                placeholder="Notes (special requests, allergies...)"
+                rows={2}
+                value={orderNotes}
+                onChange={(e) => setOrderNotes(e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider">Items ({cart.length})</h3>
+          </div>
+          
+          {cart.length === 0 ? (
+            <div className="bg-gray-50 rounded-2xl p-8 flex flex-col items-center justify-center text-center space-y-3 border-2 border-dashed border-gray-200">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
+                <ShoppingCart size={28} className="text-gray-400" strokeWidth={1.5} />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-gray-600">Your cart is empty</p>
+                <p className="text-xs text-gray-400 mt-1">Add items from the menu to get started</p>
+              </div>
             </div>
           ) : (
-            <div className="grid grid-cols-4 gap-4">
-              {filteredItems.map((product) => (
-                <button
-                  key={product.id || product._id}
-                  onClick={() => addToCart(product)}
-                  className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all text-left group"
-                >
-                  <div className="aspect-square bg-slate-100 rounded-lg mb-3 overflow-hidden">
-                    {product.image_url ? (
-                      <img
-                        src={product.image_url}
-                        alt={product.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Grid size={32} className="text-slate-300" />
-                      </div>
-                    )}
+            <div className="space-y-2">
+              {cart.map(item => (
+                <div key={item.id || item._id} className="flex items-center gap-3 p-3 bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-md transition-all">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-gray-900 truncate pr-2">{item.name}</p>
+                    <p className="text-xs text-[#e60023] font-bold mt-0.5">ETB {item.base_price.toFixed(2)}</p>
                   </div>
-                  <h4 className="font-medium text-slate-900 text-sm truncate">{product.name}</h4>
-                  <p className="text-lg font-bold text-slate-900 mt-1">${product.price.toFixed(2)}</p>
-                </button>
+                  <div className="flex items-center gap-2 bg-gray-50 rounded-full px-2 py-1 border border-gray-100">
+                    <button
+                      onClick={() => updateQuantity(item.id || item._id!, -1)}
+                      className="w-7 h-7 flex items-center justify-center bg-white border border-gray-200 text-[#e60023] rounded-full hover:bg-orange-50 hover:border-orange-200 transition-all"
+                    >
+                      <Minus size={12} />
+                    </button>
+                    <span className="text-sm font-black w-6 text-center">{item.quantity}</span>
+                    <button
+                      onClick={() => updateQuantity(item.id || item._id!, 1)}
+                      className="w-7 h-7 flex items-center justify-center bg-white border border-gray-200 text-[#e60023] rounded-full hover:bg-orange-50 hover:border-orange-200 transition-all"
+                    >
+                      <Plus size={12} />
+                    </button>
+                  </div>
+                </div>
               ))}
             </div>
           )}
         </div>
       </div>
 
-      {/* Right Side - Cart Panel */}
-      <div className="w-96 bg-white border-l border-slate-200 flex flex-col">
-        {/* Order Type Tabs */}
-        <div className="p-4 border-b border-slate-200">
-          <div className="flex gap-2">
-            {[
-              { type: 'dine-in' as const, icon: Utensils, label: 'Dine In' },
-              { type: 'takeaway' as const, icon: Package, label: 'Pickup' },
-              { type: 'delivery' as const, icon: Truck, label: 'Delivery' },
-            ].map(({ type, icon: Icon, label }) => (
+      {/* Totals and action */}
+      <div className="bottom-10 flex-shrink-0 p-5 bg-gray-50 border-t border-gray-100 space-y-4 lg:rounded-b-3xl">
+        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 space-y-3">
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-gray-500">Subtotal</span>
+            <span className="text-sm font-semibold text-gray-900">ETB {subtotal.toFixed(2)}</span>
+          </div>
+          {discountRate > 0 && (
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-green-600 font-medium flex items-center gap-1">
+                <span className="bg-green-100 text-green-700 px-1.5 py-0.5 rounded text-xs uppercase">{customerData?.customer_type}</span>
+                Discount ({discountRate}%)
+              </span>
+              <span className="text-green-600 font-semibold">-ETB {discountAmount.toFixed(2)}</span>
+            </div>
+          )}
+          <div className="flex justify-between items-center pt-2 border-t border-gray-100">
+            <span className="text-lg font-black text-gray-900">Total</span>
+            <span className="text-xl font-black text-[#e60023]">ETB {total.toFixed(2)}</span>
+          </div>
+        </div>
+        
+        <Button
+          className="w-full h-12 text-base font-bold shadow-lg shadow-orange-200 bg-gradient-to-r from-[#e60023] to-[#ff3333] hover:from-[#cc0000] hover:to-[#e60023] rounded-xl"
+          size="lg"
+          disabled={cart.length === 0 || !selectedCustomer || saving}
+          onClick={handlePlaceOrder}
+        >
+          {saving ? (
+            <span className="flex items-center gap-2">
+              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              Processing...
+            </span>
+          ) : orderId ? (
+            'Update Order'
+          ) : (
+            'Place Order'
+          )}
+        </Button>
+      </div>
+    </div>
+  );
+
+
+
+  if (orderLoading) return (
+    <div className="flex flex-col items-center justify-center h-full space-y-4">
+      <div className="w-12 h-12 border-4 border-orange-200 border-t-[#e60023] rounded-full animate-spin"></div>
+      <p className="text-gray-500 font-medium">Loading order details...</p>
+    </div>
+  );
+
+  return (
+    <div ref={rootRef} style={{ height: dynamicHeight }} className="flex flex-col lg:flex-row gap-6 relative">
+      <div className="flex-1 flex flex-col min-w-0 h-full">
+        <div className="space-y-4 mb-6">
+          <div className="flex items-center gap-4">
+            {orderId && (
               <button
-                key={type}
-                onClick={() => setOrderType(type)}
+                onClick={() => router.push('/dashboard/orders?mode=queue')}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500"
+              >
+                <ArrowLeft size={20} />
+              </button>
+            )}
+            <h1 className="text-2xl font-black text-gray-900 truncate">
+              {orderId ? `Editing Order #${orderId.slice(-4)}` : 'Create New Order'}
+            </h1>
+          </div>
+
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="relative flex-1 group">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#e60023] transition-colors w-4 h-4" />
+              <input
+                placeholder="Search by name or description..."
+                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#e60023] focus:border-transparent transition-all"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <div className="hidden xl:block w-64">
+              <select
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#e60023] transition-all"
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+              >
+                <option value="all">All Categories</option>
+                {categories.map(cat => (
+                  <option key={cat.id || cat._id} value={cat.id || cat._id}>{cat.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-2 px-2 no-scrollbar">
+            <button
+              onClick={() => setSelectedCategory('all')}
+              className={cn(
+                "whitespace-nowrap px-6 py-2 rounded-full text-sm font-bold transition-all border shrink-0",
+                selectedCategory === 'all'
+                  ? "bg-[#e60023] border-[#e60023] text-white shadow-md shadow-orange-100 scale-105"
+                  : "bg-white border-gray-200 text-gray-600 hover:border-orange-200 hover:bg-orange-50"
+              )}
+            >
+              All Items
+            </button>
+            {categories.map(cat => (
+              <button
+                key={cat.id || cat._id}
+                onClick={() => setSelectedCategory(cat.id || cat._id!)}
                 className={cn(
-                  'flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg font-medium text-sm transition-all',
-                  orderType === type
-                    ? 'bg-slate-900 text-white'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  "whitespace-nowrap px-6 py-2 rounded-full text-sm font-bold transition-all border shrink-0",
+                  selectedCategory === (cat.id || cat._id)
+                    ? "bg-[#e60023] border-[#e60023] text-white shadow-md shadow-orange-100 scale-105"
+                    : "bg-white border-gray-200 text-gray-600 hover:border-orange-200 hover:bg-orange-50"
                 )}
               >
-                <Icon size={18} />
-                {label}
+                {cat.name}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Table Selection (for Dine-in) */}
-        {orderType === 'dine-in' && (
-          <div className="p-4 border-b border-slate-200">
-            <button
-              onClick={() => setShowTableSelector(true)}
-              className="w-full flex items-center gap-3 p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-all"
-            >
-              <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
-                <Utensils size={20} className="text-slate-600" />
-              </div>
-              <div className="flex-1 text-left">
-                <p className="font-medium text-slate-900">
-                  {selectedTable ? `Table ${getTableDisplayName(selectedTable)}` : 'Select Table'}
-                </p>
-                <p className="text-sm text-slate-500">
-                  {selectedTable ? `${getTableSeats(selectedTable)} seats` : 'Choose a table'}
-                </p>
-              </div>
-              <ChevronRight size={18} className="text-slate-400" />
-            </button>
-          </div>
-        )}
-
-        {/* Customer */}
-        <div className="p-4 border-b border-slate-200">
-          <button
-            onClick={() => setShowCustomerModal(true)}
-            className="w-full flex items-center gap-3 p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-all"
-          >
-            <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
-              <User size={20} className="text-slate-600" />
+        <div className="flex-1 overflow-y-auto pr-2 pb-6 no-scrollbar">
+          {loading ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+                <div key={i} className="bg-gray-100 animate-pulse rounded-2xl h-56" />
+              ))}
             </div>
-            <div className="flex-1 text-left">
-              <p className="font-medium text-slate-900">
-                {selectedCustomer ? selectedCustomer.full_name : 'Customer'}
-              </p>
-              <p className="text-sm text-slate-500">
-                {selectedCustomer ? (
-                  <span className="flex items-center gap-2">
-                    <Badge className={cn('text-[10px]', customerTypeColors[selectedCustomer.customer_type || 'regular'])}>
-                      {selectedCustomer.customer_type || 'Regular'}
-                    </Badge>
-                    {(selectedCustomer.discount_percent || 0) > 0 && (
-                      <span className="flex items-center gap-1 text-amber-600">
-                        <Percent size={12} />
-                        {selectedCustomer.discount_percent}%
-                      </span>
-                    )}
-                  </span>
-                ) : 'Add customer'}
-              </p>
-            </div>
-            <ChevronRight size={18} className="text-slate-400" />
-          </button>
-        </div>
-
-        {/* Cart Items */}
-        <div className="flex-1 overflow-y-auto p-4">
-          {cart.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-slate-400">
-              <ShoppingCart size={40} strokeWidth={1} />
-              <p className="mt-2 font-medium">Cart is empty</p>
+          ) : filteredItems.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 text-gray-400 space-y-4">
+              <div className="p-4 bg-gray-50 rounded-full">
+                <Search size={32} strokeWidth={1.5} />
+              </div>
+              <p className="font-medium">No items found matching your criteria</p>
             </div>
           ) : (
-            <div className="space-y-3">
-              {cart.map((item) => (
-                <div key={item.id || item._id} className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-slate-900 truncate">{item.name}</p>
-                    <p className="text-sm text-slate-500">${item.price.toFixed(2)}</p>
+            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+              {filteredItems.map(item => (
+                <div
+                  key={item.id || item._id}
+                  className="group relative bg-white border border-gray-100 rounded-2xl p-3 shadow-sm hover:shadow-xl hover:border-orange-200 transition-all cursor-pointer flex flex-col active:scale-95"
+                  onClick={() => addToCart(item)}
+                >
+                  <div className="relative aspect-square mb-3 overflow-hidden rounded-xl bg-gray-50">
+                    {item.image_url ? (
+                      <img
+                        src={item.image_url || undefined}
+                        alt={item.name}
+                        className="w-full h-full object-cover transition-transform group-hover:scale-110 duration-500"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-300 group-hover:text-orange-300 transition-colors">
+                        <Grid size={48} strokeWidth={1} />
+                      </div>
+                    )}
+                    <div className="absolute top-2 right-2">
+                      <div className="bg-white/90 backdrop-blur-md p-1.5 rounded-full shadow-sm">
+                        <Plus size={16} className="text-[#e60023]" />
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 bg-white rounded-lg px-2 py-1">
-                    <button
-                      onClick={() => updateQuantity(item.id || item._id!, -1)}
-                      className="w-6 h-6 flex items-center justify-center rounded hover:bg-slate-100 transition-colors"
-                    >
-                      <Minus size={12} className="text-slate-600" />
-                    </button>
-                    <span className="w-6 text-center text-sm font-medium">{item.quantity}</span>
-                    <button
-                      onClick={() => updateQuantity(item.id || item._id!, 1)}
-                      className="w-6 h-6 flex items-center justify-center rounded hover:bg-slate-100 transition-colors"
-                    >
-                      <Plus size={12} className="text-slate-600" />
-                    </button>
+                  <div className="flex-1 flex flex-col">
+                    <h4 className="font-bold text-gray-900 text-sm sm:text-base mb-1 line-clamp-1 group-hover:text-[#e60023] transition-colors">{item.name}</h4>
+                    {item.description && <p className="text-[10px] sm:text-xs text-gray-500 line-clamp-2 mb-2 min-h-[2.5em]">{item.description}</p>}
+                    <div className="mt-auto pt-2 flex justify-between items-center border-t border-gray-50">
+                      <span className="font-black text-[#e60023] text-base">ETB {item.price.toFixed(2)}</span>
+                    </div>
                   </div>
-                  <p className="w-16 text-right font-semibold text-slate-900">
-                    ${(item.price * item.quantity).toFixed(2)}
-                  </p>
                 </div>
               ))}
             </div>
           )}
         </div>
-
-        {/* Notes */}
-        {cart.length > 0 && (
-          <div className="p-4 border-t border-slate-200">
-            <textarea
-              placeholder="Notes..."
-              className="w-full px-3 py-2 bg-slate-50 border-0 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-slate-300"
-              rows={2}
-              value={orderNotes}
-              onChange={(e) => setOrderNotes(e.target.value)}
-            />
-          </div>
-        )}
-
-        {/* Totals & Action */}
-        <div className="p-4 border-t border-slate-200 bg-slate-50">
-          <div className="space-y-2 mb-4">
-            <div className="flex justify-between text-sm text-slate-600">
-              <span>Subtotal</span>
-              <span>${subtotal.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between text-sm text-slate-600">
-              <span>VAT (15%)</span>
-              <span>${vat.toFixed(2)}</span>
-            </div>
-            {discountPercent > 0 && (
-              <div className="flex justify-between text-sm text-emerald-600">
-                <span>Discount ({discountPercent}%)</span>
-                <span>-${discountAmount.toFixed(2)}</span>
-              </div>
-            )}
-            <div className="flex justify-between text-xl font-bold text-slate-900 pt-2 border-t border-slate-200">
-              <span>Total</span>
-              <span>${total.toFixed(2)}</span>
-            </div>
-          </div>
-          <Button
-            className="w-full h-12 text-base font-semibold"
-            disabled={cart.length === 0 || saving}
-            onClick={handlePlaceOrder}
-          >
-            {saving ? 'Processing...' : orderId ? 'Update Order' : 'Place Order'}
-          </Button>
-        </div>
       </div>
 
-      {/* Table Selector Modal */}
-      <Modal
-        isOpen={showTableSelector}
-        onClose={() => setShowTableSelector(false)}
-        title="Select Table"
-        size="2xl"
-      >
-        <div className="grid grid-cols-5 gap-4 p-4">
-          {tables.map((table) => {
-            const isSelected = selectedTable?.id === table.id || selectedTable?._id === table._id;
-            return (
-              <button
-                key={table.id || table._id}
-                onClick={() => {
-                  setSelectedTable(table);
-                  setShowTableSelector(false);
-                }}
-                className={cn(
-                  'p-4 rounded-xl border-2 transition-all text-center',
-                  isSelected
-                    ? 'border-slate-900 bg-slate-50'
-                    : 'border-transparent bg-slate-50 hover:bg-slate-100'
-                )}
-              >
-                <div className={cn(
-                  'w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-2',
-                  table.status === 'available' ? 'bg-emerald-100 text-emerald-600' :
-                  table.status === 'occupied' ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-600'
-                )}>
-                  <Grid size={24} />
-                </div>
-                <p className="font-semibold text-slate-900">Table {getTableDisplayName(table)}</p>
-                <p className="text-sm text-slate-500">{getTableSeats(table)} seats</p>
-              </button>
-            );
-          })}
+      <aside className="hidden lg:flex w-96 shrink-0 flex-col bg-white border border-gray-100 rounded-3xl shadow-2xl shadow-gray-200/50 h-full overflow-hidden">
+        <div className="p-6 bg-[#e60023] text-white flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-white/20 rounded-xl backdrop-blur-md">
+              <ShoppingCart size={20} />
+            </div>
+            <div>
+              <h3 className="font-black text-lg leading-tight">Order Details</h3>
+              <p className="text-orange-100 text-xs font-medium uppercase tracking-widest">Cashier Terminal</p>
+            </div>
+          </div>
+          {orderId && (
+            <Badge className="bg-white/20 text-white border-none">EDIT</Badge>
+          )}
         </div>
-      </Modal>
+        {cartContent}
+      </aside>
 
-      {/* Customer Selector Modal */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4 z-40 flex items-center gap-4 shadow-[0_-8px_30px_rgb(0,0,0,0.12)]">
+        <div className="flex-1">
+          <p className="text-[10px] text-gray-500 font-black uppercase tracking-wider">Total Amount</p>
+          <p className="text-2xl font-black text-[#e60023]">ETB {total.toFixed(2)}</p>
+        </div>
+        <button
+          className="bg-[#e60023] text-white px-6 h-12 rounded-xl flex items-center gap-2 font-black shadow-lg shadow-orange-100 relative active:scale-95 transition-transform"
+          onClick={() => setIsCartDrawerOpen(true)}
+        >
+          <ShoppingCart size={18} />
+          View Cart
+          {cart.length > 0 && (
+            <span className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white text-[10px] font-bold flex items-center justify-center rounded-full border-2 border-white animate-bounce">
+              {cart.reduce((acc, item) => acc + item.quantity, 0)}
+            </span>
+          )}
+        </button>
+      </div>
+
+      <Drawer
+        isOpen={isCartDrawerOpen}
+        onClose={() => setIsCartDrawerOpen(false)}
+        title="Current Order"
+      >
+        <div className="h-[calc(100vh-140px)] flex flex-col">
+          {cartContent}
+        </div>
+      </Drawer>
+
       <Modal
-        isOpen={showCustomerModal}
-        onClose={() => setShowCustomerModal(false)}
-        title="Select Customer"
-        size="lg"
+        isOpen={isCustomerModalOpen}
+        onClose={() => setIsCustomerModalOpen(false)}
+        title="Register New Customer"
         footer={
-          <Button variant="outline" onClick={() => setShowCustomerModal(false)}>
-            Cancel
-          </Button>
+          <div className="flex gap-3 w-full">
+            <Button variant="outline" className="flex-1" onClick={() => setIsCustomerModalOpen(false)}>Cancel</Button>
+            <Button className="flex-1" onClick={handleRegisterCustomer}>Register Customer</Button>
+          </div>
         }
       >
-        <div className="space-y-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-            <input
+        <div className="space-y-5 py-2">
+          <Input
+            label="Full Name"
+            placeholder="e.g. John Doe"
+            value={newCustomer.name}
+            onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })}
+          />
+          <Input
+            label="Phone Number"
+            placeholder="e.g. +1 234 567 890"
+            value={newCustomer.phone}
+            onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })}
+          />
+          <Input
+            label="Email Address (Optional)"
+            type="email"
+            placeholder="e.g. john@example.com"
+            value={newCustomer.email}
+            onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })}
+          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div className="space-y-1">
+              <label className="block text-sm font-bold text-gray-700">Loyalty Status</label>
+              <select
+                className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#e60023] transition-all"
+                value={newCustomer.type}
+                onChange={(e) => {
+                  const type = e.target.value as 'regular' | 'vip' | 'member';
+                  let discount = 0;
+                  if (type === 'vip') discount = 15;
+                  else if (type === 'member') discount = 5;
+                  setNewCustomer({ ...newCustomer, type, discount });
+                }}
+              >
+                <option value="regular">Regular Guest</option>
+                <option value="member">Member (5% Off)</option>
+                <option value="vip">VIP Guest (15% Off)</option>
+              </select>
+            </div>
+            <Input
+              label="Custom Discount (%)"
               type="text"
-              placeholder="Search customers..."
-              className="w-full pl-10 pr-4 py-2.5 bg-slate-100 border-0 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300"
-              onChange={(e) => {
-                const term = e.target.value.toLowerCase();
-                // Filter customers inline
-              }}
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={newCustomer.discount || ""}
+              onChange={(e) => setNewCustomer({ ...newCustomer, discount: parseFloat(e.target.value) || 0 })}
             />
-          </div>
-          <div className="max-h-96 overflow-y-auto space-y-2">
-            {/* No Customer option */}
-            <button
-              onClick={() => {
-                setSelectedCustomer(null);
-                setShowCustomerModal(false);
-              }}
-              className={cn(
-                'w-full flex items-center gap-3 p-3 rounded-xl transition-all text-left',
-                !selectedCustomer ? 'bg-slate-900 text-white' : 'bg-slate-50 hover:bg-slate-100'
-              )}
-            >
-              <div className="w-10 h-10 bg-slate-200 rounded-lg flex items-center justify-center">
-                <User size={20} className={!selectedCustomer ? 'text-white' : 'text-slate-600'} />
-              </div>
-              <div className="flex-1">
-                <p className="font-medium">Walk-in Customer</p>
-                <p className="text-sm opacity-70">No discount</p>
-              </div>
-            </button>
-
-            {customers.map((customer) => {
-              const isSelected = selectedCustomer?.id === customer.id || selectedCustomer?._id === customer._id;
-              return (
-                <button
-                  key={customer.id || customer._id}
-                  onClick={() => {
-                    setSelectedCustomer(customer);
-                    setShowCustomerModal(false);
-                  }}
-                  className={cn(
-                    'w-full flex items-center gap-3 p-3 rounded-xl transition-all text-left',
-                    isSelected ? 'bg-slate-900 text-white' : 'bg-slate-50 hover:bg-slate-100'
-                  )}
-                >
-                  <div className={cn(
-                    'w-10 h-10 rounded-lg flex items-center justify-center font-bold',
-                    isSelected ? 'bg-white text-slate-900' : 'bg-blue-100 text-blue-600'
-                  )}>
-                    {(customer.full_name || 'U').charAt(0).toUpperCase()}
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium">{customer.full_name}</p>
-                    <p className="text-sm opacity-70">{customer.phone || customer.email || 'No contact'}</p>
-                  </div>
-                  <div className="text-right">
-                    <Badge className={cn('text-[10px]', customerTypeColors[customer.customer_type || 'regular'])}>
-                      {customer.customer_type || 'Regular'}
-                    </Badge>
-                    {(customer.discount_percent || 0) > 0 && (
-                      <p className={cn('text-sm mt-1', isSelected ? 'text-emerald-300' : 'text-emerald-600')}>
-                        {customer.discount_percent}% off
-                      </p>
-                    )}
-                  </div>
-                </button>
-              );
-            })}
           </div>
         </div>
       </Modal>
+
+      <style jsx global>{`
+        .no-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        .no-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+      `}</style>
     </div>
   );
 };
