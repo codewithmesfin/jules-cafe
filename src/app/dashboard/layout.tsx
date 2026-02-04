@@ -74,7 +74,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // Simplified sidebar menu
   const allMenuItems: MenuItem[] = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', roles: ['admin', 'manager', 'cashier', 'waiter'] },
-    { icon: Receipt, label: 'Orders', path: '/dashboard/orders', roles: ['admin', 'manager', 'cashier'] },
+    {
+      icon: Receipt, label: 'Orders', roles: ['admin', 'manager', 'cashier'],
+      submenu: [
+        { label: 'Order Lists', path: '/dashboard/orders' },
+        { label: 'New Order', path: '/dashboard/orders/new' },
+        { label: 'Order Histories', path: '/dashboard/orders/histories' },
+      ]
+    },
     {
       icon: Package, label: 'Products', roles: ['admin', 'manager', 'cashier'],
       submenu: [

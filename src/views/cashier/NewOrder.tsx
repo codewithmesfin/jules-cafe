@@ -243,7 +243,7 @@ const NewOrder: React.FC = () => {
   };
 
   const cartContent = (
-    <div className="flex flex-col h-full bg-white lg:rounded-b-3xl">
+    <div className="flex flex-col h-full max-h-[660px] bg-white lg:rounded-b-3xl">
       {/* Form fields and cart items */}
       <div className="flex-1 overflow-y-auto p-5 space-y-5">
         <div className="space-y-4">
@@ -363,7 +363,7 @@ const NewOrder: React.FC = () => {
       </div>
 
       {/* Totals and action */}
-      <div className="bottom-10 flex-shrink-0 p-5 bg-gray-50 border-t border-gray-100 space-y-4 lg:rounded-b-3xl">
+      <div className="sticky bottom-0 flex-shrink-0 p-5 bg-white border-t border-gray-100 space-y-4 lg:rounded-b-3xl">
         <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 space-y-3">
           <div className="flex justify-between items-center">
             <span className="text-sm text-gray-500">Subtotal</span>
@@ -427,9 +427,6 @@ const NewOrder: React.FC = () => {
                 <ArrowLeft size={20} />
               </button>
             )}
-            <h1 className="text-2xl font-black text-gray-900 truncate">
-              {orderId ? `Editing Order #${orderId.slice(-4)}` : 'Create New Order'}
-            </h1>
           </div>
 
           <div className="flex flex-col md:flex-row gap-4">
