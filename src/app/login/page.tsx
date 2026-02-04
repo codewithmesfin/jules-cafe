@@ -41,7 +41,7 @@ export default function LoginPage() {
           <div className="w-16 h-16 bg-slate-900 rounded-[2rem] flex items-center justify-center text-white shadow-lg mb-4">
             <ChefHat size={32} />
           </div>
-          <h1 className="text-2xl font-bold text-slate-900">Quick Serve</h1>
+          <h1 className="text-2xl font-bold text-slate-900">ABC Cafe</h1>
           <p className="text-slate-500 mt-1">Restaurant Management System</p>
         </div>
 
@@ -113,7 +113,7 @@ export default function LoginPage() {
         </div>
 
         <p className="mt-8 text-center text-slate-400 text-xs">
-          © {new Date().getFullYear()} Quick Serve Management System
+          © {new Date().getFullYear()} ABC Cafe Management System
         </p>
       </div>
     </div>

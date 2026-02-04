@@ -1,182 +1,119 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { HERO_THEMES } from '@/utils/hero-teams';
+import React from 'react';
 import Link from 'next/link';
+import { ChefHat, ArrowRight, Play } from 'lucide-react';
 
 const Hero: React.FC = () => {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(true);
-
-  const currentTheme = HERO_THEMES[currentIndex];
-
-  useEffect(() => {
-    if (!isPlaying) return;
-
-    const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % HERO_THEMES.length);
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [isPlaying]);
-
   return (
-    <div className="pb-24 pt-10 relative min-h-full bg-white overflow-hidden flex items-center">
+    <div className="relative pt-20 pb-16 lg:pt-32 lg:pb-32 flex items-center">
+      {/* Background decoration */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-full -z-10 opacity-30">
+        <div className="absolute top-20 right-0 w-96 h-96 bg-primary/20 rounded-full blur-[120px]"></div>
+        <div className="absolute bottom-20 left-0 w-96 h-96 bg-accent/20 rounded-full blur-[120px]"></div>
+      </div>
 
-      <div className="max-w-[1600px] mx-auto w-full grid grid-cols-1 lg:grid-cols-2 px-6 md:px-12 lg:px-20 items-center">
-        {/* LEFT CONTENT */}
-        <div className="order-2 lg:order-1 z-20 space-y-6 md:space-y-8 text-center lg:text-left">
-          <h1 className="text-3xl md:text-5xl lg:text-[64px] font-bold text-slate-900">
-            Explore flavors of
-          </h1>
+      <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-8 w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
 
-          {/* Animated keyword */}
-          <div className="relative h-[100px] sm:h-[130px] lg:h-[90px] overflow-hidden -mt-2">
-            {HERO_THEMES.map((theme, i) => (
-              <div
-                key={i}
-                className={`absolute inset-0 flex items-center justify-center lg:justify-start text-3xl md:text-5xl lg:text-[64px] font-bold leading-[1.1]
-                  transition-all duration-[900ms]
-                  ease-[cubic-bezier(0.19,1,0.22,1)]
-                  ${i === currentIndex
-                    ? 'opacity-100 translate-y-0'
-                    : 'opacity-0 translate-y-10'}
-                  ${theme.color}`}
+          {/* Left Content */}
+          <div className="lg:col-span-7 space-y-8 text-center lg:text-left animate-slide-up">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-100 text-slate-700 text-sm font-bold animate-fade-in">
+              <span className="flex h-2 w-2 rounded-full bg-primary animate-pulse"></span>
+              Modern POS for Smart Businesses
+            </div>
+
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold text-slate-900 leading-[1.1] tracking-tight">
+              Manage your <span className="text-primary italic">Restaurant</span> with confidence.
+            </h1>
+
+            <p className="text-lg md:text-xl text-slate-600 max-w-2xl mx-auto lg:mx-0 leading-relaxed">
+              The all-in-one platform for modern gastronomy. streamline orders, track inventory, and grow your revenue with Quick Serve.
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-4 items-center justify-center lg:justify-start pt-4">
+              <Link
+                href="/signup"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 bg-primary text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-primary-hover transition-all shadow-xl hover:shadow-primary/20 transform hover:-translate-y-1"
               >
-                {theme.keyword}
+                Start for Free <ArrowRight size={20} />
+              </Link>
+              <button className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white text-slate-700 px-8 py-4 rounded-full font-bold text-lg hover:bg-slate-50 transition-all border border-slate-200 group">
+                <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                  <Play size={14} fill="currentColor" />
+                </div>
+                Watch Demo
+              </button>
+            </div>
+
+            <div className="flex items-center justify-center lg:justify-start gap-8 pt-8 border-t border-slate-100">
+              <div className="flex -space-x-3">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="w-10 h-10 rounded-full border-2 border-white bg-slate-200 overflow-hidden">
+                    <img src={`https://i.pravatar.cc/100?img=${i+10}`} alt="User" />
+                  </div>
+                ))}
               </div>
-            ))}
+              <div className="text-sm">
+                <p className="font-bold text-slate-900">Join 500+ businesses</p>
+                <div className="flex text-amber-400">
+                  {'★★★★★'.split('').map((s, i) => <span key={i}>{s}</span>)}
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* Dots */}
-          <div className="flex justify-center lg:justify-start gap-3">
-            {HERO_THEMES.map((theme, i) => (
-              <button
-                key={i}
-                onClick={() => {
-                  setCurrentIndex(i);
-                  setIsPlaying(false);
-                }}
-                className="w-2.5 h-2.5 rounded-full transition-all cursor-pointer"
-                style={{
-                  backgroundColor:
-                    i === currentIndex ? theme.accent : '#e5e5e5',
-                  transform: i === currentIndex ? 'scale(1.4)' : 'scale(1)',
-                }}
-              />
-            ))}
-          </div>
-
-          {/* CTA */}
-          <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 items-center justify-center lg:justify-start pt-2">
-            <Link href={"/signup"} className="w-full sm:w-auto text-center bg-[#e60023] text-white px-8 py-4 rounded-3xl font-bold hover:bg-red-700 transition-colors shadow-lg">
-              Join Quick Serve for free
-            </Link>
-            <Link href={"/login"} className="font-bold cursor-pointer hover:text-red-600 transition-colors">
-              I already have an account
-            </Link>
-          </div>
-        </div>
-
-        {/* RIGHT – PINTEREST IMAGE STACK */}
-        <div className="order-1 lg:order-2 relative h-[400px] md:h-[550px] lg:h-[660px] flex justify-center items-center">
-
-          <div className="relative w-[220px] md:w-[320px] lg:w-[400px] aspect-[4/5]">
-            {HERO_THEMES.map((theme, i) => {
-              const isActive = i === currentIndex;
-
-              return (
-                <React.Fragment key={i}>
-
-                  {/* MAIN IMAGE */}
-                  <div
-                  >
-                    <div
-                      className={`absolute inset-0 rounded-[40px] lg:rounded-[52px] overflow-hidden shadow-xl
-                      transition-all duration-[1100ms]
-                      ease-[cubic-bezier(0.19,1,0.22,1)] -rotate-[5deg]
-                      ${isActive
-                          ? 'opacity-100 translate-y-0 scale-100 z-20'
-                          : 'opacity-0 translate-y-12 scale-[0.97] z-10'} 
-                    `}
-                    >
-                      <img
-                        src={theme.mainImage}
-                        className="w-full h-full object-cover"
-                        alt=""
-                      />
-                    </div>
-
-                    {/* PIN BUBBLE (image-aligned) */}
-                    <div
-                      className={`absolute top-2 right-0 lg:-top-10 lg:-right-6
-                        w-9 h-9 lg:w-18 lg:h-18 z-20
-                        rounded-xl lg:rounded-[20px]
-                        flex items-center justify-center shadow-xl
-                        transition-all duration-700
-                        ease-[cubic-bezier(0.19,1,0.22,1)]
-                        ${isActive ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}
-                      `}
-                      style={{ backgroundColor: theme.accent }}
-                    >
-                      <svg
-                        className="w-4 h-4 lg:w-7 lg:h-7 text-white"
-                        fill="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path d="M12.72 2.03C10.53 2.03 8.44 2.89 6.89 4.44c-1.55 1.55-2.41 3.64-2.41 5.83 0 1.63.48 3.16 1.3 4.45L2 22l7.72-3.73c1.29.82 2.82 1.3 4.45 1.3 2.19 0 4.28-.86 5.83-2.41s2.41-3.64 2.41-5.83c0-2.19-.86-4.28-2.41-5.83s-3.64-2.41-5.83-2.41z" />
-                      </svg>
+          {/* Right Content - Mockup */}
+          <div className="lg:col-span-5 relative animate-slide-in-right delay-200">
+            <div className="relative z-10 w-full aspect-square md:aspect-auto md:h-[600px] flex items-center justify-center">
+              {/* Main App Mockup Container */}
+              <div className="relative w-full h-full max-w-[450px] mx-auto bg-slate-900 rounded-[3rem] p-3 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.3)] border-[12px] border-slate-800">
+                <div className="w-full h-full rounded-[2.2rem] bg-white overflow-hidden relative">
+                  {/* Mock App Header */}
+                  <div className="h-12 bg-slate-50 border-b border-slate-100 flex items-center justify-between px-4">
+                    <ChefHat size={18} className="text-primary" />
+                    <div className="flex gap-1.5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-slate-300"></div>
+                      <div className="w-1.5 h-1.5 rounded-full bg-slate-300"></div>
                     </div>
                   </div>
-
-                  {/* SECONDARY IMAGE */}
-                  <div
-                    className={`absolute right-[-40px] bottom-[-40px] md:right-[-60px] md:bottom-[-60px] lg:right-[-80px] lg:bottom-[-80px]
-                      w-[180px] h-[220px] md:w-[220px] md:h-[280px] lg:w-[250px] lg:h-[300px]
-                      rounded-[24px] lg:rounded-[36px] overflow-hidden
-                      border-[6px] lg:border-[8px] border-white shadow-xl
-                      transition-all duration-[1300ms]
-                      ease-[cubic-bezier(0.19,1,0.22,1)]
-                      ${isActive
-                        ? 'opacity-100 translate-y-0 rotate-[20deg] scale-100 z-30'
-                        : 'opacity-0 translate-y-14 rotate-[12deg] scale-[0.95] z-10'}
-                    `}
-                  >
-                    <img
-                      src={theme.subImage}
-                      className="w-full h-full object-cover"
-                      alt=""
-                    />
+                  {/* Mock App Content */}
+                  <div className="p-4 space-y-4">
+                    <div className="h-24 bg-primary/5 rounded-2xl border border-primary/10 p-3">
+                      <div className="w-2/3 h-3 bg-primary/20 rounded-full mb-2"></div>
+                      <div className="w-full h-8 bg-primary/10 rounded-xl"></div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="aspect-square bg-slate-50 rounded-2xl"></div>
+                      <div className="aspect-square bg-slate-50 rounded-2xl"></div>
+                      <div className="aspect-square bg-slate-50 rounded-2xl"></div>
+                      <div className="aspect-square bg-slate-50 rounded-2xl"></div>
+                    </div>
                   </div>
+                </div>
+              </div>
 
-                </React.Fragment>
-              );
-            })}
+              {/* Decorative elements */}
+              <div className="absolute -top-6 -right-6 w-32 h-32 bg-accent/20 rounded-3xl blur-2xl -z-10 animate-pulse"></div>
+              <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-primary/20 rounded-full blur-3xl -z-10"></div>
+
+              {/* Floating stats card */}
+              <div className="absolute top-1/4 -right-10 bg-white p-4 rounded-2xl shadow-xl border border-slate-100 animate-float">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center">
+                    <ArrowRight size={20} className="-rotate-45" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Revenue</p>
+                    <p className="text-xl font-extrabold text-slate-900">+24.5%</p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
+
         </div>
       </div>
-
-      {/* PLAY / PAUSE BUTTON */}
-      <div className="absolute bottom-6 right-6 lg:bottom-24 lg:right-20 z-40">
-        <button
-          onClick={() => setIsPlaying(!isPlaying)}
-          className="w-11 h-11 border border-gray-200
-                    rounded-xl bg-gray-200 backdrop-blur-md
-                    hover:bg-gray-100 transition-colors
-                    flex items-center justify-center shadow-sm"
-        >
-          {isPlaying ? (
-            <svg className="w-5 h-5 lg:w-6 lg:h-6 text-black" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
-            </svg>
-          ) : (
-            <svg className="w-5 h-5 lg:w-6 lg:h-6 text-black" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M8 5v14l11-7z" />
-            </svg>
-          )}
-        </button>
-      </div>
-
     </div>
   );
 };

@@ -52,7 +52,7 @@ export default function SignupPage() {
           <div className="w-16 h-16 bg-slate-900 rounded-[2rem] flex items-center justify-center text-white shadow-lg mb-4">
             <ChefHat size={32} />
           </div>
-          <h1 className="text-2xl font-bold text-slate-900">Quick Serve</h1>
+          <h1 className="text-2xl font-bold text-slate-900">ABC Cafe</h1>
           <p className="text-slate-500 mt-1">Create your account</p>
         </div>
 

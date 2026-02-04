@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { 
-  ChefHat,
+  Coffee,
   Utensils, 
   ChartBar, 
   Users, 
@@ -164,24 +164,24 @@ export default function FeaturesPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center">
-                <ChefHat className="w-6 h-6 text-white" />
+              <div className="w-10 h-10 bg-amber-600 rounded-xl flex items-center justify-center">
+                <Coffee className="w-6 h-6 text-white" />
               </div>
-              <span className="text-xl font-bold text-slate-900 font-black tracking-tight">Quick Serve</span>
+              <span className="text-xl font-bold text-slate-900">ABC Cafe</span>
             </div>
             <div className="hidden md:flex items-center gap-8">
-              <Link href="/features" className="text-[#e60023] font-bold">
+              <Link href="/features" className="text-amber-600 font-semibold">
                 Features
               </Link>
-              <Link href="/use-cases" className="text-slate-600 hover:text-slate-900 transition-colors font-medium">
+              <Link href="/use-cases" className="text-slate-600 hover:text-slate-900 transition-colors">
                 Use Cases
               </Link>
-              <Link href="/login" className="text-slate-600 hover:text-slate-900 transition-colors font-medium">
+              <Link href="/login" className="text-slate-600 hover:text-slate-900 transition-colors">
                 Sign In
               </Link>
               <Link 
                 href="/signup" 
-                className="px-6 py-2.5 bg-[#e60023] text-white rounded-full hover:bg-[#ad081b] transition-all font-bold shadow-lg shadow-red-900/10"
+                className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
               >
                 Get Started
               </Link>
@@ -193,12 +193,12 @@ export default function FeaturesPage() {
       {/* Hero Section */}
       <section className="pt-32 pb-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto text-center">
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 mb-6 tracking-tight">
-            Powerful Features for Modern Restaurants
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-slate-900 mb-6">
+            Powerful Features for Modern Cafes
           </h1>
-          <p className="text-lg sm:text-xl text-slate-500 max-w-3xl mx-auto font-medium">
+          <p className="text-lg sm:text-xl text-slate-600 max-w-3xl mx-auto">
             Discover all the tools you need to streamline operations, delight customers, 
-            and grow your business - all in one intuitive platform.
+            and grow your cafe business - all in one intuitive platform.
           </p>
         </div>
       </section>
@@ -210,33 +210,30 @@ export default function FeaturesPage() {
             {features.map((feature, i) => (
               <div 
                 key={i} 
-                className={`flex flex-col lg:flex-row gap-12 lg:gap-24 items-center ${
+                className={`flex flex-col lg:flex-row gap-12 items-center ${
                   i % 2 === 1 ? 'lg:flex-row-reverse' : ''
                 }`}
               >
                 <div className="flex-1">
-                  <div className="w-20 h-20 bg-red-50 rounded-3xl flex items-center justify-center mb-8 shadow-sm">
-                    <feature.icon className="w-10 h-10 text-[#e60023]" />
+                  <div className="w-16 h-16 bg-amber-100 rounded-2xl flex items-center justify-center mb-6">
+                    <feature.icon className="w-8 h-8 text-amber-600" />
                   </div>
-                  <h2 className="text-3xl lg:text-4xl font-black text-slate-900 mb-6 tracking-tight">{feature.title}</h2>
-                  <p className="text-lg text-slate-500 mb-8 font-medium leading-relaxed">{feature.description}</p>
-                  <ul className="space-y-4">
+                  <h2 className="text-3xl font-bold text-slate-900 mb-4">{feature.title}</h2>
+                  <p className="text-lg text-slate-600 mb-6">{feature.description}</p>
+                  <ul className="space-y-3">
                     {feature.benefits.map((benefit, j) => (
                       <li key={j} className="flex items-start gap-3">
-                        <div className="mt-1 bg-emerald-100 rounded-full p-0.5">
-                          <CheckCircle className="w-4 h-4 text-emerald-600" />
-                        </div>
-                        <span className="text-slate-700 font-medium">{benefit}</span>
+                        <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+                        <span className="text-slate-700">{benefit}</span>
                       </li>
                     ))}
                   </ul>
                 </div>
                 <div className="flex-1 w-full">
-                  <div className="bg-gradient-to-br from-slate-50 to-white rounded-[2.5rem] shadow-premium border border-slate-100 p-8 lg:p-12 aspect-video flex items-center justify-center group overflow-hidden relative">
-                    <div className="absolute inset-0 bg-red-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                    <div className="text-center text-slate-300 relative z-10">
-                      <feature.icon className="w-24 h-24 lg:w-32 lg:h-32 mx-auto mb-6 opacity-20 transform group-hover:scale-110 group-hover:rotate-12 transition-transform duration-700 ease-out" />
-                      <p className="text-sm font-bold uppercase tracking-[0.2em] text-slate-400">{feature.title} Interface</p>
+                  <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-8 aspect-video flex items-center justify-center">
+                    <div className="text-center text-slate-400">
+                      <feature.icon className="w-24 h-24 mx-auto mb-4 opacity-20" />
+                      <p className="text-sm">{feature.title} Preview</p>
                     </div>
                   </div>
                 </div>
@@ -247,39 +244,35 @@ export default function FeaturesPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 lg:py-32 px-4 sm:px-6 lg:px-8 bg-slate-900 text-white relative overflow-hidden">
-         <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
-          <div className="absolute top-10 right-10 w-96 h-96 bg-[#e60023] rounded-full blur-[150px]"></div>
-          <div className="absolute bottom-10 left-10 w-96 h-96 bg-blue-600 rounded-full blur-[150px]"></div>
-        </div>
-        <div className="max-w-4xl mx-auto text-center relative z-10">
-          <h2 className="text-3xl sm:text-5xl font-black mb-8 tracking-tight">
-            Ready to Supercharge Your Restaurant?
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-slate-900 text-white">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-3xl sm:text-4xl font-bold mb-6">
+            Ready to Supercharge Your Cafe?
           </h2>
-          <p className="text-lg lg:text-xl text-slate-400 mb-12 font-medium">
-            Start your free 14-day trial today and see how Quick Serve can transform your operations.
+          <p className="text-lg text-slate-300 mb-8">
+            Start your free 14-day trial today and see how ABC Cafe can transform your operations.
           </p>
           <Link 
             href="/signup" 
-            className="inline-flex items-center justify-center gap-3 px-10 py-5 bg-[#e60023] text-white rounded-2xl font-black hover:bg-[#ad081b] transition-all hover:scale-105 shadow-2xl shadow-red-900/40"
+            className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-amber-600 text-white rounded-xl font-semibold hover:bg-amber-700 transition-all hover:scale-105"
           >
             Start Free Trial
-            <ArrowRight className="w-6 h-6" />
+            <ArrowRight className="w-5 h-5" />
           </Link>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-slate-900 text-white py-12 px-4 sm:px-6 lg:px-8 border-t border-white/5">
+      <footer className="bg-slate-900 text-white py-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-8">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-[#e60023] rounded-xl flex items-center justify-center shadow-lg shadow-red-900/20">
-                <ChefHat className="w-6 h-6 text-white" />
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-amber-600 rounded-lg flex items-center justify-center">
+                <Coffee className="w-5 h-5 text-white" />
               </div>
-              <span className="font-black text-xl tracking-tight">Quick Serve</span>
+              <span className="font-bold">ABC Cafe</span>
             </div>
-            <p className="text-slate-500 text-sm font-medium">© 2024 Quick Serve. All rights reserved.</p>
+            <p className="text-slate-400 text-sm">© 2024 ABC Cafe. All rights reserved.</p>
             <div className="flex items-center gap-6">
               <Link href="/" className="text-slate-400 hover:text-white transition-colors text-sm">Home</Link>
               <Link href="/use-cases" className="text-slate-400 hover:text-white transition-colors text-sm">Use Cases</Link>
