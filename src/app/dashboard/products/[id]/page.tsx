@@ -75,7 +75,7 @@ export default function ProductFormPage() {
       }
     } catch (error) {
       showNotification("Failed to load product", "error");
-      router.push("/products");
+      router.push("/dashboard/products");
     } finally {
       setLoading(false);
     }
@@ -159,7 +159,7 @@ export default function ProductFormPage() {
         await api.products.create(formData);
         showNotification("Product created successfully", "success");
       }
-      router.push("/products");
+      router.push("/dashboard/products");
     } catch (error) {
       showNotification("Failed to save product", "error");
     } finally {
@@ -186,7 +186,7 @@ export default function ProductFormPage() {
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-3">
               <button
-                onClick={() => router.push("/products")}
+                onClick={() => router.push("/dashboard/products")}
                 className="p-2 hover:bg-slate-100 rounded-xl text-slate-600 transition-colors"
               >
                 <ArrowLeft size={20} />
@@ -210,7 +210,7 @@ export default function ProductFormPage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <button
-                  onClick={() => router.push("/products")}
+                  onClick={() => router.push("/dashboard/products")}
                   className="p-2 hover:bg-slate-100 rounded-xl text-slate-600 transition-colors"
                 >
                   <ArrowLeft size={20} />
@@ -227,7 +227,7 @@ export default function ProductFormPage() {
               <div className="flex items-center gap-3">
                 <Button
                   variant="outline"
-                  onClick={() => router.push("/products")}
+                  onClick={() => router.push("/dashboard/products")}
                   className="rounded-xl"
                 >
                   Cancel
@@ -235,7 +235,7 @@ export default function ProductFormPage() {
                 <Button
                   onClick={handleSave}
                   disabled={saving}
-                  className="rounded-xl bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-200 disabled:opacity-50"
+                  className="rounded-xl bg-[#e60023] hover:bg-[#ad081b] shadow-lg shadow-red-200 disabled:opacity-50"
                 >
                   {saving ? "Saving..." : isEditing ? "Save Changes" : "Create"}
                 </Button>
@@ -423,7 +423,7 @@ export default function ProductFormPage() {
                 <div className="lg:hidden grid grid-cols-2 gap-3">
                   <Button
                     variant="outline"
-                    onClick={() => router.push("/products")}
+                    onClick={() => router.push("/dashboard/products")}
                     className="rounded-xl py-3"
                   >
                     Cancel
@@ -431,7 +431,7 @@ export default function ProductFormPage() {
                   <Button
                     onClick={handleSave}
                     disabled={saving}
-                    className="rounded-xl py-3 bg-blue-600 hover:bg-blue-700"
+                    className="rounded-xl py-3 bg-[#e60023] hover:bg-[#ad081b]"
                   >
                     {saving ? "Saving..." : "Save"}
                   </Button>
@@ -499,7 +499,6 @@ export default function ProductFormPage() {
                       onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
                     />
                   </div>
-
                   <div className="relative">
                     <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                     <Input
@@ -515,50 +514,50 @@ export default function ProductFormPage() {
                 </div>
               </div>
 
-              {/* Organization Card */}
+              {/* Category Card */}
+              <div className="bg-white rounded-2xl lg:rounded-3xl border border-slate-200 shadow-sm p-5 lg:p-6">
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="w-9 h-9 lg:w-10 lg:h-10 bg-amber-100 rounded-xl flex items-center justify-center">
+                    <Tag className="text-amber-600" size={18} />
+                  </div>
+                  <div>
+                    <h2 className="font-semibold lg:font-bold text-slate-900">Category</h2>
+                    <p className="text-xs text-slate-500 hidden lg:block">Organize your product</p>
+                  </div>
+                </div>
+
+                <select
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 appearance-none cursor-pointer"
+                  value={formData.category_id}
+                  onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
+                >
+                  <option value="">Select a category</option>
+                  {categories.map(cat => (
+                    <option key={cat.id || cat._id} value={cat.id || cat._id}>{cat.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Inventory Card */}
               <div className="bg-white rounded-2xl lg:rounded-3xl border border-slate-200 shadow-sm p-5 lg:p-6">
                 <div className="flex items-center gap-3 mb-5">
                   <div className="w-9 h-9 lg:w-10 lg:h-10 bg-purple-100 rounded-xl flex items-center justify-center">
-                    <Tag className="text-purple-600" size={18} />
+                    <Hash className="text-purple-600" size={18} />
                   </div>
                   <div>
-                    <h2 className="font-semibold lg:font-bold text-slate-900">Organization</h2>
-                    <p className="text-xs text-slate-500 hidden lg:block">Categorize your product</p>
+                    <h2 className="font-semibold lg:font-bold text-slate-900">Inventory</h2>
+                    <p className="text-xs text-slate-500 hidden lg:block">SKU and tracking</p>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-2">Category</label>
-                    <select
-                      className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 appearance-none cursor-pointer"
-                      value={formData.category_id}
-                      onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
-                    >
-                      <option value="">Select</option>
-                      {categories.map((category) => (
-                        <option key={category.id} value={category.id}>
-                          {category.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="relative">
-                    <Hash className="absolute left-4 top-11 text-slate-400" size={18} />
-                    <Input
-                      label="SKU"
-                      placeholder="BURGER-001"
-                      className="rounded-xl pl-11"
-                      value={formData.sku}
-                      onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-                    />
-                  </div>
-                </div>
+                <Input
+                  label="SKU (Stock Keeping Unit)"
+                  placeholder="e.g. BURGER-001"
+                  className="rounded-xl"
+                  value={formData.sku}
+                  onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
+                />
               </div>
-
-              {/* Spacer for mobile scroll */}
-              <div className="h-4 lg:h-0" />
             </div>
           </div>
         </div>

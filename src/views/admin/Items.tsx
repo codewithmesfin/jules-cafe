@@ -89,7 +89,7 @@ const Products = () => {
             {canManageProducts && (
               <Button
                 onClick={() => navigateToProduct()}
-                className="rounded-xl bg-blue-600 hover:bg-blue-700 text-sm py-2"
+                className="rounded-xl bg-[#e60023] hover:bg-[#ad081b] text-sm py-2"
               >
                 <Plus size={16} className="mr-1" /> Add
               </Button>
@@ -161,7 +161,7 @@ const Products = () => {
             {canManageProducts && (
               <Button
                 onClick={() => navigateToProduct()}
-                className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl px-6 py-3 font-bold flex items-center gap-2 shadow-lg shadow-blue-200"
+                className="bg-[#e60023] hover:bg-[#ad081b] text-white rounded-2xl px-6 py-3 font-bold flex items-center gap-2 shadow-lg shadow-red-200"
               >
                 <Plus size={20} /> Add Product
               </Button>
@@ -187,7 +187,7 @@ const Products = () => {
             {canManageProducts && (
               <Button
                 onClick={() => navigateToProduct()}
-                className="rounded-xl bg-blue-600 hover:bg-blue-700"
+                className="rounded-xl bg-[#e60023] hover:bg-[#ad081b]"
               >
                 <Plus size={16} className="mr-1" /> Add Product
               </Button>

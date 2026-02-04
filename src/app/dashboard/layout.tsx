@@ -77,8 +77,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     {
       icon: Receipt, label: 'Orders', roles: ['admin', 'manager', 'cashier'],
       submenu: [
-        { label: 'Order Lists', path: '/dashboard/orders' },
         { label: 'New Order', path: '/dashboard/orders/new' },
+        { label: 'Order Queue', path: '/dashboard/orders' },
         { label: 'Order Histories', path: '/dashboard/orders/histories' },
       ]
     },

@@ -165,16 +165,48 @@ export default function DashboardPage() {
   return (
     <RoleGuard allowedRoles={['admin', 'manager', 'cashier', 'waiter']}>
       <div className="space-y-8">
-        {/* Page Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
-            <p className="text-slate-500 mt-1">Welcome back, {user?.full_name || 'Admin'}! Here's your overview.</p>
-          </div>
-          <Link href="/orders?mode=new">
-            <Button variant="primary" leftIcon={<PlusCircle size={18} />}>
-              New Order
-            </Button>
+
+          {/* Quick Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+
+          <Link href="/dashboard/orders/new" className="group bg-white rounded-2xl border border-slate-200 p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:border-slate-300">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform">
+                <BarChart3 size={28} />
+              </div>
+              <div>
+                <h3 className="font-bold text-slate-900 group-hover:text-indigo-700 transition-colors">New Sales</h3>
+                <p className="text-sm text-slate-500">Simplify Order Management</p>
+              </div>
+              <ArrowRight className="ml-auto text-slate-300 group-hover:text-indigo-500 group-hover:translate-x-1 transition-all" size={20} />
+            </div>
+          </Link>
+
+          <Link href="/dashboard/products" className="group bg-white rounded-2xl border border-slate-200 p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:border-slate-300">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-600 group-hover:scale-110 transition-transform">
+                <Package size={28} />
+              </div>
+              <div>
+                <h3 className="font-bold text-slate-900 group-hover:text-slate-700 transition-colors">Product Catalog</h3>
+                <p className="text-sm text-slate-500">Manage your menu items</p>
+              </div>
+              <ArrowRight className="ml-auto text-slate-300 group-hover:text-slate-500 group-hover:translate-x-1 transition-all" size={20} />
+            </div>
+          </Link>
+
+          <Link href="/dashboard/ingredients/inventory" className="group bg-white rounded-2xl border border-slate-200 p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:border-slate-300">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600 group-hover:scale-110 transition-transform">
+                <Database size={28} />
+              </div>
+              <div>
+                <h3 className="font-bold text-slate-900 group-hover:text-emerald-700 transition-colors">Inventory</h3>
+                <p className="text-sm text-slate-500">Stock levels & tracking</p>
+              </div>
+              <ArrowRight className="ml-auto text-slate-300 group-hover:text-emerald-500 group-hover:translate-x-1 transition-all" size={20} />
+            </div>
           </Link>
         </div>
 
@@ -232,7 +264,7 @@ export default function DashboardPage() {
               title="Recent Orders"
               subtitle="Latest order activities"
               headerAction={
-                <Link href="/orders" className="text-sm text-slate-600 hover:text-slate-900 font-medium flex items-center gap-1">
+                <Link href="/dashboard/orders" className="text-sm text-slate-600 hover:text-slate-900 font-medium flex items-center gap-1">
                   View All <ArrowRight size={14} />
                 </Link>
               }
@@ -241,7 +273,7 @@ export default function DashboardPage() {
                 <div className="text-center py-12">
                   <ShoppingCart size={48} className="text-slate-200 mx-auto mb-4" />
                   <p className="text-slate-500">No orders yet</p>
-                  <Link href="/orders?mode=new">
+                  <Link href="/dashboard/orders/new">
                     <Button className="mt-4" variant="outline" size="sm">
                       Create First Order
                     </Button>
@@ -286,7 +318,7 @@ export default function DashboardPage() {
               title="Menu Items"
               subtitle="Your product catalog"
               headerAction={
-                <Link href="/products" className="text-sm text-slate-600 hover:text-slate-900 font-medium flex items-center gap-1">
+                <Link href="/dashboard/products" className="text-sm text-slate-600 hover:text-slate-900 font-medium flex items-center gap-1">
                   View All <ArrowRight size={14} />
                 </Link>
               }
@@ -295,7 +327,7 @@ export default function DashboardPage() {
                 <div className="text-center py-12">
                   <Package size={48} className="text-slate-200 mx-auto mb-4" />
                   <p className="text-slate-500">No products yet</p>
-                  <Link href="/products/new">
+                  <Link href="/dashboard/products/new">
                     <Button className="mt-4" variant="outline" size="sm">
                       Add Product
                     </Button>
@@ -306,7 +338,7 @@ export default function DashboardPage() {
                   {popularItems.map((item, index) => (
                     <Link 
                       key={item.id}
-                      href={`/products/${item.id}`}
+                      href={`/dashboard/products/${item.id}`}
                       className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer"
                     >
                       <div className="flex items-center gap-3">
@@ -327,47 +359,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Link href="/products" className="group bg-white rounded-2xl border border-slate-200 p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:border-slate-300">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-600 group-hover:scale-110 transition-transform">
-                <Package size={28} />
-              </div>
-              <div>
-                <h3 className="font-bold text-slate-900 group-hover:text-slate-700 transition-colors">Product Catalog</h3>
-                <p className="text-sm text-slate-500">Manage your menu items</p>
-              </div>
-              <ArrowRight className="ml-auto text-slate-300 group-hover:text-slate-500 group-hover:translate-x-1 transition-all" size={20} />
-            </div>
-          </Link>
-
-          <Link href="/ingredients/inventory" className="group bg-white rounded-2xl border border-slate-200 p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:border-slate-300">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600 group-hover:scale-110 transition-transform">
-                <Database size={28} />
-              </div>
-              <div>
-                <h3 className="font-bold text-slate-900 group-hover:text-emerald-700 transition-colors">Inventory</h3>
-                <p className="text-sm text-slate-500">Stock levels & tracking</p>
-              </div>
-              <ArrowRight className="ml-auto text-slate-300 group-hover:text-emerald-500 group-hover:translate-x-1 transition-all" size={20} />
-            </div>
-          </Link>
-
-          <Link href="/reports" className="group bg-white rounded-2xl border border-slate-200 p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:border-slate-300">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform">
-                <BarChart3 size={28} />
-              </div>
-              <div>
-                <h3 className="font-bold text-slate-900 group-hover:text-indigo-700 transition-colors">Reports</h3>
-                <p className="text-sm text-slate-500">Analytics & insights</p>
-              </div>
-              <ArrowRight className="ml-auto text-slate-300 group-hover:text-indigo-500 group-hover:translate-x-1 transition-all" size={20} />
-            </div>
-          </Link>
-        </div>
+      
       </div>
     </RoleGuard>
   );

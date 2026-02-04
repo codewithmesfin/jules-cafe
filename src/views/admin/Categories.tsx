@@ -140,7 +140,7 @@ const Categories: React.FC = () => {
         {canCreate('categories') && (
           <Button
             onClick={() => openModal()}
-            className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl px-6 py-3 font-bold flex items-center gap-2 shadow-lg shadow-blue-200 transition-all active:scale-95"
+            className="bg-[#e60023] hover:bg-[#ad081b] text-white rounded-2xl px-6 py-3 font-bold flex items-center gap-2 shadow-lg shadow-red-200 transition-all active:scale-95"
           >
             <Plus size={20} /> Add Category
           </Button>
@@ -247,7 +247,7 @@ const Categories: React.FC = () => {
             <Button variant="outline" onClick={() => setIsModalOpen(false)} className="flex-1 rounded-2xl py-4 font-bold">
               Cancel
             </Button>
-            <Button onClick={handleSave} className="flex-1 rounded-2xl py-4 font-bold bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-200">
+            <Button onClick={handleSave} className="flex-1 rounded-2xl py-4 font-bold bg-[#e60023] hover:bg-[#ad081b] shadow-lg shadow-red-200">
               {editingCategory ? "Save Changes" : "Create Category"}
             </Button>
           </div>

@@ -19,8 +19,7 @@ export default function Navbar(){
 
             <div className="flex items-center gap-3 md:gap-6 lg:gap-8 font-semibold text-black">
               <div className="hidden md:flex items-center gap-4 lg:gap-8">
-                <Link href={'/services'} className="hover:text-gray-600 transition-colors">Services</Link>
-                <Link href={"/feature"} className="hover:text-gray-600 transition-colors">Feature</Link>
+                <Link href={'/features'} className="hover:text-gray-600 transition-colors">Features</Link>
                 <Link href={'/use-cases'} className="hover:text-gray-600 transition-colors">Use Cases</Link>
               </div>
               <div className="flex items-center gap-2">

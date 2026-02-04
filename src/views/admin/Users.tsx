@@ -78,7 +78,7 @@ const Users: React.FC = () => {
           ]} />
         )}
       </div>
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingUser ? "Modify Personnel" : "Onboard New Personnel"} className="max-w-xl" footer={<div className="flex gap-3 w-full"><Button variant="outline" onClick={() => setIsModalOpen(false)} className="flex-1 rounded-xl h-12 font-bold">Discard</Button><Button onClick={handleSave} className="flex-1 rounded-xl h-12 bg-blue-600 hover:bg-blue-700 font-black shadow-lg shadow-blue-100">Save</Button></div>}>
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingUser ? "Modify Personnel" : "Onboard New Personnel"} className="max-w-xl" footer={<div className="flex gap-3 w-full"><Button variant="outline" onClick={() => setIsModalOpen(false)} className="flex-1 rounded-xl h-12 font-bold">Discard</Button><Button onClick={handleSave} className="flex-1 rounded-xl h-12 bg-[#e60023] hover:bg-[#ad081b] font-black shadow-lg shadow-red-100">Save</Button></div>}>
         <div className="space-y-6 py-2">
           <Input label="Full Legal Name *" value={formFullName} onChange={(e) => setFormFullName(e.target.value)} className="rounded-xl h-12" />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4"><Input label="Professional Email *" type="email" value={formEmail} onChange={(e) => setFormEmail(e.target.value)} className="rounded-xl h-12" /><Input label="Phone Number" value={formPhone} onChange={(e) => setFormPhone(e.target.value)} className="rounded-xl h-12" /></div>

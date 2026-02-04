@@ -156,7 +156,7 @@ const Recipes: React.FC = () => {
         {selectedProduct ? (
           <>
             <div className="p-8 border-b border-slate-100 flex justify-between items-center">
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 w-full md:w-1/2">
                 <div className="w-14 h-14 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center">
                   <UtensilsCrossed size={28} />
                 </div>
@@ -165,10 +165,10 @@ const Recipes: React.FC = () => {
                   <p className="text-slate-500 text-sm">Define ingredients and quantities required for one serving.</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex justify-end items-center gap-3 w-full md:w-1/2">
                 <Button variant="outline" onClick={() => setSelectedProduct(null)} className="rounded-xl font-bold">Cancel</Button>
                 {canUpdate('recipes') && (
-                  <Button onClick={saveRecipe} className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-6 font-bold flex items-center gap-2 shadow-lg shadow-blue-200">
+                  <Button onClick={saveRecipe} className="bg-[#e60023] hover:bg-[#ad081b] text-white rounded-xl px-6 font-bold flex items-center gap-2 shadow-lg shadow-red-200">
                     <Save size={18} /> Save Recipe
                   </Button>
                 )}
