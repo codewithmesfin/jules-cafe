@@ -198,9 +198,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Navigation */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto custom-scrollbar">
           {filteredMenuItems.map((item) => {
-            const isActive = pathname === item.path ||
-              (item.path !== '/' && item.path && pathname.startsWith(item.path)) ||
-              (item.submenu?.some(sub => pathname.startsWith(sub.path)));
+            // Direct items (no submenu) are active only on exact path match
+            // Parent items (with submenu) are active on exact path OR any submenu path
+            const isActive = item.submenu
+              ? (pathname === item.path || item.submenu.some(sub => pathname.startsWith(sub.path)))
+              : (pathname === item.path);
 
             return (
               <div key={item.label}>
