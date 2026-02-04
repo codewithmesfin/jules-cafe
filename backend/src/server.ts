@@ -12,7 +12,7 @@ const PORT = process.env.PORT || 5000;
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: process.env.FRONTEND_URL || '*',
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
   },
 });
@@ -21,22 +21,25 @@ const io = new Server(httpServer, {
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
 
+  // Join room for specific business (Cashier, Manager, Staff)
+  socket.on('join-business', (businessId: string) => {
+    socket.join(`business_${businessId}`);
+    console.log(`Socket ${socket.id} joined business room: business_${businessId}`);
+  });
+
   // Join room for specific user/customer
   socket.on('join-customer', (customerId: string) => {
     socket.join(`customer-${customerId}`);
     console.log(`Customer ${customerId} joined room`);
   });
 
-  // Join room for cashier notifications
+  // Legacy events (keeping for compatibility during transition if needed)
   socket.on('join-cashier', () => {
     socket.join('cashier-queue');
-    console.log('Cashier joined queue room');
   });
 
-  // Join room for manager notifications
   socket.on('join-manager', () => {
     socket.join('manager-reservations');
-    console.log('Manager joined reservations room');
   });
 
   socket.on('disconnect', () => {

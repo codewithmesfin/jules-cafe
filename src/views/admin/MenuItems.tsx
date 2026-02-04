@@ -1,492 +1,306 @@
+"use client";
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Edit, Trash2, UtensilsCrossed } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, Clock } from 'lucide-react';
 import { api } from '../../utils/api';
 import { Button } from '../../components/ui/Button';
-import { calculateAvailablePortions } from '../../utils/recipeUtils';
 import { Input } from '../../components/ui/Input';
 import { Table } from '../../components/ui/Table';
 import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
-import { ConfirmationDialog } from '../../components/ui/ConfirmationDialog';
 import { useNotification } from '../../context/NotificationContext';
-import type { MenuItem, MenuCategory, Recipe, InventoryItem, Branch, Item } from '../../types';
+import { useAuth } from '@/context/AuthContext';
+import { usePermission } from '../../hooks/usePermission';
 
-const MenuItems: React.FC = () => {
+const MenuAvailability: React.FC = () => {
+  const { currentBusiness } = useAuth();
   const { showNotification } = useNotification();
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
-  const [items, setItems] = useState<Item[]>([]); // Items from master Items table
-  const [categories, setCategories] = useState<MenuCategory[]>([]);
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [inventory, setInventory] = useState<InventoryItem[]>([]);
-  const [branches, setBranches] = useState<Branch[]>([]);
+  const { canCreate, canUpdate, canDelete } = usePermission();
+  const [menuItems, setMenuItems] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
-  const [itemToDelete, setItemToDelete] = useState<MenuItem | null>(null);
-  const [viewingRecipe, setViewingRecipe] = useState<MenuItem | null>(null);
-  const [selectedBranchId, setSelectedBranchId] = useState('');
+  const [editingMenu, setEditingMenu] = useState<any>(null);
+  const [formData, setFormData] = useState({ product_id: '', is_available: true, display_order: 0, available_from: '', available_to: '' });
 
-  // Form state
-  const [formItemId, setFormItemId] = useState(''); // Selected from Items table
-  const [formName, setFormName] = useState('');
-  const [formCategoryId, setFormCategoryId] = useState('');
-  const [formBasePrice, setFormBasePrice] = useState(0);
-  const [formImageUrl, setFormImageUrl] = useState('');
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [formDescription, setFormDescription] = useState('');
-  const [formIsActive, setFormIsActive] = useState(true);
+  useEffect(() => { 
+    fetchData(); 
+  }, [currentBusiness]);
 
-  useEffect(() => {
-    fetchAllData();
-  }, []);
-
-  const fetchAllData = async () => {
+  const fetchData = async () => {
     try {
       setLoading(true);
-      const [menuItemsData, itemsData, catsData, recipesData, invData, branchesData] = await Promise.all([
-        api.menuItems.getAll(),
-        api.items.getAll(), // Fetch from Items table
-        api.categories.getAll(),
-        api.recipes.getAll(),
-        api.inventory.getAll(),
-        api.branches.getAll(),
-      ]);
-      setMenuItems(menuItemsData);
-      setItems(itemsData);
-      setCategories(catsData);
-      setRecipes(recipesData);
-      setInventory(invData);
-      setBranches(branchesData);
-      if (branchesData.length > 0) setSelectedBranchId(branchesData[0].id || branchesData[0]._id || '');
+      console.log('Fetching menu items...');
+      const menuRes = await api.menu.getAll();
+      console.log('Menu response:', menuRes);
+      setMenuItems(Array.isArray(menuRes) ? menuRes : []);
+      
+      console.log('Fetching products...');
+      const prodRes = await api.products.getAll();
+      console.log('Products response:', prodRes);
+      setProducts(Array.isArray(prodRes) ? prodRes : (prodRes.data || []));
     } catch (error) {
-      console.error('Failed to fetch data:', error);
+      console.error('Fetch error:', error);
+      showNotification('Failed to load menu data', 'error');
     } finally {
       setLoading(false);
     }
   };
 
-  // Filter items from Items table that are menu_item type
-  const menuItemOptions = items.filter(item => item.item_type === 'menu_item' && item.is_active);
-
-  const filteredMenuItems = menuItems.filter(item => {
-    const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || item.category_id === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
-
-  // Handle Item selection from Items table
-  const handleItemSelect = (itemId: string) => {
-    setFormItemId(itemId);
-    const selectedItem = items.find(i => i.id === itemId || i._id === itemId);
-    if (selectedItem) {
-      setFormName(selectedItem.item_name);
-      setFormBasePrice(selectedItem.default_price || 0);
-      if (selectedItem?.image_url) {
-        setFormImageUrl(selectedItem?.image_url);
-      }
-      if (selectedItem.description) {
-        setFormDescription(selectedItem.description);
-      }
-    }
-  };
-
   const handleSave = async () => {
-    try {
-      // Validate required fields
-      if (!formItemId) {
-        showNotification("Please select an item from the Items catalog", "error");
-        return;
-      }
-      if (!formCategoryId) {
-        showNotification("Please select a category", "error");
-        return;
-      }
-      if (formBasePrice <= 0) {
-        showNotification("Please enter a valid price", "error");
-        return;
-      }
-      
-      const formData = new FormData();
-      formData.append('item_id', formItemId);
-      formData.append('name', formName);
-      formData.append('category_id', formCategoryId);
-      formData.append('base_price', formBasePrice.toString());
-      formData.append('description', formDescription);
-      formData.append('is_active', formIsActive.toString());
+    if (!formData.product_id) {
+      showNotification('Please select a product', 'error');
+      return;
+    }
 
-      if (editingItem) {
-        if (imageFile) {
-          formData.append('image', imageFile);
-        } else if (formImageUrl) {
-          formData.append('image_url', formImageUrl);
-        }
-        await api.menuItems.update(editingItem.id, formData);
-        showNotification("Item updated successfully");
+    try {
+      if (editingMenu) {
+        await api.menu.update(editingMenu.id, formData);
+        showNotification('Menu item updated');
       } else {
-        if (imageFile) {
-          formData.append('image', imageFile);
-        } else if (formImageUrl) {
-          formData.append('image_url', formImageUrl);
-        }
-        await api.menuItems.create(formData);
-        showNotification("Item created successfully");
+        await api.menu.create(formData);
+        showNotification('Menu item added');
       }
       setIsModalOpen(false);
-      setEditingItem(null);
-      setImageFile(null);
-      fetchAllData();
-    } catch (error) {
-      showNotification("Failed to save item", "error");
+      fetchData();
+    } catch (error: any) { 
+      showNotification(error.message || 'Error saving menu item', 'error'); 
     }
   };
 
-  const handleDelete = async () => {
-    if (itemToDelete) {
+  const handleDelete = async (id: string) => {
+    if (confirm('Remove this menu item?')) {
       try {
-        await api.menuItems.delete(itemToDelete.id);
-        showNotification("Item deleted successfully", "warning");
-        fetchAllData();
-      } catch (error) {
-        showNotification("Failed to delete item", "error");
-      } finally {
-        setItemToDelete(null);
+        await api.menu.delete(id);
+        showNotification('Menu item removed', 'warning');
+        fetchData();
+      } catch (error: any) {
+        showNotification(error.message || 'Error deleting', 'error');
       }
     }
   };
 
-  const openCreateModal = () => {
-    setEditingItem(null);
-    setFormItemId('');
-    setFormName('');
-    setFormCategoryId(categories[0]?.id || categories[0]?._id || '');
-    setFormBasePrice(0);
-    setFormImageUrl('');
-    setImageFile(null);
-    setFormDescription('');
-    setFormIsActive(true);
-    setIsModalOpen(true);
-  };
+  const filteredMenu = menuItems.filter(m => {
+    // Handle both object and string product_id formats
+    const prodId = m.product_id?.id || m.product_id?._id || m.product_id;
+    let prod = products.find(p => p.id === prodId);
+    if (!prod) {
+      prod = products.find(p => p._id === prodId);
+    }
+    const prodName = prod?.name?.toLowerCase() || m.product_id?.name?.toLowerCase() || '';
+    return prodName.includes(searchTerm.toLowerCase());
+  });
 
-  const openEditModal = (item: MenuItem) => {
-    setEditingItem(item);
-    setFormItemId(item.item_id || '');
-    setFormName(item.name);
-    const catId = typeof item.category_id === 'string' ? item.category_id : (item.category_id as any)?.id;
-    setFormCategoryId(catId || '');
-    setFormBasePrice(item.base_price);
-    setFormImageUrl(item?.image_url);
-    setFormDescription(item.description || '');
-    setFormIsActive(Boolean(item.is_active));
-    setIsModalOpen(true);
-  };
+  console.log('Filtered menu items:', filteredMenu.length);
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-          <div className="relative w-full sm:w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <Input
-              placeholder="Search items..."
-              className="pl-10"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <select
-            className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-          >
-            <option value="all">All Categories</option>
-            {categories.map(cat => (
-              <option key={cat.id || cat._id} value={cat.id || cat._id}>{cat.name}</option>
-            ))}
-          </select>
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Menu Management</h1>
+          <p className="text-slate-500">Manage your public menu items</p>
         </div>
-        <Button className="gap-2" onClick={openCreateModal}>
-          <Plus size={20} /> Add Menu Item
-        </Button>
+        {canCreate('menu') && (
+          <Button onClick={() => {
+            setEditingMenu(null);
+            setFormData({ product_id: '', is_available: true, display_order: 0, available_from: '', available_to: '' });
+            setIsModalOpen(true);
+          }}>
+            <Plus size={18} className="mr-2" /> Add Menu Item
+          </Button>
+        )}
       </div>
 
-      {loading ? (
-        <div className="text-center py-10">Loading menu items...</div>
-      ) : (
-        <Table
-          data={filteredMenuItems}
-          columns={[
-            {
-              header: 'Item',
-              accessor: (item) => (
-                <div className="flex items-center gap-3">
-                  <img src={item.image_url || undefined} alt={item.name} className="w-10 h-10 rounded-lg object-cover" />
-                  <span className="font-bold text-gray-900">{item.name}</span>
-                </div>
-              )
-            },
-            {
-              header: 'Category',
-              accessor: (item) => {
-                const categoryId = typeof item.category_id === 'string' ? item.category_id : (item.category_id as any)?.id;
-                return categories.find(c => c.id === categoryId)?.name || 'N/A';
-              }
-            },
-            { header: 'Base Price', accessor: (item) => `ETB ${item.base_price.toFixed(2)}` },
-            {
-              header: 'Status',
-              accessor: (item) => (
-                <Badge variant={item.is_active ? 'success' : 'neutral'}>
-                  {item.is_active ? 'Active' : 'Inactive'}
-                </Badge>
-              )
-            },
-            {
-              header: 'Actions',
-              accessor: (item) => (
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-orange-600"
-                    onClick={() => setViewingRecipe(item)}
-                    title="View Recipe"
-                  >
-                    <UtensilsCrossed size={16} />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => openEditModal(item)}
-                  >
-                    <Edit size={16} />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-red-600"
-                    onClick={() => setItemToDelete(item)}
-                  >
-                    <Trash2 size={16} />
-                  </Button>
-                </div>
-              )
-            }
-          ]}
+      {/* Search */}
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+        <input
+          type="text"
+          placeholder="Search menu items..."
+          className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
         />
-      )}
+      </div>
 
+      {/* Table */}
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        {loading ? (
+          <div className="py-12 flex justify-center">
+            <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        ) : filteredMenu.length === 0 ? (
+          <div className="text-center py-12">
+            <Clock className="mx-auto h-10 w-10 text-slate-200 mb-3" />
+            <p className="text-slate-500">No menu items found</p>
+            {canCreate('menu') && (
+              <Button variant="outline" className="mt-3" onClick={() => setIsModalOpen(true)}>
+                Add your first menu item
+              </Button>
+            )}
+          </div>
+        ) : (
+          <Table
+            data={filteredMenu}
+            columns={[
+              {
+                header: 'Product',
+                accessor: (m) => {
+                  // Handle both object and string product_id formats
+                  const prodId = m.product_id?.id || m.product_id?._id || m.product_id;
+                  // Try to find by id first, then by _id
+                  let prod = products.find(p => p.id === prodId);
+                  if (!prod) {
+                    prod = products.find(p => p._id === prodId);
+                  }
+                  // If still not found and menu item has nested product data
+                  if (!prod && m.product_id?.name) {
+                    prod = m.product_id;
+                  }
+                  return (
+                    <div>
+                      <p className="font-medium text-slate-900">{prod?.name || 'Unknown'}</p>
+                      <p className="text-xs text-slate-500">{prod?.description || ''}</p>
+                    </div>
+                  );
+                }
+              },
+              {
+                header: 'Status',
+                accessor: (m) => (
+                  <Badge variant={m.is_available ? 'success' : 'neutral'}>
+                    {m.is_available ? 'Live' : 'Hidden'}
+                  </Badge>
+                )
+              },
+              {
+                header: 'Order',
+                accessor: (m) => <span className="text-slate-500">{m.display_order}</span>
+              },
+              {
+                header: 'Hours',
+                accessor: (m) => (
+                  <span className="text-slate-500 text-sm">
+                    {m.available_from && m.available_to 
+                      ? `${m.available_from} - ${m.available_to}` 
+                      : 'All day'}
+                  </span>
+                )
+              },
+              {
+                header: 'Actions',
+                accessor: (m) => (
+                  <div className="flex items-center gap-2">
+                    {canUpdate('menu') && (
+                      <button
+                        onClick={() => {
+                          setEditingMenu(m);
+                          setFormData({
+                            product_id: m.product_id?.id || m.product_id?._id || m.product_id,
+                            is_available: m.is_available,
+                            display_order: m.display_order,
+                            available_from: m.available_from || '',
+                            available_to: m.available_to || ''
+                          });
+                          setIsModalOpen(true);
+                        }}
+                        className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-blue-600"
+                      >
+                        <Edit size={16} />
+                      </button>
+                    )}
+                    {canDelete('menu') && (
+                      <button
+                        onClick={() => handleDelete(m.id)}
+                        className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-red-600"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
+                  </div>
+                )
+              }
+            ]}
+          />
+        )}
+      </div>
+
+      {/* Modal */}
       <Modal
         isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          setEditingItem(null);
-          setImageFile(null);
-        }}
-        title={editingItem ? "Edit Menu Item" : "Add Menu Item"}
-        size="lg"
+        onClose={() => setIsModalOpen(false)}
+        title={editingMenu ? 'Edit Menu Item' : 'Add Menu Item'}
+        className="max-w-md"
         footer={
-          <>
-            <Button variant="outline" onClick={() => {
-              setIsModalOpen(false);
-              setEditingItem(null);
-              setImageFile(null);
-            }}>Cancel</Button>
-            <Button onClick={handleSave}>
-              {editingItem ? "Save Changes" : "Create Item"}
+          <div className="flex gap-3 w-full">
+            <Button variant="outline" onClick={() => setIsModalOpen(false)} className="flex-1">
+              Cancel
             </Button>
-          </>
+            <Button onClick={handleSave} className="flex-1">
+              {editingMenu ? 'Update' : 'Add'}
+            </Button>
+          </div>
         }
       >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Item Selection from Items Table */}
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Select Item from Catalog *
+        <div className="space-y-4 py-2">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              Product
             </label>
             <select
-              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-              value={formItemId}
-              onChange={(e) => handleItemSelect(e.target.value)}
+              className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={formData.product_id}
+              onChange={(e) => setFormData({ ...formData, product_id: e.target.value })}
             >
-              <option value="">-- Select an Item --</option>
-              {menuItemOptions.map(item => (
-                <option key={item.id || item._id} value={item.id || item._id}>
-                  {item.item_name} ({item.category || 'Uncategorized'})
+              <option value="">Select product...</option>
+              {products.map(p => (
+                <option key={p.id || p._id} value={p.id || p._id}>
+                  {p.name}
                 </option>
               ))}
             </select>
-            <p className="text-xs text-gray-500 mt-1">
-              Items are selected from the master Items catalog. Only items with type "menu_item" are shown.
-            </p>
           </div>
 
           <Input
-            label="Item Name"
-            placeholder="e.g. Pasta Carbonara"
-            value={formName}
-            onChange={(e) => setFormName(e.target.value)}
-          />
-          <div className="w-full">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
-            <select
-              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-              value={formCategoryId}
-              onChange={(e) => setFormCategoryId(e.target.value)}
-            >
-              <option value="">Select Category</option>
-              {categories.map(cat => (
-                <option key={cat.id || cat._id} value={cat.id || cat._id}>{cat.name}</option>
-              ))}
-            </select>
-          </div>
-          <Input
-            label="Price"
+            label="Display Order"
             type="number"
-            step="0.01"
-            placeholder="0.00"
-            value={formBasePrice}
-            onChange={(e) => setFormBasePrice(parseFloat(e.target.value) || 0)}
+            min="0"
+            value={formData.display_order}
+            onChange={(e) => setFormData({ ...formData, display_order: parseInt(e.target.value) || 0 })}
           />
-          <div className="space-y-4">
+
+          <div className="grid grid-cols-2 gap-4">
             <Input
-              label="Image URL (fallback)"
-              placeholder="https://..."
-              value={formImageUrl}
-              onChange={(e) => {
-                setFormImageUrl(e.target.value);
-                if (e.target.value) setImageFile(null);
-              }}
+              label="Available From"
+              type="time"
+              value={formData.available_from}
+              onChange={(e) => setFormData({ ...formData, available_from: e.target.value })}
             />
-            <div className="w-full">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Upload Image</label>
-              <input
-                type="file"
-                accept="image/*"
-                className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100"
-                onChange={(e) => {
-                  if (e.target.files?.[0]) {
-                    setImageFile(e.target.files[0]);
-                    setFormImageUrl('');
-                  }
-                }}
-              />
-            </div>
-          </div>
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-            <textarea
-              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 min-h-[80px]"
-              value={formDescription}
-              onChange={(e) => setFormDescription(e.target.value)}
+            <Input
+              label="Available To"
+              type="time"
+              value={formData.available_to}
+              onChange={(e) => setFormData({ ...formData, available_to: e.target.value })}
             />
           </div>
-          <div className="flex items-center gap-2">
+
+          <div className="flex items-center gap-3">
             <input
               type="checkbox"
-              id="is_active_item"
-              className="rounded text-orange-600 focus:ring-orange-500"
-              checked={formIsActive}
-              onChange={(e) => setFormIsActive(e.target.checked)}
+              id="is_available"
+              checked={formData.is_available}
+              onChange={(e) => setFormData({ ...formData, is_available: e.target.checked })}
+              className="w-4 h-4 rounded border-slate-300"
             />
-            <label htmlFor="is_active_item" className="text-sm font-medium text-gray-700">Active</label>
+            <label htmlFor="is_available" className="text-sm font-medium text-slate-700">
+              Available on menu
+            </label>
           </div>
         </div>
       </Modal>
-
-      <Modal
-        isOpen={!!viewingRecipe}
-        onClose={() => setViewingRecipe(null)}
-        title={`Recipe: ${viewingRecipe?.name}`}
-        size="lg"
-      >
-        {viewingRecipe && (
-          <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-blue-50 p-4 rounded-lg border border-blue-100">
-              <div>
-                <p className="text-xs text-blue-600 font-bold uppercase tracking-wider mb-1">Stock Availability</p>
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl font-bold text-blue-900">
-                    {(() => {
-                      const recipe = recipes.find(r => r.menu_item_id === viewingRecipe.id);
-                      if (!recipe) return 0;
-                      const branchInv = inventory.filter(i => i.branch_id === selectedBranchId);
-                      return calculateAvailablePortions(recipe, branchInv);
-                    })()}
-                  </span>
-                  <span className="text-blue-700 font-medium text-sm">portions available</span>
-                </div>
-              </div>
-              <div className="w-full sm:w-auto">
-                <label className="block text-[10px] font-bold text-blue-600 uppercase mb-1">Check Branch</label>
-                  <select
-                    className="w-full sm:w-48 rounded-md border-blue-200 bg-white px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={selectedBranchId}
-                    onChange={(e) => setSelectedBranchId(e.target.value)}
-                  >
-                    {branches.map(b => (
-                      <option key={b.id || b._id} value={b.id || b._id}>{b.name || b.branch_name}</option>
-                    ))}
-                  </select>
-              </div>
-            </div>
-
-            <div>
-              <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                <UtensilsCrossed size={16} className="text-orange-500" />
-                Ingredients (per serving)
-              </h4>
-              <div className="bg-gray-50 rounded-lg overflow-hidden border border-gray-200">
-                <table className="w-full text-left text-sm">
-                  <thead className="bg-gray-100 border-b border-gray-200">
-                    <tr>
-                      <th className="px-4 py-2 font-semibold">Ingredient</th>
-                      <th className="px-4 py-2 font-semibold text-right">Quantity</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {recipes.find(r => r.menu_item_id === viewingRecipe.id)?.ingredients?.map((ing, idx) => (
-                      <tr key={idx}>
-                        <td className="px-4 py-2">{ing.item_name}</td>
-                        <td className="px-4 py-2 text-right">{ing.quantity} {ing.unit}</td>
-                      </tr>
-                    )) || (
-                      <tr>
-                        <td colSpan={2} className="px-4 py-4 text-center text-gray-500 italic">No recipe defined yet</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {recipes.find(r => r.menu_item_id === viewingRecipe.id) && (
-              <div>
-                <h4 className="text-sm font-semibold text-gray-900 mb-2">Instructions</h4>
-                <p className="text-sm text-gray-600 bg-orange-50 p-4 rounded-lg border border-orange-100">
-                  {recipes.find(r => r.menu_item_id === viewingRecipe.id)?.instructions}
-                </p>
-              </div>
-            )}
-
-            <div className="pt-4 border-t border-gray-100 flex justify-end">
-              <Button onClick={() => setViewingRecipe(null)}>Close</Button>
-            </div>
-          </div>
-        )}
-      </Modal>
-
-      <ConfirmationDialog
-        isOpen={!!itemToDelete}
-        onClose={() => setItemToDelete(null)}
-        onConfirm={handleDelete}
-        title="Delete Menu Item"
-        description={`Are you sure you want to delete "${itemToDelete?.name}"? This action cannot be undone.`}
-        confirmLabel="Delete"
-      />
     </div>
   );
 };
 
-export default MenuItems;
+export default MenuAvailability;

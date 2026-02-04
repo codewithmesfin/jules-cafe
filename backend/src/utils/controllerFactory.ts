@@ -4,55 +4,75 @@ import { AuthRequest } from '../middleware/auth';
 import catchAsync from './catchAsync';
 import AppError from './appError';
 
-export const getAll = (model: Model<any>) =>
+export const getAll = (model: Model<any>, options: { populate?: any } = {}) =>
   catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
-    // Check if user is active (except for customers)
-    const inactiveStatuses = ['inactive', 'pending', 'suspended'];
-    if (req.user && req.user.role !== 'customer' && inactiveStatuses.includes(req.user.status)) {
-      return next(new AppError('Your account is not active. Please contact the Administrator to activate your account.', 423));
+    // Check if user is active
+    if (req.user && !req.user.is_active) {
+      return next(new AppError('Your account is not active. Please contact the Administrator.', 423));
     }
     
-    const features = model.find();
+    let features = model.find();
 
-    // Automatic branch filtering for manager/staff/cashier
-    const filterRoles = ['manager', 'staff', 'cashier'];
-    if (req.user && filterRoles.includes(req.user.role) && model.schema.path('branch_id')) {
-      if (req.user.branch_id) {
-        features.where('branch_id').equals(req.user.branch_id);
+    // Tenant isolation: filter by business_id if model has it
+    if (req.user && model.schema.path('business_id')) {
+      if (req.user.default_business_id) {
+        features = features.where('business_id').equals(req.user.default_business_id);
+      } else if (req.user.role !== 'saas_admin') {
+        // If user has no business_id but model requires it, return empty (except for saas_admin)
+        return res.status(200).json([]);
       }
-    } else if (req.query.branch_id && model.schema.path('branch_id')) {
-      // Manual filtering for others (e.g. admin or customers browsing a specific branch)
-      features.where('branch_id').equals(req.query.branch_id);
     }
 
-    const docs = await features.populate(req.query.populate as string || '');
+    // Apply population from options
+    if (options.populate) {
+      features = features.populate(options.populate);
+    }
+
+    // Also apply population from query params
+    if (req.query.populate) {
+      features = features.populate(req.query.populate as string);
+    }
+
+    const docs = await features.exec();
+
     // Transform _id to id for frontend compatibility
     const transformedDocs = docs.map((doc: any) => ({
       ...doc.toObject(),
       id: doc._id.toString(),
-      name: doc.branch_name || doc.name, // Transform branch_name to name for frontend compatibility
     }));
     res.status(200).json(transformedDocs);
   });
 
-export const getOne = (model: Model<any>) =>
+export const getOne = (model: Model<any>, options: { populate?: any } = {}) =>
   catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
-    // Check if user is active (except for customers)
-    const inactiveStatuses = ['inactive', 'pending', 'suspended'];
-    if (req.user && req.user.role !== 'customer' && inactiveStatuses.includes(req.user.status)) {
-      return next(new AppError('Your account is not active. Please contact the Administrator to activate your account.', 423));
+    // Check if user is active
+    if (req.user && !req.user.is_active) {
+      return next(new AppError('Your account is not active. Please contact the Administrator.', 423));
     }
 
-    const doc = await model.findById(req.params.id).populate(req.query.populate as string || '');
+    let query = model.findById(req.params.id);
+
+    // Apply population from options
+    if (options.populate) {
+      query = query.populate(options.populate);
+    }
+
+    // Also apply population from query params
+    if (req.query.populate) {
+      query = query.populate(req.query.populate as string);
+    }
+
+    const doc = await query.exec();
     if (!doc) {
       return next(new AppError('Document not found', 404));
     }
 
-    // Branch security check for manager/staff/cashier
-    const filterRoles = ['manager', 'staff', 'cashier'];
-    if (req.user && filterRoles.includes(req.user.role) && doc.branch_id) {
-      if (doc.branch_id.toString() !== req.user.branch_id?.toString()) {
-        return next(new AppError('You do not have permission to access this document', 403));
+    // Tenant security check
+    if (req.user && doc.business_id) {
+      if (!req.user.default_business_id || doc.business_id.toString() !== req.user.default_business_id.toString()) {
+        if (req.user.role !== 'saas_admin') {
+          return next(new AppError('You do not have permission to access this document', 403));
+        }
       }
     }
 
@@ -63,32 +83,20 @@ export const getOne = (model: Model<any>) =>
 
 export const createOne = (model: Model<any>) =>
   catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
-    // Check if user is active (except for customers)
-    const inactiveStatuses = ['inactive', 'pending', 'suspended'];
-    if (req.user && req.user.role !== 'customer' && inactiveStatuses.includes(req.user.status)) {
-      return next(new AppError('Your account is not active. Please contact the Administrator to activate your account.', 423));
+    // Check if user is active
+    if (req.user && !req.user.is_active) {
+      return next(new AppError('Your account is not active. Please contact the Administrator.', 423));
     }
 
-    // Automatically set created_by to the authenticated user's ID
+    // Automatically set creator_id to the authenticated user's ID
     const requestBody = {
       ...req.body,
-      created_by: req.user?._id || req.user?.id,
+      creator_id: req.user?._id || req.user?.id,
     };
 
-    // Idempotency check
-    if (requestBody.client_request_id && model.schema.path('client_request_id')) {
-      const existingDoc = await model.findOne({ client_request_id: requestBody.client_request_id });
-      if (existingDoc) {
-        return res.status(200).json({ ...existingDoc.toObject(), id: existingDoc._id.toString() });
-      }
-    }
-
-    // Auto-set branch_id for manager/staff/cashier if not provided
-    const filterRoles = ['manager', 'staff', 'cashier'];
-    if (req.user && filterRoles.includes(req.user.role) && model.schema.path('branch_id')) {
-      if (!requestBody.branch_id && req.user.branch_id) {
-        requestBody.branch_id = req.user.branch_id;
-      }
+    // Auto-set business_id
+    if (req.user && req.user.default_business_id && model.schema.path('business_id')) {
+      requestBody.business_id = req.user.default_business_id;
     }
 
     const doc = await model.create(requestBody);
@@ -99,10 +107,9 @@ export const createOne = (model: Model<any>) =>
 
 export const updateOne = (model: Model<any>) =>
   catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
-    // Check if user is active (except for customers)
-    const inactiveStatuses = ['inactive', 'pending', 'suspended'];
-    if (req.user && req.user.role !== 'customer' && inactiveStatuses.includes(req.user.status)) {
-      return next(new AppError('Your account is not active. Please contact the Administrator to activate your account.', 423));
+    // Check if user is active
+    if (req.user && !req.user.is_active) {
+      return next(new AppError('Your account is not active. Please contact the Administrator.', 423));
     }
 
     let doc = await model.findById(req.params.id);
@@ -110,17 +117,13 @@ export const updateOne = (model: Model<any>) =>
       return next(new AppError('Document not found', 404));
     }
 
-    // Branch security check
-    const filterRoles = ['manager', 'staff', 'cashier'];
-    if (req.user && filterRoles.includes(req.user.role) && doc.branch_id) {
-      if (doc.branch_id.toString() !== req.user.branch_id?.toString()) {
-        return next(new AppError('You do not have permission to update this document', 403));
+    // Tenant security check
+    if (req.user && doc.business_id) {
+      if (!req.user.default_business_id || doc.business_id.toString() !== req.user.default_business_id.toString()) {
+        if (req.user.role !== 'saas_admin') {
+          return next(new AppError('You do not have permission to update this document', 403));
+        }
       }
-    }
-
-    // Prevent non-admins from changing branch_name (for Branch model)
-    if (req.user?.role !== 'admin' && model.modelName === 'Branch') {
-      delete req.body.branch_name;
     }
 
     doc = await model.findByIdAndUpdate(req.params.id, req.body, {
@@ -135,10 +138,9 @@ export const updateOne = (model: Model<any>) =>
 
 export const deleteOne = (model: Model<any>) =>
   catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
-    // Check if user is active (except for customers)
-    const inactiveStatuses = ['inactive', 'pending', 'suspended'];
-    if (req.user && req.user.role !== 'customer' && inactiveStatuses.includes(req.user.status)) {
-      return next(new AppError('Your account is not active. Please contact the Administrator to activate your account.', 423));
+    // Check if user is active
+    if (req.user && !req.user.is_active) {
+      return next(new AppError('Your account is not active. Please contact the Administrator.', 423));
     }
 
     const doc = await model.findById(req.params.id);
@@ -146,11 +148,12 @@ export const deleteOne = (model: Model<any>) =>
       return next(new AppError('Document not found', 404));
     }
 
-    // Branch security check
-    const filterRoles = ['manager', 'staff', 'cashier'];
-    if (req.user && filterRoles.includes(req.user.role) && doc.branch_id) {
-      if (doc.branch_id.toString() !== req.user.branch_id?.toString()) {
-        return next(new AppError('You do not have permission to delete this document', 403));
+    // Tenant security check
+    if (req.user && doc.business_id) {
+      if (!req.user.default_business_id || doc.business_id.toString() !== req.user.default_business_id.toString()) {
+        if (req.user.role !== 'saas_admin') {
+          return next(new AppError('You do not have permission to delete this document', 403));
+        }
       }
     }
 

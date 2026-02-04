@@ -1,6 +1,7 @@
 "use client";
+
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Package, History, AlertTriangle } from 'lucide-react';
+import { Search, Package, History, AlertTriangle, TrendingUp, ArrowUpRight, ArrowDownRight, Edit, Coffee, Box } from 'lucide-react';
 import { api } from '../../utils/api';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -8,323 +9,492 @@ import { Table } from '../../components/ui/Table';
 import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
 import { Card } from '../../components/ui/Card';
-import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
-import type { InventoryItem as InventoryItemType, Recipe, Item } from '../../types';
+import { cn } from '../../utils/cn';
+import type { Inventory, Ingredient, Product } from '../../types';
 
-interface InventoryFormData {
-  item_id: string;
-  item_name: string;
-  category: string;
-  unit: string;
-  quantity: number;
-  min_stock: number;
-}
+type InventoryType = 'ingredient' | 'product';
 
-const Inventory: React.FC = () => {
-  const { user } = useAuth();
+// Helper to safely get item ID from both old (ingredient_id) and new (item_id) formats
+const getItemId = (item: any): string => {
+  if (!item) return '';
+  if (typeof item.item_id === 'string') return item.item_id;
+  if (typeof item.item_id === 'object') {
+    return item.item_id.id || item.item_id._id || '';
+  }
+  // Fallback to old ingredient_id format
+  if (typeof item.ingredient_id === 'string') return item.ingredient_id;
+  if (typeof item.ingredient_id === 'object') {
+    return item.ingredient_id.id || item.ingredient_id._id || '';
+  }
+  return '';
+};
+
+// Helper to get item name
+const getItemName = (item: any, type: InventoryType, ingredients: Ingredient[], products: Product[]): string => {
+  const itemId = getItemId(item);
+  if (type === 'ingredient') {
+    const ing = ingredients.find(i => (i.id === itemId || i._id === itemId));
+    return ing?.name || 'Unknown Ingredient';
+  } else {
+    const prod = products.find(p => (p.id === itemId || p._id === itemId));
+    return prod?.name || 'Unknown Product';
+  }
+};
+
+// Helper to get item unit
+const getItemUnit = (item: any, type: InventoryType, ingredients: Ingredient[]): string => {
+  const itemId = getItemId(item);
+  if (type === 'ingredient') {
+    const ing = ingredients.find(i => (i.id === itemId || i._id === itemId));
+    return ing?.unit || 'units';
+  }
+  return 'pcs';
+};
+
+const InventoryView: React.FC = () => {
   const { showNotification } = useNotification();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [inventory, setInventory] = useState<InventoryItemType[]>([]);
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [allItems, setAllItems] = useState<Item[]>([]);
+  const [inventory, setInventory] = useState<Inventory[]>([]);
+  const [ingredients, setIngredients] = useState<Ingredient[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState<InventoryType>('ingredient');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<InventoryItemType | null>(null);
+  const [isIngModalOpen, setIsIngModalOpen] = useState(false);
+  const [selectedInventory, setSelectedInventory] = useState<Inventory | null>(null);
 
-  // Form state
-  const [formItemId, setFormItemId] = useState('');
-  const [formItemName, setFormItemName] = useState('');
-  const [formCategory, setFormCategory] = useState('');
-  const [formUnit, setFormUnit] = useState('');
-  const [formQuantity, setFormQuantity] = useState(0);
-  const [formMinStock, setFormMinStock] = useState(0);
+  // Form states
+  const [invForm, setInvForm] = useState({
+    item_id: '',
+    item_type: 'ingredient' as InventoryType,
+    quantity_available: 0,
+    reorder_level: 0
+  });
+
+  const [ingForm, setIngForm] = useState({
+    name: '',
+    unit: ''
+  });
 
   useEffect(() => {
     fetchData();
-  }, [user?.branch_id]);
+  }, []);
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [invData, recData, itemsData] = await Promise.all([
+      const [invRes, ingRes, prodRes, transRes] = await Promise.all([
         api.inventory.getAll(),
-        api.recipes.getAll(),
-        api.items.getAll(),
+        api.ingredients.getAll(),
+        api.products.getAll(),
+        api.inventory.getTransactions()
       ]);
+      
+      // Ensure inventory is an array
+      const invData = Array.isArray(invRes) ? invRes : (invRes?.data || []);
       setInventory(invData);
-      setRecipes(recData);
-      setAllItems(itemsData);
+      setIngredients(Array.isArray(ingRes) ? ingRes : (ingRes?.data || []));
+      setProducts(Array.isArray(prodRes) ? prodRes : (prodRes?.data || []));
+      setTransactions(Array.isArray(transRes) ? transRes : (transRes?.data || []));
     } catch (error: any) {
-      console.error('Failed to fetch inventory:', error);
-      showNotification(error.message || 'Failed to fetch inventory', 'error');
+      showNotification('Failed to fetch inventory data', 'error');
     } finally {
       setLoading(false);
     }
   };
 
-  // Get inventory items from the master Items table (item_type = 'inventory')
-  const inventoryItems = allItems.filter(item => item.item_type === 'inventory' && item.is_active);
-
-  const handleOpenModal = (item: InventoryItemType | null = null) => {
-    setSelectedItem(item);
-    if (item) {
-      // Editing existing inventory item
-      setFormItemId((item as any).item_id || '');
-      setFormItemName(item.item_name);
-      setFormCategory(item.category);
-      setFormUnit(item.unit);
-      setFormQuantity(0);
-      setFormMinStock(item.min_stock || 0);
-    } else {
-      // Creating new inventory item
-      setFormItemId('');
-      setFormItemName('');
-      setFormCategory('');
-      setFormUnit('');
-      setFormQuantity(0);
-      setFormMinStock(0);
-    }
-    setIsModalOpen(true);
-  };
-
-  const handleItemSelect = (itemId: string) => {
-    setFormItemId(itemId);
-    const selectedItemData = allItems.find(i => i.id === itemId || i._id === itemId);
-    if (selectedItemData) {
-      setFormItemName(selectedItemData.item_name);
-      setFormCategory(selectedItemData.category || '');
-      setFormUnit(selectedItemData.unit || '');
-      setFormMinStock(0);
-    }
-  };
-
-  const handleSave = async () => {
+  const handleSaveInventory = async () => {
     try {
-      if (!formItemId && !selectedItem) {
-        showNotification('Please select an item from the Items catalog', 'error');
-        return;
-      }
+      const data = {
+        item_id: invForm.item_id,
+        item_type: invForm.item_type,
+        quantity_available: invForm.quantity_available,
+        reorder_level: invForm.reorder_level
+      };
 
-      if (selectedItem) {
-        // Update: quantity in form is DELTA
-        const newQuantity = selectedItem.quantity + formQuantity;
-        await api.inventory.update(selectedItem.id, {
-          quantity: Math.max(0, newQuantity),
-          min_stock: formMinStock
+      if (selectedInventory) {
+        await api.inventory.update((selectedInventory.id || (selectedInventory as any)._id)!, {
+          quantity_available: invForm.quantity_available,
+          reorder_level: invForm.reorder_level
         });
-        showNotification('Inventory updated');
+        showNotification('Stock updated successfully');
       } else {
-        // Create new inventory item
-        await api.inventory.create({
-          branch_id: user?.branch_id,
-          item_id: formItemId,
-          item_name: formItemName,
-          category: formCategory,
-          quantity: formQuantity,
-          unit: formUnit,
-          min_stock: formMinStock
-        });
-        showNotification('Item added to inventory');
+        await api.inventory.create(data);
+        showNotification('Stock entry added successfully');
       }
       setIsModalOpen(false);
       fetchData();
     } catch (error: any) {
-      showNotification(error.message || 'Failed to save inventory item', 'error');
+      showNotification(error.message || 'Error saving stock', 'error');
     }
   };
 
-  const filteredInventory = inventory.filter(item =>
-    item.item_name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handleSaveIngredient = async () => {
+    try {
+      await api.ingredients.create(ingForm);
+      showNotification('Ingredient created successfully');
+      setIsIngModalOpen(false);
+      setIngForm({ name: '', unit: '' });
+      fetchData();
+    } catch (error: any) {
+      showNotification(error.message || 'Error creating ingredient', 'error');
+    }
+  };
 
-  if (!user?.branch_id) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20 space-y-4">
-        <div className="p-4 bg-orange-100 text-orange-600 rounded-full">
-          <Package size={48} />
-        </div>
-        <h2 className="text-xl font-bold text-gray-900">No Branch Associated</h2>
-        <p className="text-gray-500 text-center max-w-md">
-          Please associate this account with a branch to manage inventory.
-        </p>
-      </div>
-    );
-  }
+  const openInvModal = (inv: Inventory | null = null) => {
+    setSelectedInventory(inv);
+    if (inv) {
+      const itemId = getItemId(inv);
+      setInvForm({
+        item_id: itemId,
+        item_type: activeTab,
+        quantity_available: inv.quantity_available,
+        reorder_level: inv.reorder_level
+      });
+    } else {
+      setInvForm({ item_id: '', item_type: activeTab, quantity_available: 0, reorder_level: 0 });
+    }
+    setIsModalOpen(true);
+  };
+
+  const filteredInventory = inventory.filter(item => {
+    // Skip items that don't match the current tab
+    const itemId = getItemId(item);
+    if (!itemId) return false;
+    
+    const name = getItemName(item, activeTab, ingredients, products);
+    return name.toLowerCase().includes(searchTerm.toLowerCase());
+  });
+
+  const lowStockCount = inventory.filter(i => {
+    const itemId = getItemId(i);
+    if (!itemId) return false;
+    return i.quantity_available <= i.reorder_level;
+  }).length;
+  
+  const totalStockValue = filteredInventory.reduce((sum, i) => sum + (i.quantity_available || 0), 0);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-in fade-in duration-500">
+      {/* Header with Tabs */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="relative w-full sm:w-96">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-          <Input
-            placeholder="Search inventory..."
-            className="pl-10"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Inventory Management</h1>
+          <p className="text-slate-500">Track stock levels for ingredients and finished products</p>
         </div>
-        <Button className="gap-2" onClick={() => handleOpenModal()}>
-          <Plus size={20} /> Add Item
-        </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="flex items-center gap-4">
-          <div className="p-3 bg-blue-100 text-blue-600 rounded-full">
-            <Package size={24} />
-          </div>
-          <div>
-            <p className="text-sm text-gray-500 font-medium">Total Items</p>
-            <h3 className="text-2xl font-bold">{inventory.length}</h3>
+      {/* Tab Switcher */}
+      <div className="bg-white p-1 rounded-xl inline-flex border border-slate-200">
+        <button
+          onClick={() => setActiveTab('ingredient')}
+          className={cn(
+            "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all",
+            activeTab === 'ingredient' ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-50"
+          )}
+        >
+          <Coffee size={16} /> Ingredients
+        </button>
+        <button
+          onClick={() => setActiveTab('product')}
+          className={cn(
+            "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all",
+            activeTab === 'product' ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-50"
+          )}
+        >
+          <Box size={16} /> Finished Products
+        </button>
+      </div>
+
+      {/* Stats Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="bg-white border border-slate-200 p-5 rounded-xl">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center">
+              {activeTab === 'ingredient' ? <Coffee size={20} /> : <Package size={20} />}
+            </div>
+            <div>
+              <p className="text-xs text-slate-500 font-medium">Total Items</p>
+              <p className="text-xl font-bold text-slate-900">{filteredInventory.length}</p>
+            </div>
           </div>
         </Card>
-        <Card className="flex items-center gap-4 border-orange-200 bg-orange-50">
-          <div className="p-3 bg-orange-100 text-orange-600 rounded-full">
-            <AlertTriangle size={24} />
+        <Card className="bg-white border border-slate-200 p-5 rounded-xl">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-green-50 text-green-600 rounded-lg flex items-center justify-center">
+              <TrendingUp size={20} />
+            </div>
+            <div>
+              <p className="text-xs text-slate-500 font-medium">In Stock</p>
+              <p className="text-xl font-bold text-slate-900">{totalStockValue}</p>
+            </div>
           </div>
-          <div>
-            <p className="text-sm text-gray-500 font-medium">Low Stock</p>
-            <h3 className="text-2xl font-bold">
-              {inventory.filter(i => i.quantity <= i.min_stock).length}
+        </Card>
+        <Card className="bg-white border border-slate-200 p-5 rounded-xl">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-amber-50 text-amber-600 rounded-lg flex items-center justify-center">
+              <AlertTriangle size={20} />
+            </div>
+            <div>
+              <p className="text-xs text-slate-500 font-medium">Low Stock</p>
+              <p className="text-xl font-bold text-slate-900">{lowStockCount}</p>
+            </div>
+          </div>
+        </Card>
+        <Card className="bg-white border border-slate-200 p-5 rounded-xl">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-slate-100 text-slate-600 rounded-lg flex items-center justify-center">
+              <History size={20} />
+            </div>
+            <div>
+              <p className="text-xs text-slate-500 font-medium">Transactions</p>
+              <p className="text-xl font-bold text-slate-900">{transactions.length}</p>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* Main Inventory Table */}
+        <div className="flex-1 space-y-4">
+          {/* Search and Actions */}
+          <div className="flex flex-col sm:flex-row gap-3 justify-between">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+              <input
+                type="text"
+                placeholder={`Search ${activeTab}...`}
+                className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <div className="flex gap-2">
+              {activeTab === 'ingredient' && (
+                <Button variant="outline" onClick={() => setIsIngModalOpen(true)}>
+                  Add Ingredient
+                </Button>
+              )}
+              <Button onClick={() => openInvModal()}>
+                Add Stock Entry
+              </Button>
+            </div>
+          </div>
+
+          {/* Table */}
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            {loading ? (
+              <div className="py-12 flex justify-center">
+                <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            ) : filteredInventory.length === 0 ? (
+              <div className="text-center py-12">
+                <Package className="mx-auto h-10 w-10 text-slate-200 mb-3" />
+                <p className="text-slate-500">No {activeTab} stock entries found</p>
+                <Button variant="outline" className="mt-3" onClick={() => openInvModal()}>
+                  Add first stock entry
+                </Button>
+              </div>
+            ) : (
+              <Table
+                data={filteredInventory}
+                columns={[
+                  {
+                    header: activeTab === 'ingredient' ? 'Ingredient' : 'Product',
+                    accessor: (item) => {
+                      const itemId = getItemId(item);
+                      const name = getItemName(item, activeTab, ingredients, products);
+                      return (
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center">
+                            {activeTab === 'ingredient' ? (
+                              <Coffee size={18} className="text-slate-600" />
+                            ) : (
+                              <Package size={18} className="text-slate-600" />
+                            )}
+                          </div>
+                          <div>
+                            <p className="font-medium text-slate-900">{name}</p>
+                            <p className="text-xs text-slate-500">{getItemUnit(item, activeTab, ingredients)}</p>
+                          </div>
+                        </div>
+                      );
+                    }
+                  },
+                  {
+                    header: 'Quantity',
+                    accessor: (item) => {
+                      const isLow = (item.quantity_available || 0) <= (item.reorder_level || 0);
+                      return (
+                        <div className="flex flex-col gap-1">
+                          <span className={cn("font-semibold", isLow ? "text-amber-600" : "text-slate-900")}>
+                            {item.quantity_available || 0}
+                          </span>
+                          {isLow && (
+                            <Badge variant="warning" className="text-[10px] w-fit">Low Stock</Badge>
+                          )}
+                        </div>
+                      );
+                    }
+                  },
+                  {
+                    header: 'Reorder Level',
+                    accessor: (item) => <span className="text-slate-500">{item.reorder_level || 0}</span>
+                  },
+                  {
+                    header: 'Actions',
+                    accessor: (item) => (
+                      <button
+                        onClick={() => openInvModal(item)}
+                        className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-blue-600 transition-colors"
+                      >
+                        <Edit size={16} />
+                      </button>
+                    )
+                  }
+                ]}
+              />
+            )}
+          </div>
+        </div>
+
+        {/* Recent Transactions */}
+        <div className="w-full lg:w-80">
+          <div className="bg-white rounded-xl border border-slate-200 p-4">
+            <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
+              <History size={18} /> Recent Activity
             </h3>
+            <div className="space-y-3 max-h-96 overflow-y-auto">
+              {transactions.length === 0 ? (
+                <p className="text-sm text-slate-400 text-center py-4">No transactions yet</p>
+              ) : (
+                transactions.slice(0, 10).map((t, idx) => {
+                  const isPositive = (t.change_quantity || 0) > 0;
+                  return (
+                    <div key={idx} className="flex items-start gap-3 p-3 hover:bg-slate-50 rounded-lg transition-colors">
+                      <div className={cn(
+                        "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
+                        isPositive ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"
+                      )}>
+                        {isPositive ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-slate-900 truncate">
+                          {(t.item_id as any)?.name || (t.ingredient_id as any)?.name || 'Item'}
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          {isPositive ? '+' : '-'}{Math.abs(t.change_quantity || 0)} units
+                        </p>
+                      </div>
+                      <span className="text-xs text-slate-400">
+                        {t.created_at ? new Date(t.created_at).toLocaleDateString() : ''}
+                      </span>
+                    </div>
+                  );
+                })
+              )}
+            </div>
           </div>
-        </Card>
-        <Card className="flex items-center gap-4">
-          <div className="p-3 bg-green-100 text-green-600 rounded-full">
-            <History size={24} />
-          </div>
-          <div>
-            <p className="text-sm text-gray-500 font-medium">Last Update</p>
-            <h3 className="text-lg font-bold">Recently</h3>
-          </div>
-        </Card>
+        </div>
       </div>
 
-      {loading ? (
-        <div className="text-center py-10">Loading inventory...</div>
-      ) : (
-        <Table
-          data={filteredInventory}
-          columns={[
-            {
-              header: 'Item Name',
-              accessor: (i) => (
-                <span className="font-bold text-gray-900">{i.item_name}</span>
-              )
-            },
-            { header: 'Category', accessor: 'category' },
-            {
-              header: 'Quantity',
-              accessor: (i) => (
-                <div className="flex flex-col">
-                  <div className="flex items-center gap-2">
-                    <span className={i.quantity <= i.min_stock ? 'text-red-600 font-bold' : 'text-gray-900'}>
-                      {i.quantity} {i.unit}
-                    </span>
-                    {i.quantity <= i.min_stock && <AlertTriangle size={14} className="text-red-600" />}
-                  </div>
-                  {i.quantity <= i.min_stock && (
-                    <Badge variant="error" className="mt-1 text-[10px] py-0">Purchase Required</Badge>
-                  )}
-                </div>
-              )
-            },
-            { header: 'Min Stock', accessor: (i) => `${i.min_stock} ${i.unit}` },
-            {
-              header: 'Last Updated',
-              accessor: (i) => new Date(i.last_updated || Date.now()).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })
-            },
-            {
-              header: 'Actions',
-              accessor: (i) => (
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" onClick={() => handleOpenModal(i)}>
-                    Update Stock
-                  </Button>
-                </div>
-              )
-            }
-          ]}
-        />
-      )}
-
+      {/* Stock Entry Modal */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={selectedItem ? `Update Stock: ${selectedItem.item_name}` : 'Add Inventory Item'}
+        title={selectedInventory ? 'Edit Stock' : 'Add Stock Entry'}
+        className="max-w-md"
         footer={
-          <>
-            <Button variant="outline" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-            <Button onClick={handleSave}>
-              {selectedItem ? 'Update' : 'Add'}
+          <div className="flex gap-3 w-full">
+            <Button variant="outline" onClick={() => setIsModalOpen(false)} className="flex-1">
+              Cancel
             </Button>
-          </>
+            <Button onClick={handleSaveInventory} className="flex-1">
+              {selectedInventory ? 'Update' : 'Add Entry'}
+            </Button>
+          </div>
         }
       >
-        <div className="space-y-4">
-          {!selectedItem ? (
+        <div className="space-y-4 py-2">
+          {!selectedInventory && (
             <>
-              <div className="w-full">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Select Item from Catalog *
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Select {activeTab === 'ingredient' ? 'Ingredient' : 'Product'}
                 </label>
                 <select
-                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  value={formItemId}
-                  onChange={(e) => handleItemSelect(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={invForm.item_id}
+                  onChange={(e) => setInvForm({ ...invForm, item_id: e.target.value })}
                 >
-                  <option value="">-- Select an Item --</option>
-                  {inventoryItems.map(item => (
-                    <option key={item.id || item._id} value={item.id || item._id}>
-                      {item.item_name} ({item.category || 'Uncategorized'})
-                    </option>
-                  ))}
+                  <option value="">Choose...</option>
+                  {activeTab === 'ingredient' ? (
+                    ingredients.map(i => (
+                      <option key={i.id || i._id} value={i.id || i._id}>
+                        {i.name} ({i.unit})
+                      </option>
+                    ))
+                  ) : (
+                    products.map(p => (
+                      <option key={p.id || p._id} value={p.id || p._id}>
+                        {p.name}
+                      </option>
+                    ))
+                  )}
                 </select>
-                <p className="text-xs text-gray-500 mt-1">
-                  Items are selected from the master Items catalog. Only items with type "inventory" are shown.
-                </p>
               </div>
-              <Input
-                label="Item Name"
-                placeholder="Auto-filled from selection"
-                value={formItemName}
-                disabled
-                className="bg-gray-50"
-              />
-              <Input
-                label="Category"
-                placeholder="Auto-filled from selection"
-                value={formCategory}
-                disabled
-                className="bg-gray-50"
-              />
-              <Input
-                label="Unit"
-                placeholder="Auto-filled from selection"
-                value={formUnit}
-                disabled
-                className="bg-gray-50"
-              />
             </>
-          ) : null}
-          <Input
-            label={selectedItem ? "Add/Remove Quantity" : "Initial Quantity"}
-            type="number"
-            placeholder="0"
-            value={formQuantity}
-            onChange={(e) => setFormQuantity(parseFloat(e.target.value) || 0)}
-          />
-          {selectedItem && (
-            <p className="text-xs text-gray-500">
-              Current quantity: {selectedItem.quantity} {selectedItem.unit}. Enter a positive number to add, negative to remove.
-            </p>
           )}
+
           <Input
-            label="Minimum Stock Level"
+            label="Quantity"
             type="number"
-            value={formMinStock}
-            onChange={(e) => setFormMinStock(parseFloat(e.target.value) || 0)}
+            min="0"
+            value={invForm.quantity_available || ''}
+            onChange={(e) => setInvForm({ ...invForm, quantity_available: parseFloat(e.target.value) || 0 })}
+          />
+
+          <Input
+            label="Reorder Level"
+            type="number"
+            min="0"
+            value={invForm.reorder_level || ''}
+            onChange={(e) => setInvForm({ ...invForm, reorder_level: parseFloat(e.target.value) || 0 })}
+          />
+        </div>
+      </Modal>
+
+      {/* New Ingredient Modal */}
+      <Modal
+        isOpen={isIngModalOpen}
+        onClose={() => setIsIngModalOpen(false)}
+        title="Add New Ingredient"
+        className="max-w-md"
+        footer={
+          <div className="flex gap-3 w-full">
+            <Button variant="outline" onClick={() => setIsIngModalOpen(false)} className="flex-1">
+              Cancel
+            </Button>
+            <Button onClick={handleSaveIngredient} className="flex-1">
+              Create
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-4 py-2">
+          <Input
+            label="Ingredient Name"
+            placeholder="e.g., Coffee Beans, Milk"
+            value={ingForm.name}
+            onChange={(e) => setIngForm({ ...ingForm, name: e.target.value })}
+          />
+          <Input
+            label="Unit"
+            placeholder="e.g., kg, liters, pieces"
+            value={ingForm.unit}
+            onChange={(e) => setIngForm({ ...ingForm, unit: e.target.value })}
           />
         </div>
       </Modal>
@@ -332,4 +502,4 @@ const Inventory: React.FC = () => {
   );
 };
 
-export default Inventory;
+export default InventoryView;

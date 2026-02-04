@@ -1,16 +1,27 @@
 import express from 'express';
-import { getAllOrders, getOrder, createOrder, updateOrder, deleteOrder } from '../controllers/orderController';
-import { protect, authorize } from '../middleware/auth';
+import {
+  createOrder,
+  getMyOrders,
+  getOrder,
+  updateOrder,
+  deleteOrder,
+  getOrderItems
+} from '../controllers/orderController';
+import { protect } from '../middleware/auth';
 
 const router = express.Router();
 
+router.use(protect);
+
 router.route('/')
-  .get(protect, getAllOrders)
-  .post(protect, createOrder);
+  .get(getMyOrders)
+  .post(createOrder);
 
 router.route('/:id')
-  .get(protect, getOrder)
-  .put(protect, updateOrder)
-  .delete(protect, authorize('admin'), deleteOrder);
+  .get(getOrder)
+  .patch(updateOrder)
+  .delete(deleteOrder);
+
+router.get('/:orderId/items', getOrderItems);
 
 export default router;

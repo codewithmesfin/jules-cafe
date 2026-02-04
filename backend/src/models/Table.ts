@@ -1,25 +1,25 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface ITable extends Document {
-  branch_id: mongoose.Types.ObjectId;
-  table_number: string;
-  capacity: number;
-  status: 'available' | 'occupied' | 'reserved';
-  created_by?: mongoose.Types.ObjectId;
+  creator_id: mongoose.Types.ObjectId;
+  business_id: mongoose.Types.ObjectId;
+  name: string;
+  seats: number;
+  location?: string;
+  is_active: boolean;
   created_at: Date;
   updated_at: Date;
 }
 
 const TableSchema: Schema = new Schema({
-  branch_id: { type: Schema.Types.ObjectId, ref: 'Branch', required: true },
-  table_number: { type: String, required: true },
-  capacity: { type: Number, required: true },
-  status: {
-    type: String,
-    enum: ['available', 'occupied', 'reserved'],
-    default: 'available'
-  },
-  created_by: { type: Schema.Types.ObjectId, ref: 'User' },
+  creator_id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  business_id: { type: Schema.Types.ObjectId, ref: 'Business', required: true },
+  name: { type: String, required: true },
+  seats: { type: Number, required: true },
+  location: { type: String },
+  is_active: { type: Boolean, default: true },
 }, { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } });
+
+TableSchema.index({ business_id: 1, name: 1 });
 
 export default mongoose.model<ITable>('Table', TableSchema);

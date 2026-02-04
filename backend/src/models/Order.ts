@@ -1,76 +1,49 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
-export interface IOrderItem {
-  menu_item_id: mongoose.Types.ObjectId;
-  menu_item_name: string;
-  variant_id?: mongoose.Types.ObjectId;
-  variant_name?: string;
-  quantity: number;
-  unit_price: number;
-}
-
 export interface IOrder extends Document {
-  order_number: string;
-  customer_id: mongoose.Types.ObjectId;
-  branch_id: mongoose.Types.ObjectId;
+  creator_id: mongoose.Types.ObjectId;
+  business_id: mongoose.Types.ObjectId;
+  customer_id?: mongoose.Types.ObjectId;
   table_id?: mongoose.Types.ObjectId;
-  waiter_id?: mongoose.Types.ObjectId;
-  status: 'pending' | 'accepted' | 'preparing' | 'ready' | 'completed' | 'cancelled';
-  type: 'walk-in' | 'self-service';
+  order_type: 'dine-in' | 'takeaway' | 'delivery';
+  order_status: 'pending' | 'accepted' | 'preparing' | 'ready' | 'delivered' | 'completed' | 'cancelled';
   total_amount: number;
-  discount_amount?: number;
+  payment_status: 'unpaid' | 'partial' | 'paid';
+  payment_method?: 'cash' | 'card' | 'mobile' | 'other';
   notes?: string;
-  cancel_reason?: string;
-  items: IOrderItem[];
-  client_request_id?: string;
-  created_by?: mongoose.Types.ObjectId;
   created_at: Date;
   updated_at: Date;
 }
 
-const OrderItemSchema = new Schema({
-  menu_item_id: { type: Schema.Types.ObjectId, ref: 'MenuItem', required: true },
-  menu_item_name: { type: String, required: true },
-  variant_id: { type: Schema.Types.ObjectId, ref: 'MenuVariant' },
-  variant_name: { type: String },
-  quantity: { type: Number, required: true },
-  unit_price: { type: Number, required: true },
-});
-
 const OrderSchema: Schema = new Schema({
-  order_number: { type: String, unique: true },
-  customer_id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  branch_id: { type: Schema.Types.ObjectId, ref: 'Branch', required: true },
+  creator_id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  business_id: { type: Schema.Types.ObjectId, ref: 'Business', required: true },
+  customer_id: { type: Schema.Types.ObjectId, ref: 'Customer' },
   table_id: { type: Schema.Types.ObjectId, ref: 'Table' },
-  waiter_id: { type: Schema.Types.ObjectId, ref: 'User' },
-  status: {
+  order_type: {
     type: String,
-    enum: ['pending', 'accepted', 'preparing', 'ready', 'completed', 'cancelled'],
+    enum: ['dine-in', 'takeaway', 'delivery'],
+    default: 'dine-in'
+  },
+  order_status: {
+    type: String,
+    enum: ['pending', 'accepted', 'preparing', 'ready', 'delivered', 'completed', 'cancelled'],
     default: 'pending'
   },
-  type: {
+  total_amount: { type: Number, default: 0 },
+  payment_status: {
     type: String,
-    enum: ['walk-in', 'self-service'],
-    default: 'walk-in'
+    enum: ['unpaid', 'partial', 'paid'],
+    default: 'unpaid'
   },
-  total_amount: { type: Number, required: true },
-  discount_amount: { type: Number, default: 0 },
+  payment_method: {
+    type: String,
+    enum: ['cash', 'card', 'mobile', 'other']
+  },
   notes: { type: String },
-  cancel_reason: { type: String },
-  items: [OrderItemSchema],
-  client_request_id: { type: String, unique: true, sparse: true },
-  created_by: { type: Schema.Types.ObjectId, ref: 'User' },
 }, { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } });
 
-// Pre-validate hook to generate order number
-OrderSchema.pre<IOrder>('validate', async function(next) {
-  if (!this.order_number) {
-    const date = new Date();
-    const dateString = date.toISOString().slice(0, 10).replace(/-/g, '');
-    const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-    this.order_number = `ORD-${dateString}-${random}`;
-  }
-  next();
-});
+OrderSchema.index({ business_id: 1, order_status: 1 });
+OrderSchema.index({ customer_id: 1 });
 
 export default mongoose.model<IOrder>('Order', OrderSchema);

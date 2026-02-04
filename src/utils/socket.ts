@@ -23,19 +23,26 @@ export const disconnectSocket = (): void => {
   }
 };
 
+// Join business room for updates
+export const joinBusinessRoom = (businessId: string): void => {
+  if (!businessId) return;
+  const s = getSocket();
+  s.emit('join-business', businessId);
+};
+
 // Join customer room for order updates
 export const joinCustomerRoom = (customerId: string): void => {
+  if (!customerId) return;
   const s = getSocket();
   s.emit('join-customer', customerId);
 };
 
-// Join cashier room for new order notifications
+// Legacy methods
 export const joinCashierRoom = (): void => {
   const s = getSocket();
   s.emit('join-cashier');
 };
 
-// Join manager room for reservation notifications
 export const joinManagerRoom = (): void => {
   const s = getSocket();
   s.emit('join-manager');
@@ -44,6 +51,7 @@ export const joinManagerRoom = (): void => {
 export default {
   getSocket,
   disconnectSocket,
+  joinBusinessRoom,
   joinCustomerRoom,
   joinCashierRoom,
   joinManagerRoom,

@@ -1,17 +1,24 @@
 import express from 'express';
-import Category from '../models/Category';
-import * as factory from '../utils/controllerFactory';
-import { protect, authorize } from '../middleware/auth';
+import {
+  getAllCategories,
+  getCategory,
+  createCategory,
+  updateCategory,
+  deleteCategory
+} from '../controllers/categoryController';
+import { protect, restrictTo } from '../middleware/auth';
 
 const router = express.Router();
 
+router.use(protect);
+
 router.route('/')
-  .get(factory.getAll(Category))
-  .post(protect, authorize('admin', 'manager'), factory.createOne(Category));
+  .get(getAllCategories)
+  .post(restrictTo('admin', 'manager'), createCategory);
 
 router.route('/:id')
-  .get(factory.getOne(Category))
-  .put(protect, authorize('admin', 'manager'), factory.updateOne(Category))
-  .delete(protect, authorize('admin', 'manager'), factory.deleteOne(Category));
+  .get(getCategory)
+  .patch(restrictTo('admin', 'manager'), updateCategory)
+  .delete(restrictTo('admin', 'manager'), deleteCategory);
 
 export default router;

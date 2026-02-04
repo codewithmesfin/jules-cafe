@@ -12,26 +12,27 @@ interface TableProps<T> {
   columns: Column<T>[];
   className?: string;
   onRowClick?: (item: T) => void;
+  emptyMessage?: string;
 }
 
-export function Table<T>({ data, columns, className, onRowClick }: TableProps<T>) {
+export function Table<T>({ data, columns, className, onRowClick, emptyMessage = 'No data available' }: TableProps<T>) {
   return (
-    <div className={cn('w-full overflow-x-auto rounded-lg border border-gray-200', className)}>
-      <table className="w-full text-sm text-left text-gray-500">
-        <thead className="text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-200">
-          <tr>
+    <div className={cn('w-full overflow-x-auto rounded-xl border border-slate-200', className)}>
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="bg-slate-50 border-b border-slate-200">
             {columns.map((column, index) => (
-              <th key={index} className={cn('px-6 py-3 font-semibold', column.className)}>
+              <th key={index} className={cn('px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider', column.className)}>
                 {column.header}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-200">
+        <tbody className="divide-y divide-slate-100">
           {data.length === 0 ? (
             <tr>
-              <td colSpan={columns.length} className="px-6 py-10 text-center text-gray-400">
-                No data available
+              <td colSpan={columns.length} className="px-6 py-12 text-center text-slate-400">
+                {emptyMessage}
               </td>
             </tr>
           ) : (
@@ -39,10 +40,10 @@ export function Table<T>({ data, columns, className, onRowClick }: TableProps<T>
               <tr
                 key={rowIndex}
                 onClick={() => onRowClick?.(item)}
-                className={cn('bg-white hover:bg-gray-50 transition-colors', onRowClick && 'cursor-pointer')}
+                className={cn('bg-white transition-colors', onRowClick && 'cursor-pointer hover:bg-slate-50')}
               >
                 {columns.map((column, colIndex) => (
-                  <td key={colIndex} className={cn('px-6 py-4', column.className)}>
+                  <td key={colIndex} className={cn('px-6 py-4 text-slate-700', column.className)}>
                     {typeof column.accessor === 'function'
                       ? column.accessor(item)
                       : (item[column.accessor] as React.ReactNode)}

@@ -1,79 +1,78 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Edit, Trash2, Grid, QrCode, Download, Printer } from 'lucide-react';
+import { Search, Plus, Edit, Grid, QrCode, Users, MapPin } from 'lucide-react';
 import { api } from '../../utils/api';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import { Table as DataTable } from '../../components/ui/Table';
 import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '@/context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
-import type { Table } from '../../types';
+import { usePermission } from '../../hooks/usePermission';
+import { cn } from '../../utils/cn';
+import type { Table, Business } from '../../types';
 
 const Tables: React.FC = () => {
   const { user } = useAuth();
   const { showNotification } = useNotification();
+  const { canCreate, canUpdate } = usePermission();
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   const [selectedTable, setSelectedTable] = useState<Table | null>(null);
   const [tables, setTables] = useState<Table[]>([]);
+  const [business, setBusiness] = useState<Business | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Form state
+  // Form state - matching backend model
+  const [formName, setFormName] = useState('');
   const [formTableNumber, setFormTableNumber] = useState('');
-  const [formCapacity, setFormCapacity] = useState(2);
-  const [formStatus, setFormStatus] = useState<'available' | 'occupied' | 'reserved'>('available');
+  const [formSeats, setFormSeats] = useState(4);
+  const [formLocation, setFormLocation] = useState('');
+  const [formIsActive, setFormIsActive] = useState(true);
 
   useEffect(() => {
-    fetchTables();
-  }, [user?.branch_id]);
+    fetchData();
+  }, []);
 
-  const fetchTables = async () => {
+  const fetchData = async () => {
     try {
       setLoading(true);
-      const data = await api.tables.getAll();
-      setTables(data.filter((t: Table) => {
-        const bId = typeof t.branch_id === 'string' ? t.branch_id : (t.branch_id as any)?.id;
-        const userBId = typeof user?.branch_id === "string" ? user?.branch_id : (user?.branch_id as any)?.id;
-        return bId === userBId;
-      }));
+      const [tableRes, bizRes] = await Promise.all([
+        api.tables.getAll(),
+        api.business.getMe()
+      ]);
+      // Handle different response formats
+      const tableData = Array.isArray(tableRes) ? tableRes : tableRes.data || [];
+      setTables(tableData);
+      setBusiness(bizRes.data || bizRes);
     } catch (error) {
-      console.error('Failed to fetch tables:', error);
+      console.error('Failed to fetch data:', error);
+      showNotification('Failed to load tables', 'error');
     } finally {
       setLoading(false);
     }
   };
 
   const filteredTables = tables.filter(table =>
-    table.table_number.includes(searchTerm)
+    table.table_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    table.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  if (!user?.branch_id) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20 space-y-4">
-        <div className="p-4 bg-orange-100 text-orange-600 rounded-full">
-          <Grid size={48} />
-        </div>
-        <h2 className="text-xl font-bold text-gray-900">No Branch Associated</h2>
-        <p className="text-gray-500 text-center max-w-md">
-          Please associate this account with a branch to manage tables.
-        </p>
-      </div>
-    );
-  }
 
   const handleOpenModal = (table: Table | null = null) => {
     setSelectedTable(table);
     if (table) {
-      setFormTableNumber(table.table_number);
-      setFormCapacity(table.capacity);
-      setFormStatus(table.status);
+      setFormName(table.name || '');
+      setFormTableNumber(table.table_number || '');
+      setFormSeats(table.capacity || table.seats || 4);
+      setFormLocation((table as any).location || '');
+      setFormIsActive((table as any).is_active !== false);
     } else {
+      setFormName('');
       setFormTableNumber('');
-      setFormCapacity(2);
-      setFormStatus('available');
+      setFormSeats(4);
+      setFormLocation('');
+      setFormIsActive(true);
     }
     setIsModalOpen(true);
   };
@@ -84,30 +83,32 @@ const Tables: React.FC = () => {
   };
 
   const handleSave = async () => {
-    if (!formTableNumber || !user?.branch_id) {
-      showNotification('Please fill in all fields (Branch ID missing)', 'error');
+    if (!formName) {
+      showNotification('Please enter a table name', 'error');
       return;
     }
 
     try {
+      // Map frontend fields to backend model
       const tableData = {
-        table_number: formTableNumber,
-        capacity: formCapacity,
-        status: formStatus,
-        branch_id: user.branch_id
+        name: formName,
+        table_number: formTableNumber || formName,
+        seats: formSeats,
+        location: formLocation || undefined,
+        is_active: formIsActive
       };
 
       if (selectedTable) {
-        await api.tables.update(selectedTable.id, tableData);
+        await api.tables.update((selectedTable.id || selectedTable._id)!, tableData);
         showNotification('Table updated successfully');
       } else {
         await api.tables.create(tableData);
         showNotification('Table created successfully');
       }
       setIsModalOpen(false);
-      fetchTables();
-    } catch (error) {
-      showNotification('Failed to save table', 'error');
+      fetchData();
+    } catch (error: any) {
+      showNotification(error.message || 'Failed to save table', 'error');
     }
   };
 
@@ -115,79 +116,142 @@ const Tables: React.FC = () => {
     if (confirm('Are you sure you want to delete this table?')) {
       try {
         await api.tables.delete(id);
-        showNotification('Table deleted', 'warning');
-        fetchTables();
-      } catch (error) {
-        showNotification('Failed to delete table', 'error');
+        showNotification('Table removed successfully', 'warning');
+        fetchData();
+      } catch (error: any) {
+        showNotification(error.message || 'Failed to delete table', 'error');
       }
     }
   };
 
+  const getTableStatus = (table: any): 'available' | 'occupied' | 'reserved' => {
+    // For now, return available if is_active is true
+    return (table as any).is_active !== false ? 'available' : 'occupied';
+  };
+
   const generateQrUrl = (table: Table) => {
-    const baseUrl = window.location.origin;
-    const menuUrl = `${baseUrl}/menu?branchId=${user.branch_id}&tableId=${table.id}&tableNo=${table.table_number}`;
-    return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(menuUrl)}`;
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+    const businessSlug = business?.name?.toLowerCase().replace(/\s+/g, '-') || 'business';
+    const tableId = table.id || table._id;
+    const tableNo = table.table_number || table.name || '';
+    const menuUrl = `${baseUrl}/${businessSlug}/menu?tableId=${tableId}&tableNo=${encodeURIComponent(tableNo)}`;
+    return `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(menuUrl)}`;
   };
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="relative w-full sm:w-96">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-          <Input
-            placeholder="Search by table number..."
-            className="pl-10"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Table Management</h1>
+          <p className="text-slate-500">Manage your restaurant tables and QR codes</p>
         </div>
-        <Button className="gap-2" onClick={() => handleOpenModal()}>
-          <Plus size={20} /> Add Table
-        </Button>
+        {canCreate('tables') && (
+          <Button
+            className="gap-2"
+            onClick={() => handleOpenModal()}
+          >
+            <Plus size={18} /> Add Table
+          </Button>
+        )}
       </div>
 
-      {loading ? (
-        <div className="text-center py-10">Loading tables...</div>
-      ) : (
-        <DataTable
-          data={filteredTables}
-          columns={[
-            {
-              header: 'Table Number',
-              accessor: (t) => (
-                <div className="flex items-center gap-2 font-bold text-gray-900">
-                  <Grid size={16} className="text-orange-600" />
-                  Table {t.table_number}
-                </div>
-              )
-            },
-            { header: 'Capacity', accessor: (t) => `${t.capacity} Guests` },
-            {
-              header: 'Status',
-              accessor: (t) => (
-                <Badge
-                  variant={
-                    t.status === 'available' ? 'success' :
-                    t.status === 'occupied' ? 'error' : 'warning'
-                  }
-                  className="capitalize"
-                >
-                  {t.status}
-                </Badge>
-              )
-            },
-            {
-              header: 'Actions',
-              accessor: (t) => (
-                <div className="flex items-center gap-2">
-                  <Button variant="ghost" size="sm" className="text-blue-600" onClick={() => handleOpenQrModal(t)} title="Generate QR Code"><QrCode size={16} /></Button>
-                  <Button variant="ghost" size="sm" onClick={() => handleOpenModal(t)}><Edit size={16} /></Button>
-                  <Button variant="ghost" size="sm" className="text-red-600" onClick={() => handleDelete(t.id)}><Trash2 size={16} /></Button>
-                </div>
-              )
-            }
-          ]}
+      {/* Search */}
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+        <input
+          type="text"
+          placeholder="Search tables..."
+          className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
         />
+      </div>
+
+      {/* Tables Grid */}
+      {loading ? (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(i => (
+            <div key={i} className="aspect-square bg-slate-100 rounded-2xl animate-pulse" />
+          ))}
+        </div>
+      ) : filteredTables.length === 0 ? (
+        <div className="text-center py-16 bg-white rounded-2xl border border-slate-200">
+          <Grid className="mx-auto h-12 w-12 text-slate-200 mb-4" />
+          <p className="text-slate-500 font-medium">No tables found</p>
+          {canCreate('tables') && (
+            <Button variant="outline" className="mt-4" onClick={() => handleOpenModal()}>
+              Add your first table
+            </Button>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          {filteredTables.map(table => (
+            <div
+              key={table.id || table._id}
+              className={cn(
+                "bg-white border rounded-2xl p-5 transition-all hover:shadow-lg",
+                "border-slate-200 hover:border-blue-200"
+              )}
+            >
+              <div className="flex items-start justify-between mb-3">
+                <div className={cn(
+                  "w-12 h-12 rounded-xl flex items-center justify-center",
+                  getTableStatus(table) === 'available' ? "bg-green-50 text-green-600" :
+                  getTableStatus(table) === 'occupied' ? "bg-red-50 text-red-600" : "bg-amber-50 text-amber-600"
+                )}>
+                  <Grid size={24} />
+                </div>
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => handleOpenQrModal(table)}
+                    className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                    title="View QR Code"
+                  >
+                    <QrCode size={16} />
+                  </button>
+                  <button
+                    onClick={() => handleOpenModal(table)}
+                    className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                    title="Edit"
+                  >
+                    {canUpdate('tables') && (
+                     <Edit size={16} />
+                   )}
+                  </button>
+                </div>
+              </div>
+
+              <h3 className="font-semibold text-slate-900 text-lg mb-1">
+                Table {table.table_number || table.name}
+              </h3>
+              
+              <div className="flex items-center gap-4 text-sm text-slate-500 mb-3">
+                <div className="flex items-center gap-1">
+                  <Users size={14} />
+                  <span>{table.capacity || table.seats} seats</span>
+                </div>
+                {(table as any).location && (
+                  <div className="flex items-center gap-1">
+                    <MapPin size={14} />
+                    <span className="truncate">{(table as any).location}</span>
+                  </div>
+                )}
+              </div>
+
+              <Badge
+                variant={
+                  getTableStatus(table) === 'available' ? 'success' :
+                  getTableStatus(table) === 'occupied' ? 'error' : 'warning'
+                }
+                className="w-full justify-center"
+              >
+                {getTableStatus(table)}
+              </Badge>
+            </div>
+          ))}
+        </div>
       )}
 
       {/* Add/Edit Modal */}
@@ -195,40 +259,56 @@ const Tables: React.FC = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title={selectedTable ? 'Edit Table' : 'Add New Table'}
+        className="max-w-md"
         footer={
-          <>
-            <Button variant="outline" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-            <Button onClick={handleSave}>
+          <div className="flex gap-3 w-full">
+            <Button variant="outline" className="flex-1" onClick={() => setIsModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button className="flex-1" onClick={handleSave}>
               {selectedTable ? 'Save Changes' : 'Create Table'}
             </Button>
-          </>
+          </div>
         }
       >
-        <div className="space-y-4">
+        <div className="space-y-4 py-2">
+          <Input
+            label="Table Name *"
+            placeholder="e.g., Main Dining"
+            value={formName}
+            onChange={(e) => setFormName(e.target.value)}
+          />
           <Input
             label="Table Number"
-            placeholder="e.g. 15"
+            placeholder="e.g., A1, 10"
             value={formTableNumber}
             onChange={(e) => setFormTableNumber(e.target.value)}
           />
           <Input
-            label="Capacity"
+            label="Seating Capacity"
             type="number"
-            placeholder="4"
-            value={formCapacity}
-            onChange={(e) => setFormCapacity(parseInt(e.target.value) || 0)}
+            min="1"
+            max="50"
+            value={formSeats}
+            onChange={(e) => setFormSeats(parseInt(e.target.value) || 1)}
           />
-          <div className="w-full">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-            <select
-              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-              value={formStatus}
-              onChange={(e) => setFormStatus(e.target.value as any)}
-            >
-              <option value="available">Available</option>
-              <option value="occupied">Occupied</option>
-              <option value="reserved">Reserved</option>
-            </select>
+          <Input
+            label="Location (optional)"
+            placeholder="e.g., Window, Patio, Bar"
+            value={formLocation}
+            onChange={(e) => setFormLocation(e.target.value)}
+          />
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="isActive"
+              checked={formIsActive}
+              onChange={(e) => setFormIsActive(e.target.checked)}
+              className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
+            />
+            <label htmlFor="isActive" className="text-sm font-medium text-slate-700">
+              Table is active
+            </label>
           </div>
         </div>
       </Modal>
@@ -237,64 +317,27 @@ const Tables: React.FC = () => {
       <Modal
         isOpen={isQrModalOpen}
         onClose={() => setIsQrModalOpen(false)}
-        title={`QR Code for Table ${selectedTable?.table_number}`}
-        footer={
-          <>
-            <Button variant="outline" onClick={() => setIsQrModalOpen(false)}>Close</Button>
-            <Button className="gap-2" onClick={() => window.print()}>
-              <Printer size={16} /> Print
-            </Button>
-          </>
-        }
+        title="Table QR Code"
+        className="max-w-sm"
       >
         {selectedTable && (
-          <div className="flex flex-col items-center justify-center py-8 space-y-6" id="printable-qr">
-            <div className="bg-white p-6 rounded-3xl shadow-xl border border-gray-100 flex flex-col items-center space-y-4">
-              <div className="text-center">
-                <h2 className="text-2xl font-black text-gray-900">TABLE {selectedTable.table_number}</h2>
-                <p className="text-orange-600 font-bold text-sm uppercase tracking-widest">Scan to Order</p>
-              </div>
-
-              <div className="w-64 h-64 bg-gray-50 rounded-2xl flex items-center justify-center overflow-hidden border-4 border-white shadow-inner">
-                <img
-                  src={generateQrUrl(selectedTable)}
-                  alt="Table QR Code"
-                  className="w-full h-full"
-                />
-              </div>
-
-              <div className="text-center space-y-1">
-                <p className="text-xs text-gray-400 font-medium italic">Powered by</p>
-                <div className="flex items-center gap-1">
-                   <span className="text-lg font-black tracking-tighter uppercase">Coffee<span className="text-orange-600">Hub</span></span>
-                </div>
-              </div>
+          <div className="flex flex-col items-center py-4">
+            <div className="bg-white p-6 rounded-2xl shadow-lg border border-slate-100 mb-4">
+              <img
+                src={generateQrUrl(selectedTable)}
+                alt="Table QR Code"
+                className="w-48 h-48"
+              />
             </div>
-
-            <p className="text-sm text-gray-500 text-center max-w-xs">
-              Print this code and attach it to Table {selectedTable.table_number}. Customers can scan this to view the menu and place orders directly from their seats.
+            <p className="text-center font-medium text-slate-700">
+              Table {selectedTable.table_number || selectedTable.name}
+            </p>
+            <p className="text-center text-sm text-slate-500 mt-1">
+              Scan to view menu and order
             </p>
           </div>
         )}
       </Modal>
-
-      <style jsx global>{`
-        @media print {
-          body * {
-            visibility: hidden;
-          }
-          #printable-qr, #printable-qr * {
-            visibility: visible;
-          }
-          #printable-qr {
-            position: fixed;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-            width: 100%;
-          }
-        }
-      `}</style>
     </div>
   );
 };

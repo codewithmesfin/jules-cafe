@@ -1,20 +1,24 @@
-import React, { useState, useEffect } from 'react';
+"use client";
+
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { ShoppingCart, Plus, Minus, Search, Grid, User, UserPlus, ArrowLeft } from 'lucide-react';
+import {
+  ShoppingCart, Plus, Minus, Search, Grid, User, ArrowLeft, UserPlus
+} from 'lucide-react';
 import { api } from '../../utils/api';
 import { Button } from '../../components/ui/Button';
-import { Input } from '../../components/ui/Input';
-import { Card } from '../../components/ui/Card';
+import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
 import { Drawer } from '../../components/ui/Drawer';
-import { Badge } from '../../components/ui/Badge';
+import { Input } from '../../components/ui/Input';
 import { useNotification } from '../../context/NotificationContext';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '@/context/AuthContext';
 import { cn } from '../../utils/cn';
-import type { MenuItem, MenuCategory, Table, User as UserType, Branch } from '../../types';
+import type { Product, Category, Table, User as AppUser, Customer } from '../../types';
 
-interface CartItem extends MenuItem {
+interface CartItem extends Product {
   quantity: number;
+  base_price: number;
 }
 
 const NewOrder: React.FC = () => {
@@ -27,48 +31,66 @@ const NewOrder: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [cart, setCart] = useState<CartItem[]>([]);
+  
   const [selectedTable, setSelectedTable] = useState('');
   const [selectedWaiter, setSelectedWaiter] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState('');
+
   const [orderNotes, setOrderNotes] = useState('');
 
-  const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
-  const [isCartDrawerOpen, setIsCartDrawerOpen] = useState(false);
-  const [newCustomer, setNewCustomer] = useState({ name: '', email: '', phone: '', type: 'regular' as 'regular' | 'vip' | 'member', discount: 0 });
-
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
-  const [categories, setCategories] = useState<MenuCategory[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [tables, setTables] = useState<Table[]>([]);
-  const [users, setUsers] = useState<UserType[]>([]);
-  const [branches, setBranches] = useState<Branch[]>([]);
+  const [users, setUsers] = useState<AppUser[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [orderLoading, setOrderLoading] = useState(false);
-  const [clientRequestId, setClientRequestId] = useState(() => Math.random().toString(36).substring(2, 15));
+
+  const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
+  const [isCartDrawerOpen, setIsCartDrawerOpen] = useState(false);
+  const [newCustomer, setNewCustomer] = useState({ name: '', phone: '', email: '', type: 'regular' as 'regular' | 'vip' | 'member', discount: 0 });
+
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [dynamicHeight, setDynamicHeight] = useState('100%');
+
+  useEffect(() => {
+    if (rootRef.current) {
+      const topOffset = rootRef.current.getBoundingClientRect().top;
+      const bottomPadding = 24; // p-6 on main element
+      setDynamicHeight(`calc(100vh - ${topOffset + bottomPadding}px)`);
+    }
+  }, [orderId]); // Re-calculate if orderId changes (tabs appear/disappear)
+
+
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [items, cats, tbls, usrs, brnchs] = await Promise.all([
-          api.menuItems.getAll(),
+        const [prodList, catList, tblList, usrList, custList] = await Promise.all([
+          api.products.getAll(),
           api.categories.getAll(),
           api.tables.getAll(),
           api.users.getAll(),
-          api.branches.getAll(),
+          api.customers.getAll(),
         ]);
-        setMenuItems(items);
-        setCategories(cats);
-        setTables(tbls);
-        setUsers(usrs);
-        setBranches(brnchs);
+
+        const getArray = (response: any) => Array.isArray(response) ? response : response.data || [];
+
+        setProducts(getArray(prodList));
+        setCategories(getArray(catList));
+        setTables(getArray(tblList));
+        setUsers(getArray(usrList));
+        setCustomers(getArray(custList));
 
         if (orderId) {
-          fetchOrderDetails(orderId, items);
+          fetchOrderDetails(orderId, getArray(prodList));
         }
       } catch (error: any) {
         console.error('Failed to fetch data:', error);
-        showNotification(error.message || 'Failed to fetch data', 'error');
+        showNotification('Failed to load data', 'error');
       } finally {
         setLoading(false);
       }
@@ -76,342 +98,368 @@ const NewOrder: React.FC = () => {
     fetchData();
   }, [orderId]);
 
-  const fetchOrderDetails = async (id: string, allMenuItems: MenuItem[]) => {
+  const fetchOrderDetails = async (id: string, allProducts: Product[]) => {
     try {
       setOrderLoading(true);
-      const order = await api.orders.getOne(id);
+      const orderResponse = await api.orders.getOne(id);
+      const order = orderResponse.data || orderResponse;
 
-      const editableStatuses = ['pending', 'accepted', 'preparing'];
-      if (!editableStatuses.includes(order.status)) {
-        showNotification(`Orders in ${order.status} status cannot be edited.`, 'warning');
-        router.push('/cashier/queue');
-        return;
-      }
-
-      setSelectedCustomer(typeof order.customer_id === 'string' ? order.customer_id : order.customer_id.id);
-      setSelectedTable(order.table_id ? (typeof order.table_id === 'string' ? order.table_id : order.table_id.id) : '');
-      setSelectedWaiter(order.waiter_id ? (typeof order.waiter_id === 'string' ? order.waiter_id : order.waiter_id.id) : '');
+      setSelectedTable(order.table_id?._id || order.table_id || '');
+      setSelectedCustomer(order.customer_id?._id || order.customer_id || '');
+      setSelectedWaiter(order.waiter_id?._id || order.waiter_id || '');
       setOrderNotes(order.notes || '');
 
-      const cartItems: CartItem[] = order.items.map((item: any) => {
-        const originalItem = allMenuItems.find(mi => mi.id === item.menu_item_id || (mi as any)._id === item.menu_item_id);
+      const itemsResponse = await api.orders.getItems(id);
+      const items = Array.isArray(itemsResponse) ? itemsResponse : itemsResponse.data || [];
 
-        return {
-          id: item.menu_item_id,
-          name: item.menu_item_name,
-          base_price: item.unit_price,
-          quantity: item.quantity,
-          description: originalItem?.description || '',
-          image_url: originalItem?.image_url || '',
-          category_id: originalItem?.category_id || ''
-        } as CartItem;
-      });
+      const cartItems: CartItem[] = items.map((item: any) => {
+        const product = allProducts.find(p => p.id === (item.product_id?._id || item.product_id) || p._id === (item.product_id?._id || item.product_id));
+        if (!product) return null;
+        return { ...product, quantity: item.quantity, base_price: item.price };
+      }).filter(Boolean) as CartItem[];
+
       setCart(cartItems);
     } catch (error: any) {
-      showNotification(error.message || 'Failed to fetch order details', 'error');
+      showNotification('Failed to load order: ' + error.message, 'error');
     } finally {
       setOrderLoading(false);
     }
   };
 
-  const filteredItems = menuItems.filter(item => {
-    const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const categoryId = typeof item.category_id === 'string' ? item.category_id : (item.category_id as any)?.id;
-    const matchesCategory = selectedCategory === 'all' || categoryId === selectedCategory;
-    return matchesSearch && matchesCategory;
+  const filteredItems = products.filter(item => {
+    const searchLower = searchTerm.toLowerCase();
+    const matchesSearch = item.name.toLowerCase().includes(searchLower) || item.description?.toLowerCase().includes(searchLower);
+    const matchesCategory = selectedCategory === 'all' || item.category_id === selectedCategory || (item.category_id as any)?._id === selectedCategory;
+    
+    return matchesSearch && matchesCategory && item.is_active;
   });
 
-  const addToCart = (item: MenuItem) => {
+  const addToCart = (product: Product) => {
     setCart(prev => {
-      const existing = prev.find(i => i.id === item.id);
+      const existing = prev.find(i => i.id === product.id || i._id === product._id);
       if (existing) {
-        return prev.map(i => i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i);
+        return prev.map(i => (i.id === product.id || i._id === product._id) ? { ...i, quantity: i.quantity + 1 } : i);
       }
-      return [...prev, { ...item, quantity: 1 }];
+      return [...prev, { ...product, quantity: 1, base_price: product.price }];
     });
   };
 
   const updateQuantity = (id: string, delta: number) => {
     setCart(prev => prev.map(item => {
-      if (item.id === id) {
+      if (item.id === id || item._id === id) {
         const newQty = Math.max(0, item.quantity + delta);
         return { ...item, quantity: newQty };
       }
       return item;
     }).filter(item => item.quantity > 0));
   };
+  
+  const customerData = useMemo(() => {
+    if (!selectedCustomer) return null;
+    const customer = customers.find(c => c.id === selectedCustomer || c._id === selectedCustomer);
+    if (!customer) return null;
+    
+    return {
+        ...customer,
+        customer_type: customer.customer_type,
+        discount_rate: customer.discount_percent
+    };
+  }, [selectedCustomer, customers]);
 
-  const customerData = users.find(u => u.id === selectedCustomer);
-  const discountRate = customerData?.discount_rate || 0;
   const subtotal = cart.reduce((acc, item) => acc + item.base_price * item.quantity, 0);
-  const discountAmount = (subtotal * discountRate) / 100;
+  const discountRate = customerData?.discount_rate || 0;
+  const discountAmount = subtotal * (discountRate / 100);
   const total = subtotal - discountAmount;
 
+
   const handlePlaceOrder = async () => {
+    if (!selectedCustomer) {
+        showNotification("Please select a customer.", "error");
+        return;
+    }
     try {
       setSaving(true);
-      const orderData = {
+      const orderData: any = {
         customer_id: selectedCustomer,
-        branch_id: user?.branch_id || (branches.length > 0 ? branches[0].id : ''),
-        table_id: selectedTable || undefined,
-        waiter_id: selectedWaiter || undefined,
         notes: orderNotes,
-        status: 'pending',
-        type: 'walk-in',
-        total_amount: total,
+        discount_percent: discountRate,
         discount_amount: discountAmount,
+        total_price: total,
         items: cart.map(item => ({
-          menu_item_id: item.id,
-          menu_item_name: item.name,
+          product_id: item.id || item._id,
           quantity: item.quantity,
-          unit_price: item.base_price
+          price: item.base_price,
         }))
       };
 
+      if (selectedTable) orderData.table_id = selectedTable;
+      if (selectedWaiter) orderData.waiter_id = selectedWaiter;
+
+
       if (orderId) {
         await api.orders.update(orderId, orderData);
-        showNotification("Order updated successfully!");
-        router.push('/cashier/queue');
+        showNotification('Order updated successfully!');
+        router.push('/dashboard/orders?mode=queue');
       } else {
-        await api.orders.create({
-          ...orderData,
-          client_request_id: clientRequestId
-        });
-        showNotification("Order placed successfully!");
+        await api.orders.create(orderData);
+        showNotification('Order placed successfully!');
         setCart([]);
-        setSelectedCustomer('');
         setSelectedTable('');
+        setSelectedCustomer('');
         setSelectedWaiter('');
         setOrderNotes('');
-        setClientRequestId(Math.random().toString(36).substring(2, 15));
-        setIsCartDrawerOpen(false);
       }
     } catch (error: any) {
-      showNotification(error.message || `Failed to ${orderId ? 'update' : 'place'} order`, "error");
+      showNotification(error.message || 'Failed to place order', 'error');
     } finally {
       setSaving(false);
     }
   };
 
+  const handleRegisterCustomer = async () => {
+    try {
+      const { name, phone, email, type, discount } = newCustomer;
+      if (!name || !phone) {
+        showNotification("Full Name and Phone are required.", "error");
+        return;
+      }
+
+      await api.customers.create({
+        full_name: name,
+        phone,
+        email,
+        customer_type: type === 'vip' ? 'vip' : type === 'member' ? 'member' : 'regular',
+        discount_percent: discount,
+      });
+
+      showNotification("Customer added successfully!");
+      setIsCustomerModalOpen(false);
+      setNewCustomer({ name: '', phone: '', email: '', type: 'regular', discount: 0 });
+      const custs = await api.customers.getAll();
+      setCustomers(Array.isArray(custs) ? custs : custs.data || []);
+    } catch (error: any) {
+      showNotification(error.message || "Failed to add customer", "error");
+    }
+  };
+
   const cartContent = (
-    <div className="flex flex-col h-full flex-1 overflow-y-auto">
-      <div className="p-4 border-b border-gray-200 space-y-4">
-        <div className="space-y-1">
-          <label className="text-xs font-bold text-gray-400 uppercase flex items-center gap-1">
-            <Grid size={12} /> Table
-          </label>
-          <select
-            className="w-full text-sm border-gray-200 rounded-md bg-gray-50 px-3 py-2 focus:ring-orange-500 focus:border-orange-500"
-            value={selectedTable}
-            onChange={(e) => setSelectedTable(e.target.value)}
-          >
-            <option value="">Select Table (Optional)</option>
-            {tables.filter(t => {
-              const bId = typeof t.branch_id === 'string' ? t.branch_id : (t.branch_id as any)?.id;
-              const userBId = typeof user?.branch_id === 'string' ? user?.branch_id : (user?.branch_id as any)?.id;
-              return bId === userBId;
-            }).map(t => (
-              <option key={t.id} value={t.id}>Table {t.table_number} ({t.capacity} seats)</option>
-            ))}
-          </select>
-        </div>
+    <div className="flex flex-col h-full max-h-[660px] bg-white lg:rounded-b-3xl">
+      {/* Form fields and cart items */}
+      <div className="flex-1 overflow-y-auto p-5 space-y-5">
+        <div className="space-y-4">
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs font-semibold text-gray-600 flex items-center gap-1 mb-1.5">
+                <Grid size={12} className="text-[#e60023]" /> Table
+              </label>
+              <select
+                className="w-full text-sm border border-gray-200 rounded-xl bg-white px-3 py-2.5 focus:ring-2 focus:ring-[#e60023] focus:border-transparent transition-all shadow-sm"
+                value={selectedTable}
+                onChange={(e) => setSelectedTable(e.target.value)}
+              >
+                <option value="">Select Table</option>
+                {tables.map(t => (
+                  <option key={t.id || t._id} value={t.id || t._id}>{t.name} ({t.capacity} seats)</option>
+                ))}
+              </select>
+            </div>
 
-        <div className="space-y-1">
-          <label className="text-xs font-bold text-gray-400 uppercase flex items-center gap-1">
-            <User size={12} /> Waiter
-          </label>
-          <select
-            className="w-full text-sm border-gray-200 rounded-md bg-gray-50 px-3 py-2 focus:ring-orange-500 focus:border-orange-500"
-            value={selectedWaiter}
-            onChange={(e) => setSelectedWaiter(e.target.value)}
-          >
-            <option value="">Assign Waiter (Optional)</option>
-            {users.filter(u => {
-              const bId = typeof u.branch_id === 'string' ? u.branch_id : (u.branch_id as any)?.id;
-              const userBId = typeof user?.branch_id === 'string' ? user?.branch_id : (user?.branch_id as any)?.id;
-              return u.role === 'staff' && bId === userBId;
-            }).map(u => (
-              <option key={u.id} value={u.id}>{u.full_name || u.username}</option>
-            ))}
-          </select>
-        </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-600 flex items-center gap-1 mb-1.5">
+                <User size={12} className="text-gray-500" /> Waiter
+              </label>
+              <select
+                className="w-full text-sm border border-gray-200 rounded-xl bg-white px-3 py-2.5 focus:ring-2 focus:ring-[#e60023] focus:border-transparent transition-all shadow-sm"
+                value={selectedWaiter}
+                onChange={(e) => setSelectedWaiter(e.target.value)}
+              >
+                <option value="">Assign Waiter</option>
+                {users.filter(u => u.role === 'waiter').map(u => (
+                  <option key={u.id || u._id} value={u.id || u._id}>{u.full_name}</option>
+                ))}
+              </select>
+            </div>
 
-        <div className="space-y-1">
-          <label className="text-xs font-bold text-gray-400 uppercase flex items-center gap-1">
-            <User size={12} className="text-orange-600" /> Customer *
-          </label>
-          <div className="flex items-center gap-2">
-            <select
-              className="flex-1 text-sm border-gray-200 rounded-md bg-gray-50 px-3 py-2 focus:ring-orange-500 focus:border-orange-500 font-medium"
-              value={selectedCustomer}
-              onChange={(e) => setSelectedCustomer(e.target.value)}
-            >
-              <option value="">Select Customer</option>
-              {users.filter(u => u.role === 'customer').map(u => (
-                <option key={u.id} value={u.id}>{u.full_name} ({u.phone})</option>
-              ))}
-            </select>
-            <button
-              onClick={() => setIsCustomerModalOpen(true)}
-              className="p-2 text-orange-600 hover:bg-orange-50 rounded-md border border-orange-200 transition-colors"
-              title="Add New Customer"
-            >
-              <UserPlus size={18} />
-            </button>
-          </div>
-        </div>
-
-        <div className="pt-2">
-          <textarea
-            className="w-full text-xs border border-gray-200 rounded-md p-2 bg-white focus:ring-orange-500 focus:border-orange-500"
-            placeholder="Order notes (customizations, allergies...)"
-            rows={2}
-            value={orderNotes}
-            onChange={(e) => setOrderNotes(e.target.value)}
-          />
-        </div>
-      </div>
-
-      <div className="flex-1 p-4 space-y-4 pb-10">
-        {cart.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-gray-400 space-y-2">
-            <ShoppingCart size={48} strokeWidth={1.5} />
-            <p className="text-sm font-medium">Your cart is empty</p>
-            <p className="text-xs">Select items from the menu to start</p>
-          </div>
-        ) : (
-          cart.map(item => (
-            <div key={item.id} className="flex justify-between items-center gap-3 p-2 hover:bg-gray-50 rounded-lg transition-colors">
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-gray-900 truncate">{item.name}</p>
-                <p className="text-xs text-orange-600 font-bold">ETB {item.base_price.toFixed(2)}</p>
-              </div>
-              <div className="flex items-center gap-3 bg-white border border-gray-100 rounded-full px-2 py-1 shadow-sm">
-                <button
-                  onClick={() => updateQuantity(item.id, -1)}
-                  className="p-1 hover:bg-orange-50 text-orange-600 rounded-full transition-colors"
+            <div>
+              <label className="text-xs font-semibold text-[#e60023] flex items-center gap-1 mb-1.5">
+                <User size={12} /> Customer *
+              </label>
+              <div className="flex items-center gap-2">
+                <select
+                  className="flex-1 text-sm border border-gray-200 rounded-xl bg-white px-3 py-2.5 focus:ring-2 focus:ring-[#e60023] focus:border-transparent transition-all shadow-sm font-medium"
+                  value={selectedCustomer}
+                  onChange={(e) => setSelectedCustomer(e.target.value)}
                 >
-                  <Minus size={14} />
-                </button>
-                <span className="text-sm font-black w-4 text-center">{item.quantity}</span>
+                  <option value="">Select Customer</option>
+                  {customers.map(c => (
+                    <option key={c.id || c._id} value={c.id || c._id}>{c.full_name} ({c.phone})</option>
+                  ))}
+                </select>
                 <button
-                  onClick={() => updateQuantity(item.id, 1)}
-                  className="p-1 hover:bg-orange-50 text-orange-600 rounded-full transition-colors"
+                  onClick={() => setIsCustomerModalOpen(true)}
+                  className="p-2.5 bg-[#e60023] text-white hover:bg-[#cc0000] rounded-xl shadow-md transition-all hover:scale-105 active:scale-95"
+                  title="Add New Customer"
                 >
-                  <Plus size={14} />
+                  <UserPlus size={18} />
                 </button>
               </div>
             </div>
-          ))
-        )}
-      </div>
 
-      <div className="sticky bottom-0 p-4 bg-gray-50 border-t border-gray-200 space-y-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm text-gray-500">
-            <span>Subtotal</span>
-            <span className="font-medium text-gray-900">ETB {subtotal.toFixed(2)}</span>
+            <div>
+              <textarea
+                className="w-full text-sm border border-gray-200 rounded-xl bg-white px-3 py-2.5 focus:ring-2 focus:ring-[#e60023] focus:border-transparent transition-all shadow-sm placeholder:text-gray-400"
+                placeholder="Notes (special requests, allergies...)"
+                rows={2}
+                value={orderNotes}
+                onChange={(e) => setOrderNotes(e.target.value)}
+              />
+            </div>
           </div>
-          {discountRate > 0 && (
-            <div className="flex justify-between text-sm text-green-600 font-medium">
-              <span>Discount ({customerData?.customer_type?.toUpperCase()} {discountRate}%)</span>
-              <span>-ETB {discountAmount.toFixed(2)}</span>
+        </div>
+
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider">Items ({cart.length})</h3>
+          </div>
+          
+          {cart.length === 0 ? (
+            <div className="bg-gray-50 rounded-2xl p-8 flex flex-col items-center justify-center text-center space-y-3 border-2 border-dashed border-gray-200">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
+                <ShoppingCart size={28} className="text-gray-400" strokeWidth={1.5} />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-gray-600">Your cart is empty</p>
+                <p className="text-xs text-gray-400 mt-1">Add items from the menu to get started</p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {cart.map(item => (
+                <div key={item.id || item._id} className="flex items-center gap-3 p-3 bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-md transition-all">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-gray-900 truncate pr-2">{item.name}</p>
+                    <p className="text-xs text-[#e60023] font-bold mt-0.5">ETB {item.base_price.toFixed(2)}</p>
+                  </div>
+                  <div className="flex items-center gap-2 bg-gray-50 rounded-full px-2 py-1 border border-gray-100">
+                    <button
+                      onClick={() => updateQuantity(item.id || item._id!, -1)}
+                      className="w-7 h-7 flex items-center justify-center bg-white border border-gray-200 text-[#e60023] rounded-full hover:bg-orange-50 hover:border-orange-200 transition-all"
+                    >
+                      <Minus size={12} />
+                    </button>
+                    <span className="text-sm font-black w-6 text-center">{item.quantity}</span>
+                    <button
+                      onClick={() => updateQuantity(item.id || item._id!, 1)}
+                      className="w-7 h-7 flex items-center justify-center bg-white border border-gray-200 text-[#e60023] rounded-full hover:bg-orange-50 hover:border-orange-200 transition-all"
+                    >
+                      <Plus size={12} />
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
-          <div className="flex justify-between text-xl font-black text-gray-900 pt-2 border-t border-gray-200">
-            <span>Total</span>
-            <span className="text-orange-600">ETB {total.toFixed(2)}</span>
+        </div>
+      </div>
+
+      {/* Totals and action */}
+      <div className="sticky bottom-0 flex-shrink-0 p-5 bg-white border-t border-gray-100 space-y-4 lg:rounded-b-3xl">
+        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 space-y-3">
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-gray-500">Subtotal</span>
+            <span className="text-sm font-semibold text-gray-900">ETB {subtotal.toFixed(2)}</span>
+          </div>
+          {discountRate > 0 && (
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-green-600 font-medium flex items-center gap-1">
+                <span className="bg-green-100 text-green-700 px-1.5 py-0.5 rounded text-xs uppercase">{customerData?.customer_type}</span>
+                Discount ({discountRate}%)
+              </span>
+              <span className="text-green-600 font-semibold">-ETB {discountAmount.toFixed(2)}</span>
+            </div>
+          )}
+          <div className="flex justify-between items-center pt-2 border-t border-gray-100">
+            <span className="text-lg font-black text-gray-900">Total</span>
+            <span className="text-xl font-black text-[#e60023]">ETB {total.toFixed(2)}</span>
           </div>
         </div>
+        
         <Button
-          className="w-full h-12 text-lg font-bold shadow-lg shadow-orange-200"
+          className="w-full h-12 text-base font-bold shadow-lg shadow-orange-200 bg-gradient-to-r from-[#e60023] to-[#ff3333] hover:from-[#cc0000] hover:to-[#e60023] rounded-xl"
           size="lg"
           disabled={cart.length === 0 || !selectedCustomer || saving}
           onClick={handlePlaceOrder}
         >
-          {saving ? 'Processing...' : orderId ? 'Update Order' : 'Place Order'}
+          {saving ? (
+            <span className="flex items-center gap-2">
+              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              Processing...
+            </span>
+          ) : orderId ? (
+            'Update Order'
+          ) : (
+            'Place Order'
+          )}
         </Button>
       </div>
     </div>
   );
 
-  if (!user?.branch_id) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20 space-y-6">
-        <div className="w-24 h-24 bg-orange-100 text-orange-600 rounded-3xl flex items-center justify-center shadow-inner">
-          <ShoppingCart size={48} strokeWidth={1.5} />
-        </div>
-        <div className="text-center space-y-2">
-          <h2 className="text-2xl font-black text-gray-900">No Branch Associated</h2>
-          <p className="text-gray-500 max-w-sm">
-            Please associate this account with a branch to begin creating and managing orders.
-          </p>
-        </div>
-        <Button variant="outline" onClick={() => router.push('/cashier/dashboard')}>Return to Dashboard</Button>
-      </div>
-    );
-  }
+
 
   if (orderLoading) return (
     <div className="flex flex-col items-center justify-center h-full space-y-4">
-      <div className="w-12 h-12 border-4 border-orange-200 border-t-orange-600 rounded-full animate-spin"></div>
+      <div className="w-12 h-12 border-4 border-orange-200 border-t-[#e60023] rounded-full animate-spin"></div>
       <p className="text-gray-500 font-medium">Loading order details...</p>
     </div>
   );
 
   return (
-    <div className="flex flex-col lg:flex-row h-full gap-6 relative pb-24 lg:pb-0">
-      {/* Menu Selection */}
+    <div ref={rootRef} style={{ height: dynamicHeight }} className="flex flex-col lg:flex-row gap-6 relative">
       <div className="flex-1 flex flex-col min-w-0 h-full">
-        {/* Header Actions */}
         <div className="space-y-4 mb-6">
           <div className="flex items-center gap-4">
             {orderId && (
               <button
-                onClick={() => router.push('/cashier/queue')}
+                onClick={() => router.push('/dashboard/orders?mode=queue')}
                 className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500"
               >
                 <ArrowLeft size={20} />
               </button>
             )}
-            <h1 className="text-2xl font-black text-gray-900 truncate">
-              {orderId ? `Editing Order #${orderId.slice(-4)}` : 'Create New Order'}
-            </h1>
           </div>
 
           <div className="flex flex-col md:flex-row gap-4">
             <div className="relative flex-1 group">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-orange-500 transition-colors w-4 h-4" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#e60023] transition-colors w-4 h-4" />
               <input
                 placeholder="Search by name or description..."
-                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#e60023] focus:border-transparent transition-all"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            {/* Desktop Category Dropdown (fallback for wide screens) */}
             <div className="hidden xl:block w-64">
               <select
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all"
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#e60023] transition-all"
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
               >
                 <option value="all">All Categories</option>
                 {categories.map(cat => (
-                  <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  <option key={cat.id || cat._id} value={cat.id || cat._id}>{cat.name}</option>
                 ))}
               </select>
             </div>
           </div>
 
-          {/* Category Pills (Mobile & Tablet optimized) */}
           <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-2 px-2 no-scrollbar">
             <button
               onClick={() => setSelectedCategory('all')}
               className={cn(
                 "whitespace-nowrap px-6 py-2 rounded-full text-sm font-bold transition-all border shrink-0",
                 selectedCategory === 'all'
-                  ? "bg-orange-600 border-orange-600 text-white shadow-md shadow-orange-100 scale-105"
+                  ? "bg-[#e60023] border-[#e60023] text-white shadow-md shadow-orange-100 scale-105"
                   : "bg-white border-gray-200 text-gray-600 hover:border-orange-200 hover:bg-orange-50"
               )}
             >
@@ -419,12 +467,12 @@ const NewOrder: React.FC = () => {
             </button>
             {categories.map(cat => (
               <button
-                key={cat.id}
-                onClick={() => setSelectedCategory(cat.id)}
+                key={cat.id || cat._id}
+                onClick={() => setSelectedCategory(cat.id || cat._id!)}
                 className={cn(
                   "whitespace-nowrap px-6 py-2 rounded-full text-sm font-bold transition-all border shrink-0",
-                  selectedCategory === cat.id
-                    ? "bg-orange-600 border-orange-600 text-white shadow-md shadow-orange-100 scale-105"
+                  selectedCategory === (cat.id || cat._id)
+                    ? "bg-[#e60023] border-[#e60023] text-white shadow-md shadow-orange-100 scale-105"
                     : "bg-white border-gray-200 text-gray-600 hover:border-orange-200 hover:bg-orange-50"
                 )}
               >
@@ -434,7 +482,6 @@ const NewOrder: React.FC = () => {
           </div>
         </div>
 
-        {/* Menu Items Grid */}
         <div className="flex-1 overflow-y-auto pr-2 pb-6 no-scrollbar">
           {loading ? (
             <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -453,7 +500,7 @@ const NewOrder: React.FC = () => {
             <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
               {filteredItems.map(item => (
                 <div
-                  key={item.id}
+                  key={item.id || item._id}
                   className="group relative bg-white border border-gray-100 rounded-2xl p-3 shadow-sm hover:shadow-xl hover:border-orange-200 transition-all cursor-pointer flex flex-col active:scale-95"
                   onClick={() => addToCart(item)}
                 >
@@ -471,15 +518,15 @@ const NewOrder: React.FC = () => {
                     )}
                     <div className="absolute top-2 right-2">
                       <div className="bg-white/90 backdrop-blur-md p-1.5 rounded-full shadow-sm">
-                        <Plus size={16} className="text-orange-600" />
+                        <Plus size={16} className="text-[#e60023]" />
                       </div>
                     </div>
                   </div>
                   <div className="flex-1 flex flex-col">
-                    <h4 className="font-bold text-gray-900 text-sm sm:text-base mb-1 line-clamp-1 group-hover:text-orange-600 transition-colors">{item.name}</h4>
-                    <p className="text-[10px] sm:text-xs text-gray-500 line-clamp-2 mb-2 min-h-[2.5em]">{item.description}</p>
+                    <h4 className="font-bold text-gray-900 text-sm sm:text-base mb-1 line-clamp-1 group-hover:text-[#e60023] transition-colors">{item.name}</h4>
+                    {item.description && <p className="text-[10px] sm:text-xs text-gray-500 line-clamp-2 mb-2 min-h-[2.5em]">{item.description}</p>}
                     <div className="mt-auto pt-2 flex justify-between items-center border-t border-gray-50">
-                      <span className="font-black text-orange-600 text-base">ETB {item.base_price.toFixed(2)}</span>
+                      <span className="font-black text-[#e60023] text-base">ETB {item.price.toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
@@ -489,9 +536,8 @@ const NewOrder: React.FC = () => {
         </div>
       </div>
 
-      {/* Desktop Cart Panel */}
       <aside className="hidden lg:flex w-96 shrink-0 flex-col bg-white border border-gray-100 rounded-3xl shadow-2xl shadow-gray-200/50 h-full overflow-hidden">
-        <div className="p-6 bg-orange-600 text-white flex items-center justify-between">
+        <div className="p-6 bg-[#e60023] text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-white/20 rounded-xl backdrop-blur-md">
               <ShoppingCart size={20} />
@@ -508,14 +554,13 @@ const NewOrder: React.FC = () => {
         {cartContent}
       </aside>
 
-      {/* Mobile Sticky Footer */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4 z-40 flex items-center gap-4 shadow-[0_-8px_30px_rgb(0,0,0,0.12)]">
         <div className="flex-1">
           <p className="text-[10px] text-gray-500 font-black uppercase tracking-wider">Total Amount</p>
-          <p className="text-2xl font-black text-orange-600">ETB {total.toFixed(2)}</p>
+          <p className="text-2xl font-black text-[#e60023]">ETB {total.toFixed(2)}</p>
         </div>
         <button
-          className="bg-orange-600 text-white px-6 h-12 rounded-xl flex items-center gap-2 font-black shadow-lg shadow-orange-100 relative active:scale-95 transition-transform"
+          className="bg-[#e60023] text-white px-6 h-12 rounded-xl flex items-center gap-2 font-black shadow-lg shadow-orange-100 relative active:scale-95 transition-transform"
           onClick={() => setIsCartDrawerOpen(true)}
         >
           <ShoppingCart size={18} />
@@ -528,13 +573,12 @@ const NewOrder: React.FC = () => {
         </button>
       </div>
 
-      {/* Mobile Cart Drawer */}
       <Drawer
         isOpen={isCartDrawerOpen}
         onClose={() => setIsCartDrawerOpen(false)}
         title="Current Order"
       >
-        <div className="h-[calc(100vh-140px)]">
+        <div className="h-[calc(100vh-140px)] flex flex-col">
           {cartContent}
         </div>
       </Drawer>
@@ -546,23 +590,7 @@ const NewOrder: React.FC = () => {
         footer={
           <div className="flex gap-3 w-full">
             <Button variant="outline" className="flex-1" onClick={() => setIsCustomerModalOpen(false)}>Cancel</Button>
-            <Button className="flex-1" onClick={async () => {
-              try {
-                await api.users.create({
-                  ...newCustomer,
-                  full_name: newCustomer.name,
-                  role: 'customer',
-                  status: 'active',
-                  password: 'password123'
-                });
-                showNotification("Customer added successfully!");
-                setIsCustomerModalOpen(false);
-                const usrs = await api.users.getAll();
-                setUsers(usrs);
-              } catch (error: any) {
-                showNotification(error.message || "Failed to add customer", "error");
-              }
-            }}>Register Customer</Button>
+            <Button className="flex-1" onClick={handleRegisterCustomer}>Register Customer</Button>
           </div>
         }
       >
@@ -571,33 +599,33 @@ const NewOrder: React.FC = () => {
             label="Full Name"
             placeholder="e.g. John Doe"
             value={newCustomer.name}
-            onChange={(e) => setNewCustomer({...newCustomer, name: e.target.value})}
+            onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })}
           />
           <Input
             label="Phone Number"
             placeholder="e.g. +1 234 567 890"
             value={newCustomer.phone}
-            onChange={(e) => setNewCustomer({...newCustomer, phone: e.target.value})}
+            onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })}
           />
           <Input
             label="Email Address (Optional)"
             type="email"
             placeholder="e.g. john@example.com"
             value={newCustomer.email}
-            onChange={(e) => setNewCustomer({...newCustomer, email: e.target.value})}
+            onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })}
           />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div className="space-y-1">
               <label className="block text-sm font-bold text-gray-700">Loyalty Status</label>
               <select
-                className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all"
+                className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#e60023] transition-all"
                 value={newCustomer.type}
                 onChange={(e) => {
                   const type = e.target.value as 'regular' | 'vip' | 'member';
                   let discount = 0;
                   if (type === 'vip') discount = 15;
                   else if (type === 'member') discount = 5;
-                  setNewCustomer({...newCustomer, type, discount});
+                  setNewCustomer({ ...newCustomer, type, discount });
                 }}
               >
                 <option value="regular">Regular Guest</option>
@@ -607,9 +635,11 @@ const NewOrder: React.FC = () => {
             </div>
             <Input
               label="Custom Discount (%)"
-              type="number"
-              value={newCustomer.discount}
-              onChange={(e) => setNewCustomer({...newCustomer, discount: parseFloat(e.target.value) || 0})}
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={newCustomer.discount || ""}
+              onChange={(e) => setNewCustomer({ ...newCustomer, discount: parseFloat(e.target.value) || 0 })}
             />
           </div>
         </div>

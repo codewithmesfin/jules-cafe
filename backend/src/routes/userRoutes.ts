@@ -1,16 +1,25 @@
 import express from 'express';
-import { getAllUsers, getUser, createUser, updateUser, deleteUser } from '../controllers/userController';
-import { protect, authorize } from '../middleware/auth';
+import {
+  createStaff,
+  getAllUsers,
+  getUser,
+  updateUser,
+  deleteUser
+} from '../controllers/userController';
+import { protect, restrictTo } from '../middleware/auth';
 
 const router = express.Router();
 
+router.use(protect);
+
+router.post('/staff', restrictTo('admin', 'manager'), createStaff);
+
 router.route('/')
-  .get(protect, authorize('admin', 'manager', 'staff', 'cashier'), getAllUsers)
-  .post(protect, authorize('admin', 'manager', 'staff', 'cashier'), createUser);
+  .get(restrictTo('admin', 'manager', 'saas_admin'), getAllUsers);
 
 router.route('/:id')
-  .get(protect, getUser)
-  .put(protect, authorize('admin', 'manager', 'staff', 'cashier'), updateUser)
-  .delete(protect, authorize('admin', 'manager', 'staff', 'cashier'), deleteUser);
+  .get(getUser)
+  .patch(updateUser)
+  .delete(restrictTo('admin', 'saas_admin'), deleteUser);
 
 export default router;
