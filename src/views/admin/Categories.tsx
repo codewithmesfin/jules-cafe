@@ -10,11 +10,13 @@ import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
 import { ConfirmationDialog } from '../../components/ui/ConfirmationDialog';
 import { useNotification } from '../../context/NotificationContext';
+import { usePermission } from '../../hooks/usePermission';
 import { cn } from '../../utils/cn';
 import type { Category } from '../../types';
 
 const Categories: React.FC = () => {
   const { showNotification } = useNotification();
+  const { canCreate, canUpdate, canDelete } = usePermission();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -135,12 +137,14 @@ const Categories: React.FC = () => {
             </select>
           </div>
         </div>
-        <Button
-          onClick={() => openModal()}
-          className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl px-6 py-3 font-bold flex items-center gap-2 shadow-lg shadow-blue-200 transition-all active:scale-95"
-        >
-          <Plus size={20} /> Add Category
-        </Button>
+        {canCreate('categories') && (
+          <Button
+            onClick={() => openModal()}
+            className="bg-[#e60023] hover:bg-[#ad081b] text-white rounded-2xl px-6 py-3 font-bold flex items-center gap-2 shadow-lg shadow-red-200 transition-all active:scale-95"
+          >
+            <Plus size={20} /> Add Category
+          </Button>
+        )}
       </div>
 
       <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden">
@@ -181,18 +185,22 @@ const Categories: React.FC = () => {
                 header: 'Actions',
                 accessor: (cat) => (
                   <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => openModal(cat)}
-                      className="p-2 hover:bg-slate-50 rounded-xl text-slate-400 hover:text-blue-600 transition-colors"
-                    >
-                      <Edit size={18} />
-                    </button>
-                    <button
-                      onClick={() => setCategoryToDelete(cat)}
-                      className="p-2 hover:bg-red-50 rounded-xl text-slate-400 hover:text-red-600 transition-colors"
-                    >
-                      <Trash2 size={18} />
-                    </button>
+                    {canUpdate('categories') && (
+                      <button
+                        onClick={() => openModal(cat)}
+                        className="p-2 hover:bg-slate-50 rounded-xl text-slate-400 hover:text-blue-600 transition-colors"
+                      >
+                        <Edit size={18} />
+                      </button>
+                    )}
+                    {canDelete('categories') && (
+                      <button
+                        onClick={() => setCategoryToDelete(cat)}
+                        className="p-2 hover:bg-red-50 rounded-xl text-slate-400 hover:text-red-600 transition-colors"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    )}
                   </div>
                 )
               }
@@ -239,7 +247,7 @@ const Categories: React.FC = () => {
             <Button variant="outline" onClick={() => setIsModalOpen(false)} className="flex-1 rounded-2xl py-4 font-bold">
               Cancel
             </Button>
-            <Button onClick={handleSave} className="flex-1 rounded-2xl py-4 font-bold bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-200">
+            <Button onClick={handleSave} className="flex-1 rounded-2xl py-4 font-bold bg-[#e60023] hover:bg-[#ad081b] shadow-lg shadow-red-200">
               {editingCategory ? "Save Changes" : "Create Category"}
             </Button>
           </div>

@@ -1,6 +1,8 @@
 export type UserRole = 'saas_admin' | 'admin' | 'manager' | 'cashier' | 'waiter';
 export type UserStatus = 'active' | 'inactive' | 'pending' | 'suspended' | 'onboarding';
 
+export type CustomerType = 'regular' | 'member' | 'staff' | 'vip' | 'wholesale';
+
 export interface User {
   id: string;
   _id?: string;
@@ -34,10 +36,14 @@ export interface Product {
   _id?: string;
   business_id: string;
   category_id: string;
+  creator_id?: string;
   name: string;
   description?: string;
   price: number;
+  cost?: number;
   image_url?: string;
+  sku?: string;
+  status?: 'draft' | 'published' | 'out_of_stock';
   is_active: boolean;
 }
 
@@ -45,8 +51,12 @@ export interface Ingredient {
   id: string;
   _id?: string;
   business_id: string;
+  creator_id?: string;
   name: string;
   unit: string;
+  cost_per_unit?: number;
+  sku?: string;
+  is_active?: boolean;
 }
 
 export interface Category {
@@ -62,9 +72,25 @@ export interface Inventory {
   id: string;
   _id?: string;
   business_id: string;
-  ingredient_id: string | Ingredient;
+  item_id: string | Ingredient | Product;
+  item_type: 'ingredient' | 'product';
   quantity_available: number;
   reorder_level: number;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface InventoryTransaction {
+  id: string;
+  _id?: string;
+  business_id: string;
+  item_id: string | Ingredient | Product;
+  item_type: 'ingredient' | 'product';
+  change_quantity: number;
+  reference_type: 'purchase' | 'sale' | 'waste' | 'adjustment' | 'production';
+  reference_id?: string;
+  note?: string;
+  created_at: string;
 }
 
 export interface Recipe {
@@ -80,9 +106,16 @@ export interface Table {
   id: string;
   _id?: string;
   business_id: string;
-  table_number: string;
-  capacity: number;
-  status: 'available' | 'occupied' | 'reserved';
+  creator_id?: string;
+  name: string;
+  table_number?: string;
+  seats: number;
+  capacity?: number;
+  location?: string;
+  status?: 'available' | 'occupied' | 'reserved';
+  is_active: boolean;
+  created_at: string;
+  updated_at?: string;
 }
 
 export interface Order {
@@ -90,10 +123,13 @@ export interface Order {
   _id?: string;
   business_id: string;
   creator_id: string;
-  customer_id?: string;
+  customer_id?: string | Customer;
   table_id?: string;
+  order_type: 'dine-in' | 'takeaway' | 'delivery';
   order_status: 'pending' | 'accepted' | 'preparing' | 'ready' | 'delivered' | 'completed' | 'cancelled';
   total_amount: number;
+  discount_percent: number;
+  discount_amount: number;
   payment_status: 'unpaid' | 'partial' | 'paid';
   payment_method?: 'cash' | 'card' | 'mobile' | 'other';
   notes?: string;
@@ -113,47 +149,35 @@ export interface Customer {
   id: string;
   _id?: string;
   business_id: string;
+  creator_id?: string;
   full_name: string;
   email?: string;
   phone?: string;
+  address?: string;
+  customer_type: CustomerType;
+  discount_percent: number;
   loyalty_points: number;
   total_spent: number;
+  last_visit?: string;
+  notes?: string;
+  is_active: boolean;
+  created_at: string;
 }
 
-export interface Task {
+export interface Unit {
   id: string;
   _id?: string;
-  business_id: string;
-  title: string;
+  name: string;
   description?: string;
-  assigned_to?: string;
-  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  due_date?: string;
+  is_active: boolean;
 }
 
-export interface CashSession {
+export interface UnitConversion {
   id: string;
   _id?: string;
-  business_id: string;
-  user_id: string;
-  opening_balance: number;
-  closing_balance?: number;
-  expected_balance?: number;
-  difference?: number;
-  status: 'open' | 'closed';
-  opened_at: string;
-  closed_at?: string;
-}
-
-export interface Shift {
-  id: string;
-  _id?: string;
-  business_id: string;
-  user_id: string;
-  clock_in: string;
-  clock_out?: string;
-  status: 'active' | 'completed';
+  from_unit: string;
+  to_unit: string;
+  factor: number;
 }
 
 export interface ApiResponse<T> {

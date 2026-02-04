@@ -11,20 +11,29 @@ export const getAll = (model: Model<any>, options: { populate?: any } = {}) =>
       return next(new AppError('Your account is not active. Please contact the Administrator.', 423));
     }
     
-    const features = model.find();
+    let features = model.find();
 
     // Tenant isolation: filter by business_id if model has it
     if (req.user && model.schema.path('business_id')) {
       if (req.user.default_business_id) {
-        features.where('business_id').equals(req.user.default_business_id);
+        features = features.where('business_id').equals(req.user.default_business_id);
       } else if (req.user.role !== 'saas_admin') {
         // If user has no business_id but model requires it, return empty (except for saas_admin)
         return res.status(200).json([]);
       }
     }
 
-    if (options.populate) features.populate(options.populate);
-    const docs = await features.populate(req.query.populate as string || '');
+    // Apply population from options
+    if (options.populate) {
+      features = features.populate(options.populate);
+    }
+
+    // Also apply population from query params
+    if (req.query.populate) {
+      features = features.populate(req.query.populate as string);
+    }
+
+    const docs = await features.exec();
 
     // Transform _id to id for frontend compatibility
     const transformedDocs = docs.map((doc: any) => ({
@@ -41,11 +50,19 @@ export const getOne = (model: Model<any>, options: { populate?: any } = {}) =>
       return next(new AppError('Your account is not active. Please contact the Administrator.', 423));
     }
 
-    const query = model.findById(req.params.id);
-    if (options.populate) query.populate(options.populate);
-    query.populate(req.query.populate as string || '');
+    let query = model.findById(req.params.id);
 
-    const doc = await query;
+    // Apply population from options
+    if (options.populate) {
+      query = query.populate(options.populate);
+    }
+
+    // Also apply population from query params
+    if (req.query.populate) {
+      query = query.populate(req.query.populate as string);
+    }
+
+    const doc = await query.exec();
     if (!doc) {
       return next(new AppError('Document not found', 404));
     }

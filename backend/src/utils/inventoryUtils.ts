@@ -2,29 +2,35 @@ import mongoose from 'mongoose';
 import Recipe from '../models/Recipe';
 import Inventory from '../models/Inventory';
 import InventoryTransaction from '../models/InventoryTransaction';
-import OrderItem from '../models/OrderItem';
+import Ingredient from '../models/Ingredient';
 import AppError from './appError';
 
 /**
  * Checks if there is enough stock for a list of order items.
+ * Supports both ingredient and product inventory tracking.
  */
 export const checkInventoryForOrderItems = async (businessId: string, items: any[]) => {
   const missingIngredients: string[] = [];
 
   for (const item of items) {
     // Find all recipe entries for this product
-    const recipes = await Recipe.find({ product_id: item.product_id }).populate('ingredient_id');
+    const recipes = await Recipe.find({ product_id: item.product_id });
 
     for (const recipe of recipes) {
       const requiredQuantity = recipe.quantity_required * item.quantity;
 
+      // Check inventory using new item_id structure
       const inventory = await Inventory.findOne({
         business_id: businessId,
-        ingredient_id: recipe.ingredient_id
-      }).populate('ingredient_id');
+        item_id: recipe.ingredient_id,
+        item_type: 'ingredient'
+      });
+
+      // Get ingredient name separately
+      const ingredient = await Ingredient.findById(recipe.ingredient_id);
 
       if (!inventory || inventory.quantity_available < requiredQuantity) {
-        const ingredientName = (recipe.ingredient_id as any)?.name || 'Unknown Ingredient';
+        const ingredientName = ingredient?.name || 'Unknown Ingredient';
         missingIngredients.push(`${ingredientName} (Required: ${requiredQuantity}, Available: ${inventory?.quantity_available || 0})`);
       }
     }
@@ -38,6 +44,7 @@ export const checkInventoryForOrderItems = async (businessId: string, items: any
 
 /**
  * Deducts stock from inventory based on order items.
+ * Supports both ingredient and product inventory tracking.
  */
 export const deductInventoryForOrder = async (
   businessId: string,
@@ -52,9 +59,11 @@ export const deductInventoryForOrder = async (
     for (const recipe of recipes) {
       const deductionQuantity = recipe.quantity_required * item.quantity;
 
+      // Check inventory using new item_id structure
       const inventory = await Inventory.findOne({
         business_id: businessId,
-        ingredient_id: recipe.ingredient_id
+        item_id: recipe.ingredient_id,
+        item_type: 'ingredient'
       });
 
       if (inventory) {
@@ -62,7 +71,8 @@ export const deductInventoryForOrder = async (
 
         const transactionData = {
           business_id: businessId,
-          ingredient_id: recipe.ingredient_id,
+          item_id: recipe.ingredient_id,
+          item_type: 'ingredient',
           change_quantity: -deductionQuantity,
           reference_type: 'sale',
           reference_id: orderId,
@@ -83,6 +93,7 @@ export const deductInventoryForOrder = async (
 
 /**
  * Reverts stock to inventory for an order.
+ * Supports both ingredient and product inventory tracking.
  */
 export const revertInventoryForOrder = async (
   businessId: string,
@@ -97,9 +108,11 @@ export const revertInventoryForOrder = async (
     for (const recipe of recipes) {
       const revertQuantity = recipe.quantity_required * item.quantity;
 
+      // Check inventory using new item_id structure
       const inventory = await Inventory.findOne({
         business_id: businessId,
-        ingredient_id: recipe.ingredient_id
+        item_id: recipe.ingredient_id,
+        item_type: 'ingredient'
       });
 
       if (inventory) {
@@ -107,9 +120,10 @@ export const revertInventoryForOrder = async (
 
         const transactionData = {
           business_id: businessId,
-          ingredient_id: recipe.ingredient_id,
+          item_id: recipe.ingredient_id,
+          item_type: 'ingredient',
           change_quantity: revertQuantity,
-          reference_type: 'adjustment', // Reverting is technically an adjustment or reverse sale
+          reference_type: 'adjustment',
           reference_id: orderId,
           creator_id: userId,
         };
@@ -124,4 +138,90 @@ export const revertInventoryForOrder = async (
       }
     }
   }
+};
+
+/**
+ * Add stock to inventory (for purchases/restocking).
+ */
+export const addInventoryStock = async (
+  businessId: string,
+  itemId: string,
+  itemType: 'ingredient' | 'product',
+  quantity: number,
+  userId: string,
+  note?: string
+) => {
+  // Use atomic upsert to prevent race conditions
+  const inventory = await Inventory.findOneAndUpdate(
+    { business_id: businessId, item_id: itemId, item_type: itemType },
+    { 
+      $inc: { quantity_available: quantity },
+      $setOnInsert: { 
+        business_id: businessId,
+        item_id: itemId,
+        item_type: itemType,
+        quantity_available: quantity,
+        reorder_level: 0
+      }
+    },
+    { 
+      upsert: true,
+      new: true
+    }
+  );
+
+  // Record transaction
+  await InventoryTransaction.create({
+    business_id: businessId,
+    item_id: itemId,
+    item_type: itemType,
+    change_quantity: quantity,
+    reference_type: 'purchase',
+    creator_id: userId,
+    note
+  });
+
+  return inventory;
+};
+
+/**
+ * Deduct stock from inventory (for waste/adjustments).
+ */
+export const deductInventoryStock = async (
+  businessId: string,
+  itemId: string,
+  itemType: 'ingredient' | 'product',
+  quantity: number,
+  userId: string,
+  note?: string
+) => {
+  const inventory = await Inventory.findOne({
+    business_id: businessId,
+    item_id: itemId,
+    item_type: itemType
+  });
+
+  if (!inventory) {
+    throw new AppError('Inventory item not found', 404);
+  }
+
+  if (inventory.quantity_available < quantity) {
+    throw new AppError('Insufficient stock for deduction', 400);
+  }
+
+  inventory.quantity_available -= quantity;
+  await inventory.save();
+
+  // Record transaction
+  await InventoryTransaction.create({
+    business_id: businessId,
+    item_id: itemId,
+    item_type: itemType,
+    change_quantity: -quantity,
+    reference_type: 'waste',
+    creator_id: userId,
+    note
+  });
+
+  return inventory;
 };

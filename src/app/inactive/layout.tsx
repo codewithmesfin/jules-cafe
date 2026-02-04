@@ -34,11 +34,7 @@ export default function InactiveLayout({ children }: { children: React.ReactNode
     // Check stored user first
     if (typeof window !== 'undefined' && storedUser) {
       if (storedUser.status === 'active') {
-        let redirectPath = '/';
-        if (storedUser.role === 'admin') redirectPath = '/admin';
-        else if (storedUser.role === 'manager') redirectPath = '/manager';
-        else if (storedUser.role === 'cashier' || storedUser.role === 'staff') redirectPath = '/cashier';
-        router.replace(redirectPath);
+        router.replace('/dashboard');
         return;
       }
       // Inactive user - allow them to see the page
@@ -48,10 +44,7 @@ export default function InactiveLayout({ children }: { children: React.ReactNode
     // Wait for AuthContext if no stored user
     if (!loading && user) {
       if (user.status === 'active') {
-        let redirectPath = '/';
-        if (user.role === 'admin') redirectPath = '/admin';
-        else if (user.role === 'manager') redirectPath = '/manager';
-        else if (user.role === 'cashier' || user.role === 'staff') redirectPath = '/cashier';
+        let redirectPath = '/dashboard';
         router.replace(redirectPath);
       }
     } else if (!loading && !user && checkedStorage) {

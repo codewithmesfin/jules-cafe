@@ -42,6 +42,7 @@ export const createStaff = catchAsync(async (req: AuthRequest, res: Response, ne
     role,
     status: 'active',
     default_business_id: businessId,
+    assigned_businesses: [businessId],
     created_by: req.user._id
   });
 

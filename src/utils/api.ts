@@ -1,17 +1,6 @@
 export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
-const MAX_RETRIES = 3;
-const BASE_DELAY = 1000;
-
-const getRetryDelay = (attempt: number): number => {
-  const delay = BASE_DELAY * Math.pow(2, attempt);
-  const jitter = delay * 0.2 * (Math.random() * 2 - 1);
-  return Math.min(delay + jitter, 30000);
-};
-
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-const fetcher = async (url: string, options?: RequestInit, retryCount = 0): Promise<any> => {
+const fetcher = async (url: string, options?: RequestInit): Promise<any> => {
   const jwt = typeof window !== 'undefined' ? localStorage.getItem('jwt') : null;
   const fullUrl = url.startsWith('http') ? url : `${API_URL}${url}`;
   const isFormData = options?.body instanceof FormData;
@@ -25,16 +14,8 @@ const fetcher = async (url: string, options?: RequestInit, retryCount = 0): Prom
     },
   });
 
-  if (response.status === 429 && retryCount < MAX_RETRIES) {
-    const delay = getRetryDelay(retryCount);
-    await sleep(delay);
-    return fetcher(url, options, retryCount + 1);
-  }
-
   if (response.status === 423) {
-    if (typeof window !== 'undefined') {
-      window.location.href = '/inactive';
-    }
+    if (typeof window !== 'undefined') window.location.href = '/inactive';
     throw new Error('Account inactive.');
   }
 
@@ -48,11 +29,7 @@ const fetcher = async (url: string, options?: RequestInit, retryCount = 0): Prom
   }
 
   const text = await response.text();
-  try {
-    return JSON.parse(text);
-  } catch (e) {
-    return text;
-  }
+  try { return JSON.parse(text); } catch (e) { return text; }
 };
 
 export const api = {
@@ -61,10 +38,20 @@ export const api = {
     getProducts: (businessId: string) => fetcher(`/public/products?business_id=${businessId}`),
     getCategories: (businessId: string) => fetcher(`/public/categories?business_id=${businessId}`),
   },
+  menu: {
+    getAll: () => fetcher('/api/menu'),
+    getOne: (id: string) => fetcher(`/api/menu/${id}`),
+    create: (data: any) => fetcher('/api/menu', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: string, data: any) => fetcher(`/api/menu/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    delete: (id: string) => fetcher(`/api/menu/${id}`, { method: 'DELETE' }),
+  },
   business: {
     setup: (data: any) => fetcher('/api/business/setup', { method: 'POST', body: JSON.stringify(data) }),
     getMe: () => fetcher('/api/business/me'),
+    getMyBusinesses: () => fetcher('/api/business/my-businesses'),
+    switch: (businessId: string) => fetcher('/api/business/switch', { method: 'POST', body: JSON.stringify({ business_id: businessId }) }),
     update: (id: string, data: any) => fetcher(`/api/business/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    create: (data: any) => fetcher('/api/business', { method: 'POST', body: JSON.stringify(data) }),
   },
   products: {
     getAll: () => fetcher('/api/products'),
@@ -99,6 +86,8 @@ export const api = {
     getTransactions: () => fetcher('/api/inventory/transactions'),
     create: (data: any) => fetcher('/api/inventory', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: string, data: any) => fetcher(`/api/inventory/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    delete: (id: string) => fetcher(`/api/inventory/${id}`, { method: 'DELETE' }),
+    addStock: (data: any) => fetcher('/api/inventory/add-stock', { method: 'POST', body: JSON.stringify(data) }),
   },
   orders: {
     getAll: () => fetcher('/api/orders'),
@@ -126,22 +115,6 @@ export const api = {
     update: (id: string, data: any) => fetcher(`/api/customers/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     delete: (id: string) => fetcher(`/api/customers/${id}`, { method: 'DELETE' }),
   },
-  tasks: {
-    getAll: () => fetcher('/api/tasks'),
-    create: (data: any) => fetcher('/api/tasks', { method: 'POST', body: JSON.stringify(data) }),
-    update: (id: string, data: any) => fetcher(`/api/tasks/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
-    delete: (id: string) => fetcher(`/api/tasks/${id}`, { method: 'DELETE' }),
-  },
-  cashSessions: {
-    getAll: () => fetcher('/api/cash-sessions'),
-    create: (data: any) => fetcher('/api/cash-sessions', { method: 'POST', body: JSON.stringify(data) }),
-    close: (id: string, data: any) => fetcher(`/api/cash-sessions/${id}/close`, { method: 'POST', body: JSON.stringify(data) }),
-  },
-  shifts: {
-    getAll: () => fetcher('/api/shifts'),
-    clockIn: () => fetcher('/api/shifts/clock-in', { method: 'POST' }),
-    clockOut: () => fetcher('/api/shifts/clock-out', { method: 'POST' }),
-  },
   analytics: {
     getSales: (params?: string) => fetcher(`/api/analytics/sales${params ? `?${params}` : ''}`),
     getProducts: (params?: string) => fetcher(`/api/analytics/products${params ? `?${params}` : ''}`),
@@ -152,5 +125,33 @@ export const api = {
     signup: (data: any) => fetcher('/api/auth/register', { method: 'POST', body: JSON.stringify(data) }),
     getProfile: () => fetcher('/api/auth/me'),
     updateProfile: (data: any) => fetcher('/api/auth/profile', { method: 'PUT', body: JSON.stringify(data) }),
+  },
+  settings: {
+    getUnits: () => fetcher('/api/settings/units'),
+    createUnit: (data: any) => fetcher('/api/settings/units', { method: 'POST', body: JSON.stringify(data) }),
+    updateUnit: (id: string, data: any) => fetcher(`/api/settings/units/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    deleteUnit: (id: string) => fetcher(`/api/settings/units/${id}`, { method: 'DELETE' }),
+    getConversions: () => fetcher('/api/settings/conversions'),
+    createConversion: (data: any) => fetcher('/api/settings/conversions', { method: 'POST', body: JSON.stringify(data) }),
+    updateConversion: (id: string, data: any) => fetcher(`/api/settings/conversions/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    deleteConversion: (id: string) => fetcher(`/api/settings/conversions/${id}`, { method: 'DELETE' }),
+  },
+  upload: {
+    uploadImage: async (file: File) => {
+      const formData = new FormData();
+      formData.append('image', file);
+      const jwt = typeof window !== 'undefined' ? localStorage.getItem('jwt') : null;
+      const response = await fetch(`${API_URL}/api/upload`, {
+        method: 'POST',
+        headers: {
+          ...(jwt ? { 'Authorization': `Bearer ${jwt}` } : {}),
+        },
+        body: formData,
+      });
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+      return response.json();
+    },
   }
 };

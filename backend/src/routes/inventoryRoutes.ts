@@ -5,7 +5,8 @@ import {
   createInventory,
   updateInventory,
   deleteInventory,
-  getInventoryTransactions
+  getInventoryTransactions,
+  addStock
 } from '../controllers/inventoryController';
 import { protect, restrictTo } from '../middleware/auth';
 
@@ -23,5 +24,7 @@ router.route('/:id')
   .get(getInventory)
   .patch(restrictTo('admin', 'manager'), updateInventory)
   .delete(restrictTo('admin', 'manager'), deleteInventory);
+
+router.post('/add-stock', restrictTo('admin', 'manager'), addStock);
 
 export default router;

@@ -1,5 +1,4 @@
 import { Response, NextFunction } from 'express';
-import mongoose from 'mongoose';
 import Order from '../models/Order';
 import OrderItem from '../models/OrderItem';
 import Product from '../models/Product';
@@ -13,7 +12,7 @@ import { checkInventoryForOrderItems, deductInventoryForOrder } from '../utils/i
  * Create Order with Items
  */
 export const createOrder = catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
-  const { items, customer_id, table_id, notes, payment_method } = req.body;
+  const { items, customer_id, table_id, notes, payment_method, order_type } = req.body;
   const businessId = req.user.default_business_id;
   const userId = req.user._id;
 
@@ -21,14 +20,11 @@ export const createOrder = catchAsync(async (req: AuthRequest, res: Response, ne
     return next(new AppError('Order must have at least one item', 400));
   }
 
-  // 1. Check inventory before starting transaction
+  // 1. Check inventory before creating order
   const inventoryCheck = await checkInventoryForOrderItems(businessId.toString(), items);
   if (!inventoryCheck.canDeduct) {
     return next(new AppError(`Insufficient stock: ${inventoryCheck.missingIngredients.join(', ')}`, 400));
   }
-
-  const session = await mongoose.startSession();
-  session.startTransaction();
 
   try {
     // 2. Calculate total amount and verify products
@@ -36,7 +32,7 @@ export const createOrder = catchAsync(async (req: AuthRequest, res: Response, ne
     const itemsToCreate = [];
 
     for (const item of items) {
-      const product = await Product.findById(item.product_id).session(session);
+      const product = await Product.findById(item.product_id);
       if (!product) {
         throw new AppError(`Product not found: ${item.product_id}`, 404);
       }
@@ -56,21 +52,20 @@ export const createOrder = catchAsync(async (req: AuthRequest, res: Response, ne
       creator_id: userId,
       customer_id: customer_id || undefined,
       table_id: table_id || undefined,
+      order_type: order_type || 'dine-in',
       notes,
       total_amount: totalAmount,
       payment_method,
       order_status: 'pending'
-    }], { session });
+    }]);
 
     // 4. Create Order Items
     const orderId = order[0]._id;
     const finalItems = itemsToCreate.map(item => ({ ...item, order_id: orderId }));
-    await OrderItem.insertMany(finalItems, { session });
+    await OrderItem.insertMany(finalItems);
 
-    // 5. Deduct Inventory
-    await deductInventoryForOrder(businessId.toString(), orderId.toString(), items, userId.toString(), session);
-
-    await session.commitTransaction();
+    // 5. Deduct Inventory (without session)
+    await deductInventoryForOrder(businessId.toString(), orderId.toString(), items, userId.toString());
 
     // Trigger socket event for new order
     const io = req.app.get('io');
@@ -86,10 +81,7 @@ export const createOrder = catchAsync(async (req: AuthRequest, res: Response, ne
       data: order[0]
     });
   } catch (error) {
-    await session.abortTransaction();
     next(error);
-  } finally {
-    session.endSession();
   }
 });
 
@@ -99,16 +91,10 @@ export const createOrder = catchAsync(async (req: AuthRequest, res: Response, ne
 export const getMyOrders = catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
   const businessId = req.user.default_business_id;
 
-  // Basic query
   const orders = await Order.find({ business_id: businessId })
     .populate('customer_id')
     .populate('table_id')
     .sort({ created_at: -1 });
-
-  // If we want items too, we'd have to aggregate or map
-  // For simplicity and efficiency, let's just return orders.
-  // Frontend can fetch items for specific order if needed,
-  // or we can aggregate here.
 
   const ordersWithItems = await Promise.all(orders.map(async (order) => {
     const items = await OrderItem.find({ order_id: order._id }).populate('product_id');
