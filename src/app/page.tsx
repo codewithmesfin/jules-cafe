@@ -22,11 +22,11 @@ const Home: React.FC = () => {
             <h2 className="text-3xl lg:text-4xl font-bold mb-6 lg:mb-8 text-black">See what's trending</h2>
             <div className="flex gap-2.5 md:gap-4 flex-wrap justify-center max-w-3xl">
               {[
-                { label: 'Summer fashion', emoji: '👗' },
-                { label: 'Nail art', emoji: '💅' },
-                { label: 'Home office', emoji: '💻' },
-                { label: 'Dessert recipes', emoji: '🍰' },
-                { label: 'Travel tips', emoji: '✈️' }
+                { label: 'Burger deals', emoji: '🍔' },
+                { label: 'Fresh Salads', emoji: '🥗' },
+                { label: 'Coffee spots', emoji: '☕' },
+                { label: 'Pizza night', emoji: '🍕' },
+                { label: 'Healthy bowls', emoji: '🥣' }
               ].map(tag => (
                 <button
                   key={tag.label}

@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, Package, Users, BarChart3, ShoppingCart, PlusCircle, Database, ArrowRight, DollarSign } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { TrendingUp, Package, Users, BarChart3, ShoppingCart, PlusCircle, Database, ArrowRight, DollarSign, ArrowUpRight } from 'lucide-react';
 import { RoleGuard } from '@/components/RoleGuard';
 import { useAuth } from '@/context/AuthContext';
 import { useNotification } from '@/context/NotificationContext';
@@ -162,102 +163,107 @@ export default function DashboardPage() {
     );
   }
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0 }
+  };
+
   return (
     <RoleGuard allowedRoles={['admin', 'manager', 'cashier', 'waiter']}>
-      <div className="space-y-8">
-
-          {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-
-
-          <Link href="/dashboard/orders/new" className="group bg-white rounded-2xl border border-slate-200 p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:border-slate-300">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform">
-                <BarChart3 size={28} />
-              </div>
-              <div>
-                <h3 className="font-bold text-slate-900 group-hover:text-indigo-700 transition-colors">New Sales</h3>
-                <p className="text-sm text-slate-500">Simplify Order Management</p>
-              </div>
-              <ArrowRight className="ml-auto text-slate-300 group-hover:text-indigo-500 group-hover:translate-x-1 transition-all" size={20} />
-            </div>
-          </Link>
-
-          <Link href="/dashboard/products" className="group bg-white rounded-2xl border border-slate-200 p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:border-slate-300">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-600 group-hover:scale-110 transition-transform">
-                <Package size={28} />
-              </div>
-              <div>
-                <h3 className="font-bold text-slate-900 group-hover:text-slate-700 transition-colors">Product Catalog</h3>
-                <p className="text-sm text-slate-500">Manage your menu items</p>
-              </div>
-              <ArrowRight className="ml-auto text-slate-300 group-hover:text-slate-500 group-hover:translate-x-1 transition-all" size={20} />
-            </div>
-          </Link>
-
-          <Link href="/dashboard/ingredients/inventory" className="group bg-white rounded-2xl border border-slate-200 p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:border-slate-300">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600 group-hover:scale-110 transition-transform">
-                <Database size={28} />
-              </div>
-              <div>
-                <h3 className="font-bold text-slate-900 group-hover:text-emerald-700 transition-colors">Inventory</h3>
-                <p className="text-sm text-slate-500">Stock levels & tracking</p>
-              </div>
-              <ArrowRight className="ml-auto text-slate-300 group-hover:text-emerald-500 group-hover:translate-x-1 transition-all" size={20} />
-            </div>
-          </Link>
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+        className="space-y-10"
+      >
+        {/* Welcome Section */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-2xl lg:text-3xl font-black text-slate-900 tracking-tight">
+              Welcome back, {user?.full_name?.split(' ')[0] || 'User'}!
+            </h2>
+            <p className="text-slate-500 font-medium mt-1">Here's what's happening with your restaurant today.</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Link href="/dashboard/orders/new">
+              <Button leftIcon={<PlusCircle size={18} />} className="shadow-lg shadow-red-100">
+                New Order
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-            <div className="flex items-start justify-between mb-4">
-              <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center">
-                <DollarSign size={24} className="text-slate-900" />
+          {[
+            { label: 'Total Revenue', value: `$${stats.total_revenue.toFixed(2)}`, icon: DollarSign, color: 'bg-emerald-50 text-emerald-600', trend: '+12.5%' },
+            { label: 'Active Orders', value: stats.active_orders, icon: ShoppingCart, color: 'bg-blue-50 text-blue-600', badge: `${stats.active_orders} live` },
+            { label: 'Menu Items', value: stats.menu_items, icon: Package, color: 'bg-indigo-50 text-indigo-600' },
+            { label: 'Orders Today', value: stats.customers_today, icon: Users, color: 'bg-amber-50 text-amber-600', trend: '+5.2%' },
+          ].map((stat, i) => (
+            <motion.div
+              key={stat.label}
+              variants={itemVariants}
+              className="bg-white rounded-[2rem] border border-slate-100 p-8 shadow-premium hover:shadow-premium-hover transition-all duration-300 group cursor-default"
+            >
+              <div className="flex items-start justify-between mb-6">
+                <div className={cn('w-14 h-14 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 duration-300', stat.color)}>
+                  <stat.icon size={28} />
+                </div>
+                {stat.trend && (
+                  <span className="flex items-center gap-1 text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">
+                    <ArrowUpRight size={14} /> {stat.trend}
+                  </span>
+                )}
+                {stat.badge && (
+                  <Badge variant="info" size="sm" className="animate-pulse">{stat.badge}</Badge>
+                )}
               </div>
-            </div>
-            <p className="text-2xl font-bold text-slate-900">${stats.total_revenue.toFixed(2)}</p>
-            <p className="text-sm text-slate-500 mt-1">Total Revenue</p>
-          </div>
+              <p className="text-3xl font-black text-slate-900 tracking-tight">{stat.value}</p>
+              <p className="text-sm text-slate-400 font-bold uppercase tracking-wider mt-2">{stat.label}</p>
+            </motion.div>
+          ))}
+        </div>
 
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-            <div className="flex items-start justify-between mb-4">
-              <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center">
-                <ShoppingCart size={24} className="text-emerald-600" />
-              </div>
-              <span className="text-xs font-semibold px-2 py-1 rounded-full bg-slate-100 text-slate-600">
-                {stats.active_orders} active
-              </span>
-            </div>
-            <p className="text-2xl font-bold text-slate-900">{stats.active_orders}</p>
-            <p className="text-sm text-slate-500 mt-1">Active Orders</p>
-          </div>
-
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-            <div className="flex items-start justify-between mb-4">
-              <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center">
-                <Package size={24} className="text-indigo-600" />
-              </div>
-            </div>
-            <p className="text-2xl font-bold text-slate-900">{stats.menu_items}</p>
-            <p className="text-sm text-slate-500 mt-1">Menu Items</p>
-          </div>
-
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-            <div className="flex items-start justify-between mb-4">
-              <div className="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center">
-                <Users size={24} className="text-amber-600" />
-              </div>
-            </div>
-            <p className="text-2xl font-bold text-slate-900">{stats.customers_today}</p>
-            <p className="text-sm text-slate-500 mt-1">Orders Today</p>
-          </div>
+          {/* Quick Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {[
+            { title: 'New Sales', subtitle: 'Quick POS Terminal', icon: BarChart3, path: '/dashboard/orders/new', color: 'bg-indigo-600' },
+            { title: 'Product Catalog', subtitle: 'Manage Menu Items', icon: Package, path: '/dashboard/products', color: 'bg-slate-900' },
+            { title: 'Inventory', subtitle: 'Stock & Tracking', icon: Database, path: '/dashboard/ingredients/inventory', color: 'bg-emerald-600' },
+          ].map((action) => (
+            <motion.div key={action.title} variants={itemVariants}>
+              <Link
+                href={action.path}
+                className="group flex items-center gap-5 bg-white rounded-[2rem] border border-slate-100 p-6 shadow-premium hover:shadow-premium-hover transition-all duration-300"
+              >
+                <div className={cn('w-16 h-16 rounded-2xl flex items-center justify-center text-white shadow-lg transition-transform group-hover:scale-110 duration-300', action.color)}>
+                  <action.icon size={30} />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-black text-slate-900 group-hover:text-[#e60023] transition-colors">{action.title}</h3>
+                  <p className="text-sm text-slate-400 font-medium">{action.subtitle}</p>
+                </div>
+                <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-[#e60023] group-hover:text-white transition-all">
+                  <ArrowRight size={18} />
+                </div>
+              </Link>
+            </motion.div>
+          ))}
         </div>
 
         {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <motion.div variants={itemVariants} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Recent Orders */}
           <div className="lg:col-span-2">
             <Card
@@ -357,10 +363,8 @@ export default function DashboardPage() {
               )}
             </Card>
           </div>
-        </div>
-
-      
-      </div>
+        </motion.div>
+      </motion.div>
     </RoleGuard>
   );
 }

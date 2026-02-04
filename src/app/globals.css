@@ -64,19 +64,39 @@ body {
 }
 
 .animate-fade-in {
-  animation: fadeIn 200ms ease-out;
+  animation: fadeIn 300ms ease-out;
 }
 
 .animate-slide-up {
-  animation: slideUp 300ms ease-out;
+  animation: slideUp 400ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .animate-slide-down {
-  animation: slideDown 300ms ease-out;
+  animation: slideDown 400ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .animate-scale-in {
   animation: scaleIn 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.shadow-premium {
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.04), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+}
+
+.shadow-premium-hover {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 10px 10px -6px rgba(0, 0, 0, 0.08);
+}
+
+.glass-morphism {
+  @apply bg-white/70 backdrop-blur-md border border-white/20;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 .animate-spin {

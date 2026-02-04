@@ -3,8 +3,9 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
-  ShoppingCart, Plus, Minus, Search, Grid, User, ArrowLeft, UserPlus
+  ShoppingCart, Plus, Minus, Search, Grid, User, ArrowLeft, UserPlus, X, ArrowRight
 } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { api } from '../../utils/api';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
@@ -243,9 +244,9 @@ const NewOrder: React.FC = () => {
   };
 
   const cartContent = (
-    <div className="flex flex-col h-full max-h-[660px] bg-white lg:rounded-b-3xl">
+    <div className="flex flex-col h-full bg-white lg:rounded-b-[2rem]">
       {/* Form fields and cart items */}
-      <div className="flex-1 overflow-y-auto p-5 space-y-5">
+      <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
         <div className="space-y-4">
           <div className="space-y-3">
             <div>
@@ -497,12 +498,16 @@ const NewOrder: React.FC = () => {
               <p className="font-medium">No items found matching your criteria</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-5 lg:gap-8">
               {filteredItems.map(item => (
-                <div
+                <motion.div
+                  layout
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
                   key={item.id || item._id}
-                  className="group relative bg-white border border-gray-100 rounded-2xl p-3 shadow-sm hover:shadow-xl hover:border-orange-200 transition-all cursor-pointer flex flex-col active:scale-95"
+                  className="group relative bg-white border border-slate-100 rounded-[2rem] p-4 shadow-premium hover:shadow-premium-hover hover:border-[#e60023]/20 transition-all cursor-pointer flex flex-col"
                   onClick={() => addToCart(item)}
+                  whileTap={{ scale: 0.95 }}
                 >
                   <div className="relative aspect-square mb-3 overflow-hidden rounded-xl bg-gray-50">
                     {item.image_url ? (
@@ -529,15 +534,15 @@ const NewOrder: React.FC = () => {
                       <span className="font-black text-[#e60023] text-base">ETB {item.price.toFixed(2)}</span>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
           )}
         </div>
       </div>
 
-      <aside className="hidden lg:flex w-96 shrink-0 flex-col bg-white border border-gray-100 rounded-3xl shadow-2xl shadow-gray-200/50 h-full overflow-hidden">
-        <div className="p-6 bg-[#e60023] text-white flex items-center justify-between">
+      <aside className="hidden lg:flex w-[400px] shrink-0 flex-col bg-white border border-slate-100 rounded-[2.5rem] shadow-premium h-full overflow-hidden">
+        <div className="p-8 bg-slate-900 text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-white/20 rounded-xl backdrop-blur-md">
               <ShoppingCart size={20} />
@@ -554,22 +559,29 @@ const NewOrder: React.FC = () => {
         {cartContent}
       </aside>
 
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4 z-40 flex items-center gap-4 shadow-[0_-8px_30px_rgb(0,0,0,0.12)]">
-        <div className="flex-1">
-          <p className="text-[10px] text-gray-500 font-black uppercase tracking-wider">Total Amount</p>
-          <p className="text-2xl font-black text-[#e60023]">ETB {total.toFixed(2)}</p>
-        </div>
+      <div className="lg:hidden fixed bottom-20 left-4 right-4 z-40">
         <button
-          className="bg-[#e60023] text-white px-6 h-12 rounded-xl flex items-center gap-2 font-black shadow-lg shadow-orange-100 relative active:scale-95 transition-transform"
+          className="w-full bg-slate-900 text-white p-5 rounded-[2rem] flex items-center justify-between font-black shadow-2xl shadow-slate-200 active:scale-95 transition-all"
           onClick={() => setIsCartDrawerOpen(true)}
         >
-          <ShoppingCart size={18} />
-          View Cart
-          {cart.length > 0 && (
-            <span className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white text-[10px] font-bold flex items-center justify-center rounded-full border-2 border-white animate-bounce">
-              {cart.reduce((acc, item) => acc + item.quantity, 0)}
-            </span>
-          )}
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <ShoppingCart size={24} />
+              {cart.length > 0 && (
+                <span className="absolute -top-2 -right-2 w-6 h-6 bg-[#e60023] text-white text-[10px] font-bold flex items-center justify-center rounded-full border-2 border-slate-900 animate-bounce">
+                  {cart.reduce((acc, item) => acc + item.quantity, 0)}
+                </span>
+              )}
+            </div>
+            <div className="text-left">
+              <p className="text-[10px] text-slate-400 uppercase tracking-widest leading-none mb-1">Total Order</p>
+              <p className="text-xl leading-none">ETB {total.toFixed(2)}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-xl">
+            <span>Review Cart</span>
+            <ArrowRight size={18} />
+          </div>
         </button>
       </div>
 

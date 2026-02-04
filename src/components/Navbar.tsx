@@ -10,7 +10,7 @@ export default function Navbar(){
             <div className="flex items-center gap-2 md:gap-4 lg:gap-8">
               <Link href={"/"} className="flex items-center gap-2 text-[#e60023] font-bold text-xl">
                 <ChefHat size={32} />
-                <span className="hidden sm:inline">Abc Cafe</span>
+                <span className="hidden sm:inline">Quick Serve</span>
               </Link>
               <div className="hidden lg:flex items-center gap-8 font-semibold text-black">
                 <Link href={'/use-cases'} className="hover:text-gray-600 transition-colors">Explore</Link>

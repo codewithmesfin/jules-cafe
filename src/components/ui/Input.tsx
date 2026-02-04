@@ -31,19 +31,19 @@ export const Input: React.FC<InputProps> = ({
       )}
       <div className="relative">
         {leftIcon && (
-          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
             {leftIcon}
           </div>
         )}
         <input
           id={inputId}
           className={cn(
-            'w-full px-4 py-3 bg-white border border-slate-300 rounded-xl text-slate-900 placeholder:text-slate-400 transition-all duration-200',
-            'focus:outline-none focus:ring-2 focus:ring-slate-500/20 focus:border-slate-500',
-            'disabled:bg-slate-50 disabled:cursor-not-allowed',
-            error && 'border-rose-500 focus:ring-rose-500/20 focus:border-rose-500',
-            leftIcon && 'pl-10',
-            rightIcon && 'pr-10',
+            'w-full px-5 py-3.5 bg-slate-50/50 border border-slate-200 rounded-2xl text-slate-900 placeholder:text-slate-400 transition-all duration-200',
+            'focus:outline-none focus:ring-4 focus:ring-[#e60023]/5 focus:border-[#e60023] focus:bg-white',
+            'disabled:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60',
+            error && 'border-rose-500 focus:ring-rose-500/10 focus:border-rose-500',
+            leftIcon && 'pl-12',
+            rightIcon && 'pr-12',
             className
           )}
           {...props}

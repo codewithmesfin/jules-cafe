@@ -3,8 +3,8 @@ import "./globals.css";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "ABC Cafe - Restaurant Management System",
-  description: "Premium restaurant management system for ABC Cafe",
+  title: "Quick Serve - Restaurant Management System",
+  description: "Premium restaurant management system for Quick Serve",
 };
 
 export default function RootLayout({

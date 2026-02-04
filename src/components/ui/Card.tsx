@@ -19,6 +19,8 @@ const paddingClasses = {
   lg: 'p-8',
 };
 
+import { motion } from 'framer-motion';
+
 export const Card: React.FC<CardProps> = ({
   children,
   className,
@@ -30,28 +32,33 @@ export const Card: React.FC<CardProps> = ({
   padding = 'md',
 }) => {
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
       className={cn(
-        'bg-white rounded-2xl border border-slate-200 shadow-sm',
-        hover && 'transition-all duration-300 hover:shadow-lg hover:border-slate-300',
+        'bg-white rounded-[2rem] border border-slate-100 shadow-premium',
+        hover && 'transition-all duration-300 hover:shadow-premium-hover hover:border-slate-200 hover:-translate-y-1',
         className
       )}
     >
       {(title || subtitle || headerAction) && (
-        <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+        <div className="px-8 py-6 border-b border-slate-50 flex items-center justify-between">
           <div>
-            {title && <h3 className="text-lg font-semibold text-slate-900">{title}</h3>}
-            {subtitle && <p className="text-sm text-slate-500 mt-0.5">{subtitle}</p>}
+            {title && <h3 className="text-xl font-bold text-slate-900 tracking-tight">{title}</h3>}
+            {subtitle && <p className="text-sm text-slate-400 font-medium mt-1">{subtitle}</p>}
           </div>
           {headerAction && <div>{headerAction}</div>}
         </div>
       )}
-      <div className={paddingClasses[padding]}>{children}</div>
+      <div className={cn('px-8 py-6', paddingClasses[padding] && padding !== 'md' && paddingClasses[padding])}>
+        {children}
+      </div>
       {footer && (
-        <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/30">
+        <div className="px-8 py-5 border-t border-slate-50 bg-slate-50/30 rounded-b-[2rem]">
           {footer}
         </div>
       )}
-    </div>
+    </motion.div>
   );
 };

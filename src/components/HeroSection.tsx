@@ -25,17 +25,17 @@ const Hero: React.FC = () => {
 
       <div className="max-w-[1600px] mx-auto w-full grid grid-cols-1 lg:grid-cols-2 px-6 md:px-12 lg:px-20 items-center">
         {/* LEFT CONTENT */}
-        <div className="order-2 lg:order-1 z-20 space-y-8 text-center lg:text-left">
-          <h1 className="text-4xl md:text-5xl lg:text-[64px] font-bold">
+        <div className="order-2 lg:order-1 z-20 space-y-6 md:space-y-8 text-center lg:text-left">
+          <h1 className="text-3xl md:text-5xl lg:text-[64px] font-bold text-slate-900">
             Explore flavors of
           </h1>
 
           {/* Animated keyword */}
-          <div className="relative h-[60px] lg:h-[90px] overflow-hidden -mt-5">
+          <div className="relative h-[100px] sm:h-[130px] lg:h-[90px] overflow-hidden -mt-2">
             {HERO_THEMES.map((theme, i) => (
               <div
                 key={i}
-                className={`absolute inset-0 text-4xl md:text-5xl lg:text-[64px] font-bold
+                className={`absolute inset-0 flex items-center justify-center lg:justify-start text-3xl md:text-5xl lg:text-[64px] font-bold leading-[1.1]
                   transition-all duration-[900ms]
                   ease-[cubic-bezier(0.19,1,0.22,1)]
                   ${i === currentIndex
@@ -68,20 +68,20 @@ const Hero: React.FC = () => {
           </div>
 
           {/* CTA */}
-          <div className="flex gap-6 items-center justify-center lg:justify-start">
-            <Link href={"/signup"} className="bg-[#e60023] text-white px-8 py-4 rounded-3xl font-bold">
+          <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 items-center justify-center lg:justify-start pt-2">
+            <Link href={"/signup"} className="w-full sm:w-auto text-center bg-[#e60023] text-white px-8 py-4 rounded-3xl font-bold hover:bg-red-700 transition-colors shadow-lg">
               Join Quick Serve for free
             </Link>
-            <Link href={"/login"} className="font-bold cursor-pointer">
+            <Link href={"/login"} className="font-bold cursor-pointer hover:text-red-600 transition-colors">
               I already have an account
             </Link>
           </div>
         </div>
 
         {/* RIGHT – PINTEREST IMAGE STACK */}
-        <div className="order-1 lg:order-2 relative h-[480px] lg:h-[660px] flex justify-center items-center">
+        <div className="order-1 lg:order-2 relative h-[400px] md:h-[550px] lg:h-[660px] flex justify-center items-center">
 
-          <div className="relative w-[280px] md:w-[360px] lg:w-[400px] aspect-[4/5]">
+          <div className="relative w-[220px] md:w-[320px] lg:w-[400px] aspect-[4/5]">
             {HERO_THEMES.map((theme, i) => {
               const isActive = i === currentIndex;
 
@@ -92,7 +92,7 @@ const Hero: React.FC = () => {
                   <div
                   >
                     <div
-                      className={`absolute inset-0 rounded-[52px] overflow-hidden shadow-xl
+                      className={`absolute inset-0 rounded-[40px] lg:rounded-[52px] overflow-hidden shadow-xl
                       transition-all duration-[1100ms]
                       ease-[cubic-bezier(0.19,1,0.22,1)] -rotate-[5deg]
                       ${isActive
@@ -110,8 +110,8 @@ const Hero: React.FC = () => {
                     {/* PIN BUBBLE (image-aligned) */}
                     <div
                       className={`absolute top-2 right-0 lg:-top-10 lg:-right-6
-                        w-11 h-11 lg:w-18 lg:h-18 z-20
-                        rounded-2xl lg:rounded-[20px]
+                        w-9 h-9 lg:w-18 lg:h-18 z-20
+                        rounded-xl lg:rounded-[20px]
                         flex items-center justify-center shadow-xl
                         transition-all duration-700
                         ease-[cubic-bezier(0.19,1,0.22,1)]
@@ -120,7 +120,7 @@ const Hero: React.FC = () => {
                       style={{ backgroundColor: theme.accent }}
                     >
                       <svg
-                        className="w-5 h-5 lg:w-7 lg:h-7 text-white"
+                        className="w-4 h-4 lg:w-7 lg:h-7 text-white"
                         fill="currentColor"
                         viewBox="0 0 24 24"
                       >
@@ -131,10 +131,10 @@ const Hero: React.FC = () => {
 
                   {/* SECONDARY IMAGE */}
                   <div
-                    className={`absolute right-[-80px] bottom-[-80px]
-                      w-[250px] h-[300px]
-                      rounded-[36px] overflow-hidden
-                      border-[8px] border-white shadow-xl
+                    className={`absolute right-[-40px] bottom-[-40px] md:right-[-60px] md:bottom-[-60px] lg:right-[-80px] lg:bottom-[-80px]
+                      w-[180px] h-[220px] md:w-[220px] md:h-[280px] lg:w-[250px] lg:h-[300px]
+                      rounded-[24px] lg:rounded-[36px] overflow-hidden
+                      border-[6px] lg:border-[8px] border-white shadow-xl
                       transition-all duration-[1300ms]
                       ease-[cubic-bezier(0.19,1,0.22,1)]
                       ${isActive

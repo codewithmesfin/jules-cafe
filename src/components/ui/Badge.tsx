@@ -9,17 +9,17 @@ interface BadgeProps {
 }
 
 const variantStyles = {
-  success: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  warning: 'bg-amber-50 text-amber-700 border-amber-200',
-  error: 'bg-rose-50 text-rose-700 border-rose-200',
-  info: 'bg-sky-50 text-sky-700 border-sky-200',
-  primary: 'bg-slate-900 text-white border-transparent',
-  neutral: 'bg-slate-100 text-slate-600 border-slate-200',
+  success: 'bg-emerald-50 text-emerald-600 border-emerald-100/80',
+  warning: 'bg-amber-50 text-amber-600 border-amber-100/80',
+  error: 'bg-rose-50 text-rose-600 border-rose-100/80',
+  info: 'bg-sky-50 text-sky-600 border-sky-100/80',
+  primary: 'bg-[#e60023] text-white border-transparent shadow-sm shadow-red-100',
+  neutral: 'bg-slate-100 text-slate-500 border-slate-200',
 };
 
 const sizeStyles = {
-  sm: 'px-2 py-0.5 text-xs',
-  md: 'px-2.5 py-1 text-xs',
+  sm: 'px-2.5 py-0.5 text-[10px] tracking-wider uppercase font-bold',
+  md: 'px-3 py-1 text-xs font-bold',
 };
 
 export const Badge: React.FC<BadgeProps> = ({

@@ -3,11 +3,11 @@
 import React from 'react';
 import Link from 'next/link';
 import { 
-  Coffee, 
+  ChefHat,
   ArrowRight,
   CheckCircle,
   Store,
-  ChefHat,
+  Utensils,
   Truck,
   Building,
   Users
@@ -82,7 +82,7 @@ const useCases = [
 
 const testimonials = [
   {
-    quote: "ABC Cafe transformed our single location into a thriving business. We doubled our revenue in the first year!",
+    quote: "Quick Serve transformed our single location into a thriving business. We doubled our revenue in the first year!",
     author: "Sarah Johnson",
     role: "Owner, The Daily Grind",
     location: "Portland, OR",
@@ -106,12 +106,12 @@ const testimonials = [
 
 const faqs = [
   {
-    question: "Can I try ABC Cafe before committing?",
+    question: "Can I try Quick Serve before committing?",
     answer: "Yes! We offer a 14-day free trial with full access to all features. No credit card required to start.",
   },
   {
     question: "Do I need special hardware?",
-    answer: "ABC Cafe works with any device that has a browser. We also support popular POS hardware like Square readers and receipt printers.",
+    answer: "Quick Serve works with any device that has a browser. We also support popular POS hardware like Square readers and receipt printers.",
   },
   {
     question: "Is my data secure?",
@@ -131,16 +131,16 @@ export default function UseCasesPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-amber-600 rounded-xl flex items-center justify-center">
-                <Coffee className="w-6 h-6 text-white" />
+              <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center">
+                <ChefHat className="w-6 h-6 text-white" />
               </div>
-              <span className="text-xl font-bold text-slate-900">ABC Cafe</span>
+              <span className="text-xl font-bold text-slate-900">Quick Serve</span>
             </div>
             <div className="hidden md:flex items-center gap-8">
               <Link href="/features" className="text-slate-600 hover:text-slate-900 transition-colors">
                 Features
               </Link>
-              <Link href="/use-cases" className="text-amber-600 font-semibold">
+              <Link href="/use-cases" className="text-[#e60023] font-semibold">
                 Use Cases
               </Link>
               <Link href="/login" className="text-slate-600 hover:text-slate-900 transition-colors">
@@ -148,7 +148,7 @@ export default function UseCasesPage() {
               </Link>
               <Link 
                 href="/signup" 
-                className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
+                className="px-4 py-2 bg-[#e60023] text-white rounded-lg hover:bg-[#ad081b] transition-colors"
               >
                 Get Started
               </Link>
@@ -161,11 +161,11 @@ export default function UseCasesPage() {
       <section className="pt-32 pb-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto text-center">
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-slate-900 mb-6">
-            Built for Every Type of Cafe
+            Built for Every Type of Restaurant
           </h1>
           <p className="text-lg sm:text-xl text-slate-600 max-w-3xl mx-auto">
-            Whether you're running a cozy coffee shop or a multi-location cafe chain, 
-            ABC Cafe has the tools you need to succeed.
+            Whether you're running a cozy coffee shop or a multi-location restaurant chain,
+            Quick Serve has the tools you need to succeed.
           </p>
         </div>
       </section>
@@ -182,44 +182,44 @@ export default function UseCasesPage() {
                 }`}
               >
                 <div className="flex-1">
-                  <div className="w-16 h-16 bg-amber-100 rounded-2xl flex items-center justify-center mb-6">
-                    <useCase.icon className="w-8 h-8 text-amber-600" />
+                  <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mb-6">
+                    <useCase.icon className="w-8 h-8 text-[#e60023]" />
                   </div>
                   <h2 className="text-3xl font-bold text-slate-900 mb-4">{useCase.title}</h2>
                   <p className="text-lg text-slate-600 mb-8">{useCase.description}</p>
                   <ul className="space-y-4 mb-8">
                     {useCase.benefits.map((benefit, j) => (
                       <li key={j} className="flex items-start gap-3">
-                        <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+                        <CheckCircle className="w-5 h-5 text-emerald-500 mt-0.5 flex-shrink-0" />
                         <span className="text-slate-700">{benefit}</span>
                       </li>
                     ))}
                   </ul>
                   <Link 
                     href="/signup" 
-                    className="inline-flex items-center gap-2 text-amber-600 font-semibold hover:text-amber-700 transition-colors"
+                    className="inline-flex items-center gap-2 text-[#e60023] font-semibold hover:text-[#ad081b] transition-colors"
                   >
                     Get Started
                     <ArrowRight className="w-5 h-5" />
                   </Link>
                 </div>
                 <div className="flex-1 w-full">
-                  <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-8">
+                  <div className="bg-gradient-to-br from-slate-50 to-red-50 rounded-3xl p-8 border border-slate-100">
                     <div className="grid grid-cols-3 gap-4 mb-6">
                       {useCase.stats.map((stat, j) => (
-                        <div key={j} className="bg-white rounded-xl p-4 text-center shadow-sm">
-                          <p className="text-2xl font-bold text-amber-600">{stat.value}</p>
-                          <p className="text-xs text-slate-500 mt-1">{stat.label}</p>
+                        <div key={j} className="bg-white rounded-2xl p-4 text-center shadow-sm border border-slate-100 transition-transform hover:scale-105 duration-300">
+                          <p className="text-2xl font-bold text-[#e60023]">{stat.value}</p>
+                          <p className="text-xs text-slate-500 mt-1 font-bold uppercase tracking-wider">{stat.label}</p>
                         </div>
                       ))}
                     </div>
-                    <div className="bg-white rounded-xl p-6 shadow-sm">
-                      <p className="text-sm text-slate-600 mb-4">Average customer results after 6 months</p>
+                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+                      <p className="text-sm text-slate-600 mb-4 font-medium">Average customer results after 6 months</p>
                       <div className="flex items-center gap-2">
-                        <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
-                          <div className="h-full bg-amber-500 rounded-full" style={{ width: '75%' }} />
+                        <div className="flex-1 h-3 bg-slate-100 rounded-full overflow-hidden">
+                          <div className="h-full bg-[#e60023] rounded-full" style={{ width: '75%' }} />
                         </div>
-                        <span className="text-sm text-slate-500">75%</span>
+                        <span className="text-sm text-slate-900 font-bold">75%</span>
                       </div>
                     </div>
                   </div>
@@ -235,10 +235,10 @@ export default function UseCasesPage() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">
-              Trusted by Cafe Owners Everywhere
+              Trusted by Restaurant Owners Everywhere
             </h2>
             <p className="text-lg text-slate-600">
-              See what our customers have to say about their experience with ABC Cafe.
+              See what our customers have to say about their experience with Quick Serve.
             </p>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
@@ -252,11 +252,11 @@ export default function UseCasesPage() {
                     <span key={j} className="text-amber-500">★</span>
                   ))}
                 </div>
-                <p className="text-slate-700 mb-6 italic">"{testimonial.quote}"</p>
+                <p className="text-slate-700 mb-6 italic font-medium">"{testimonial.quote}"</p>
                 <div>
-                  <p className="font-semibold text-slate-900">{testimonial.author}</p>
-                  <p className="text-sm text-slate-500">{testimonial.role}</p>
-                  <p className="text-sm text-amber-600">{testimonial.location}</p>
+                  <p className="font-bold text-slate-900">{testimonial.author}</p>
+                  <p className="text-sm text-slate-500 font-medium">{testimonial.role}</p>
+                  <p className="text-sm text-[#e60023] font-bold">{testimonial.location}</p>
                 </div>
               </div>
             ))}
@@ -290,36 +290,40 @@ export default function UseCasesPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-slate-900 text-white">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl sm:text-4xl font-bold mb-6">
-            Ready to Transform Your Cafe?
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-slate-900 text-white relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
+          <div className="absolute top-10 left-10 w-64 h-64 bg-[#e60023] rounded-full blur-[120px]"></div>
+          <div className="absolute bottom-10 right-10 w-64 h-64 bg-slate-400 rounded-full blur-[120px]"></div>
+        </div>
+        <div className="max-w-4xl mx-auto text-center relative z-10">
+          <h2 className="text-3xl sm:text-4xl font-black mb-6 tracking-tight">
+            Ready to Transform Your Restaurant?
           </h2>
-          <p className="text-lg text-slate-300 mb-8">
-            Join 500+ cafe owners who trust ABC Cafe to power their business.
+          <p className="text-lg text-slate-300 mb-8 font-medium">
+            Join 500+ business owners who trust Quick Serve to power their growth.
           </p>
           <Link 
             href="/signup" 
-            className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-amber-600 text-white rounded-xl font-semibold hover:bg-amber-700 transition-all hover:scale-105"
+            className="inline-flex items-center justify-center gap-2 px-10 py-5 bg-[#e60023] text-white rounded-2xl font-bold hover:bg-[#ad081b] transition-all hover:scale-105 shadow-xl shadow-red-900/20"
           >
             Start Free 14-Day Trial
             <ArrowRight className="w-5 h-5" />
           </Link>
-          <p className="text-sm text-slate-400 mt-4">No credit card required • Cancel anytime</p>
+          <p className="text-sm text-slate-500 mt-6 font-medium tracking-wide uppercase">No credit card required • Cancel anytime</p>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-slate-900 text-white py-8 px-4 sm:px-6 lg:px-8">
+      <footer className="bg-slate-900 text-white py-8 px-4 sm:px-6 lg:px-8 border-t border-white/5">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-amber-600 rounded-lg flex items-center justify-center">
-                <Coffee className="w-5 h-5 text-white" />
+              <div className="w-8 h-8 bg-[#e60023] rounded-lg flex items-center justify-center shadow-lg shadow-red-900/20">
+                <ChefHat className="w-5 h-5 text-white" />
               </div>
-              <span className="font-bold">ABC Cafe</span>
+              <span className="font-bold tracking-tight">Quick Serve</span>
             </div>
-            <p className="text-slate-400 text-sm">© 2024 ABC Cafe. All rights reserved.</p>
+            <p className="text-slate-500 text-sm">© 2024 Quick Serve. All rights reserved.</p>
             <div className="flex items-center gap-6">
               <Link href="/" className="text-slate-400 hover:text-white transition-colors text-sm">Home</Link>
               <Link href="/features" className="text-slate-400 hover:text-white transition-colors text-sm">Features</Link>

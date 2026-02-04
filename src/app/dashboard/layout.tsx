@@ -4,9 +4,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
-  LayoutDashboard, Receipt, Package, Database, Users, Settings,
-  ChevronDown, ChevronLeft, ChevronRight, LogOut, ChefHat, Utensils,
-  Plus, ClipboardList
+  LayoutDashboard, Receipt, Package, Settings,
+  ChevronDown, ChevronLeft, ChevronRight, ChefHat,
+  Plus, ClipboardList, Menu, X, Search, Bell, LogOut,
+  Database, Utensils, Users
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useAuth } from '@/context/AuthContext';
@@ -25,8 +26,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { user, logout, loading, switchBusiness, businesses, currentBusiness } = useAuth();
   const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showBusinessSelector, setShowBusinessSelector] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     if (loading) return;
@@ -119,12 +126,29 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const userInitials = user.full_name?.split(' ').map(n => n[0]).join('').toUpperCase() || user.email?.[0].toUpperCase() || 'U';
 
   return (
-    <div className="flex h-screen bg-slate-50 overflow-hidden font-sans">
+    <div className="flex h-screen bg-slate-50 overflow-hidden font-sans relative">
+      {/* Mobile Sidebar Overlay */}
+      {mobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 lg:hidden animate-fade-in"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
       <aside className={cn(
-        'flex flex-col bg-white border-r border-slate-200 shadow-sm transition-all duration-300',
-        sidebarCollapsed ? 'w-20' : 'w-64'
+        'fixed inset-y-0 left-0 z-50 lg:relative flex flex-col bg-white border-r border-slate-100 shadow-xl lg:shadow-none transition-all duration-300 ease-in-out',
+        sidebarCollapsed ? 'lg:w-20' : 'lg:w-72',
+        mobileMenuOpen ? 'translate-x-0 w-[280px]' : '-translate-x-full lg:translate-x-0'
       )}>
+        {/* Mobile Close Button */}
+        <button
+          className="absolute top-4 -right-12 p-2 bg-white rounded-xl shadow-lg lg:hidden"
+          onClick={() => setMobileMenuOpen(false)}
+        >
+          <X size={20} className="text-slate-600" />
+        </button>
+
         {/* Logo & Business Selector */}
         <div className="p-4 border-b border-slate-100 relative">
           <div ref={dropdownRef} className="relative">
@@ -141,7 +165,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </div>
                 {!sidebarCollapsed && (
                   <div className="flex flex-col min-w-0">
-                    <span className="text-sm font-semibold text-slate-900 truncate">{currentBusiness?.name || 'ABC Cafe'}</span>
+                    <span className="text-sm font-semibold text-slate-900 truncate">{currentBusiness?.name || 'Quick Serve'}</span>
                     <span className="text-xs text-slate-500 font-medium uppercase tracking-wider">Workspace</span>
                   </div>
                 )}
@@ -287,51 +311,98 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 relative">
         {/* Header */}
-        <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-6 shrink-0 sticky top-0 z-20">
-          {/* Collapse Sidebar Button */}
-          <button
-            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="p-2.5 hover:bg-slate-100 rounded-xl transition-all text-slate-500 hover:text-slate-700 mr-2"
-            title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          >
-            {sidebarCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
-          </button>
-          
-          {/* Search */}
-          <div className="flex items-center gap-4 flex-1 max-w-xl">
+        <header className="h-16 lg:h-20 bg-white/80 backdrop-blur-md border-b border-slate-100 flex items-center justify-between px-4 lg:px-8 shrink-0 sticky top-0 z-30">
+          <div className="flex items-center gap-4">
+            {/* Mobile Menu Toggle */}
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className="lg:hidden p-2.5 hover:bg-slate-100 rounded-2xl transition-all text-slate-600 active:scale-95"
+            >
+              <Menu size={24} />
+            </button>
+
+            {/* Desktop Collapse Sidebar Button */}
+            <button
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              className="hidden lg:flex p-2.5 hover:bg-slate-100 rounded-2xl transition-all text-slate-400 hover:text-slate-600"
+            >
+              {sidebarCollapsed ? <ChevronRight size={22} /> : <ChevronLeft size={22} />}
+            </button>
+
+            <h1 className="text-lg lg:text-xl font-bold text-slate-900 truncate">
+              {filteredMenuItems.find(m => m.path === pathname || m.submenu?.some(s => s.path === pathname))?.label || 'Dashboard'}
+            </h1>
+          </div>
+
+          {/* Desktop Search */}
+          <div className="hidden md:flex items-center gap-4 flex-1 max-w-md mx-8">
             <div className="relative w-full group">
-              <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-600 transition-colors" size={18} />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#e60023] transition-colors" size={18} />
               <input
                 type="text"
-                placeholder="Search..."
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border-none rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-slate-500/20 focus:bg-white transition-all placeholder:text-slate-400"
+                placeholder="Search anything..."
+                className="w-full pl-12 pr-4 py-2.5 bg-slate-50 border border-transparent rounded-2xl text-sm font-medium focus:outline-none focus:ring-4 focus:ring-[#e60023]/5 focus:bg-white focus:border-[#e60023]/20 transition-all placeholder:text-slate-400"
               />
             </div>
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-3">
-            <div className="hidden sm:block w-px h-8 bg-slate-200 mx-2"></div>
-            <Link href="/dashboard/settings/profile" className="flex items-center gap-3 cursor-pointer group">
-              <div className="w-9 h-9 bg-slate-100 rounded-xl flex items-center justify-center text-slate-700 font-semibold text-sm transition-transform group-hover:scale-105">
+          <div className="flex items-center gap-2 lg:gap-4">
+            <button className="p-2.5 hover:bg-slate-100 rounded-2xl transition-all text-slate-500 relative group">
+              <Bell size={22} />
+              <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-[#e60023] rounded-full border-2 border-white"></span>
+            </button>
+            <div className="w-px h-6 bg-slate-200 mx-1 hidden sm:block"></div>
+            <Link href="/dashboard/settings/profile" className="flex items-center gap-3 p-1.5 hover:bg-slate-50 rounded-2xl transition-all group">
+              <div className="w-9 h-9 lg:w-10 lg:h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-slate-200 transition-transform group-hover:scale-105">
                 {userInitials}
               </div>
-              <div className="hidden md:block flex-col">
-                <span className="text-sm font-semibold text-slate-900 leading-tight">{user.full_name || 'User'}</span>
-                <span className="text-xs text-slate-500 font-medium uppercase tracking-wider">{user.role}</span>
+              <div className="hidden sm:flex flex-col">
+                <span className="text-sm font-bold text-slate-900 leading-tight">{user.full_name?.split(' ')[0] || 'User'}</span>
+                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider leading-none mt-1">{user.role}</span>
               </div>
             </Link>
           </div>
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto bg-slate-50 p-6 custom-scrollbar">
-          <div className="animate-fade-in">
+        <main className="flex-1 overflow-y-auto bg-slate-50/50 p-4 lg:p-8 pb-24 lg:pb-8 custom-scrollbar">
+          <div className="max-w-7xl mx-auto">
             {children}
           </div>
         </main>
+
+        {/* Mobile Bottom Navigation */}
+        <nav className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-slate-100 px-4 py-3 flex items-center justify-around lg:hidden z-40 shadow-[0_-8px_30px_rgb(0,0,0,0.04)]">
+          {[
+            { icon: LayoutDashboard, label: 'Home', path: '/dashboard' },
+            { icon: Receipt, label: 'Orders', path: '/dashboard/orders/new' },
+            { icon: Package, label: 'Products', path: '/dashboard/products' },
+            { icon: ClipboardList, label: 'Reports', path: '/dashboard/reports' },
+          ].map((item) => {
+            const isActive = pathname === item.path || (item.path !== '/dashboard' && pathname.startsWith(item.path));
+            return (
+              <Link
+                key={item.label}
+                href={item.path}
+                className={cn(
+                  'flex flex-col items-center gap-1 transition-all active:scale-90',
+                  isActive ? 'text-[#e60023]' : 'text-slate-400'
+                )}
+              >
+                <div className={cn(
+                  'p-2 rounded-xl transition-all',
+                  isActive ? 'bg-[#e60023]/10' : 'bg-transparent'
+                )}>
+                  <item.icon size={22} strokeWidth={isActive ? 2.5 : 2} />
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-tight">{item.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
       </div>
     </div>
   );

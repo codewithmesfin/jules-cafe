@@ -1,18 +1,12 @@
 import type {
-  MenuCategory,
-  MenuItem,
-  Branch,
   Table,
-  BranchMenuItem,
   User,
   Order,
   OrderItem,
-  Reservation,
-  InventoryItem,
   Recipe
 } from '../types';
 
-export const MOCK_BRANCHES: Branch[] = [
+export const MOCK_BRANCHES: any[] = [
   {
     id: 'b1',
     branch_name: 'Downtown Branch',
@@ -35,27 +29,27 @@ export const MOCK_BRANCHES: Branch[] = [
   },
 ];
 
-export const MOCK_TABLES: Table[] = [
+export const MOCK_TABLES: any[] = [
   { id: 't1', branch_id: 'b1', table_number: '1', capacity: 2, status: 'available' },
   { id: 't2', branch_id: 'b1', table_number: '2', capacity: 4, status: 'occupied' },
   { id: 't3', branch_id: 'b2', table_number: '1', capacity: 4, status: 'available' },
 ];
 
-export const MOCK_CATEGORIES: MenuCategory[] = [
+export const MOCK_CATEGORIES: any[] = [
   { id: 'c1', name: 'Appetizers', description: 'Start your meal with these tasty treats', is_active: true, created_at: new Date().toISOString() },
   { id: 'c2', name: 'Main Courses', description: 'Hearty and delicious main dishes', is_active: true, created_at: new Date().toISOString() },
   { id: 'c3', name: 'Desserts', description: 'Sweet endings for your meal', is_active: true, created_at: new Date().toISOString() },
   { id: 'c4', name: 'Beverages', description: 'Refreshing drinks and coffees', is_active: true, created_at: new Date().toISOString() },
 ];
 
-export const MOCK_MENU_ITEMS: MenuItem[] = [
+export const MOCK_MENU_ITEMS: any[] = [
   { id: 'm1', category_id: 'c1', name: 'Garlic Bread', description: 'Toasted baguette with garlic butter and herbs', base_price: 5.99, image_url: 'https://images.unsplash.com/photo-1573140247632-f8fd74997d5c?auto=format&fit=crop&q=80&w=400', is_active: true, created_at: new Date().toISOString() },
   { id: 'm2', category_id: 'c1', name: 'Calamari', description: 'Crispy fried squid with lemon aioli', base_price: 12.50, image_url: 'https://images.unsplash.com/photo-1599487488170-d11ec9c172f0?auto=format&fit=crop&q=80&w=400', is_active: true, created_at: new Date().toISOString() },
   { id: 'm3', category_id: 'c2', name: 'Grilled Salmon', description: 'Atlantic salmon with roasted vegetables', base_price: 24.00, image_url: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&q=80&w=400', is_active: true, created_at: new Date().toISOString() },
   { id: 'm4', category_id: 'c2', name: 'Beef Burger', description: 'Juicy beef patty with cheese, lettuce, and tomato', base_price: 16.99, image_url: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&q=80&w=400', is_active: true, created_at: new Date().toISOString() },
 ];
 
-export const MOCK_BRANCH_MENU_ITEMS: BranchMenuItem[] = [
+export const MOCK_BRANCH_MENU_ITEMS: any[] = [
   { id: 'bm1', branch_id: 'b1', menu_item_id: 'm1', is_available: true },
   { id: 'bm2', branch_id: 'b1', menu_item_id: 'm2', is_available: true },
   { id: 'bm3', branch_id: 'b1', menu_item_id: 'm3', is_available: true },
@@ -64,7 +58,7 @@ export const MOCK_BRANCH_MENU_ITEMS: BranchMenuItem[] = [
   { id: 'bm6', branch_id: 'b2', menu_item_id: 'm3', is_available: false },
 ];
 
-export const MOCK_USERS: User[] = [
+export const MOCK_USERS: any[] = [
   { id: 'u1', username: 'admin', full_name: 'Admin User', email: 'admin@example.com', phone: '123-456-7890', role: 'admin', status: 'active', created_at: new Date().toISOString() },
   { id: 'u2', username: 'manager', full_name: 'Manager User', email: 'manager@example.com', phone: '234-567-8901', role: 'manager', status: 'active', branch_id: 'b1', created_at: new Date().toISOString() },
   { id: 'u3', username: 'cashier', full_name: 'Cashier User', email: 'cashier@example.com', phone: '345-678-9012', role: 'cashier', status: 'active', branch_id: 'b1', created_at: new Date().toISOString() },
@@ -73,28 +67,28 @@ export const MOCK_USERS: User[] = [
   { id: 'u6', username: 'mike_waiter', full_name: 'Mike Waiter', email: 'mike@example.com', phone: '678-901-2345', role: 'staff', status: 'active', branch_id: 'b1', created_at: new Date().toISOString() },
 ];
 
-export const MOCK_ORDERS: Order[] = [
+export const MOCK_ORDERS: any[] = [
   { id: 'o1', order_number: 'ORD-001', customer_id: 'u4', branch_id: 'b1', status: 'completed', type: 'self-service', total_amount: 32.50, created_at: new Date(Date.now() - 86400000).toISOString() },
   { id: 'o2', order_number: 'ORD-002', customer_id: 'u4', branch_id: 'b1', status: 'preparing', type: 'self-service', total_amount: 18.99, created_at: new Date().toISOString() },
 ];
 
-export const MOCK_ORDER_ITEMS: OrderItem[] = [
+export const MOCK_ORDER_ITEMS: any[] = [
   { id: 'oi1', order_id: 'o1', menu_item_id: 'm1', menu_item_name: 'Garlic Bread', quantity: 1, unit_price: 5.99 },
   { id: 'oi2', order_id: 'o1', menu_item_id: 'm3', menu_item_name: 'Grilled Salmon', quantity: 1, unit_price: 24.00 },
 ];
 
-export const MOCK_RESERVATIONS: Reservation[] = [
+export const MOCK_RESERVATIONS: any[] = [
   { id: 'r1', customer_id: 'u4', branch_id: 'b1', reservation_date: '2024-06-20', reservation_time: '19:00', guests_count: 4, status: 'confirmed', note: 'Window seat if possible', created_at: new Date().toISOString() },
 ];
 
-export const MOCK_INVENTORY: InventoryItem[] = [
+export const MOCK_INVENTORY: any[] = [
   { id: 'i1', branch_id: 'b1', item_name: 'Flour', category: 'Dry Goods', quantity: 50, unit: 'kg', min_stock: 10, last_updated: new Date().toISOString() },
   { id: 'i2', branch_id: 'b1', item_name: 'Milk', category: 'Dairy', quantity: 12, unit: 'liters', min_stock: 5, last_updated: new Date().toISOString() },
   { id: 'i3', branch_id: 'b1', item_name: 'Eggs', category: 'Dairy', quantity: 120, unit: 'units', min_stock: 30, last_updated: new Date().toISOString() },
   { id: 'i4', branch_id: 'b1', item_name: 'Coffee Beans', category: 'Beverages', quantity: 8, unit: 'kg', min_stock: 2, last_updated: new Date().toISOString() },
 ];
 
-export const MOCK_RECIPES: Recipe[] = [
+export const MOCK_RECIPES: any[] = [
   {
     id: 'r1',
     menu_item_id: 'm1', // Garlic Bread
