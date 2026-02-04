@@ -47,7 +47,7 @@ const BusinessManagement: React.FC = () => {
         <Card className="p-8 border-slate-100 rounded-[2.5rem] shadow-sm bg-white border">
           <div className="flex justify-between items-start">
             <div className="flex gap-6">
-              <div className="w-20 h-20 bg-blue-600 rounded-[2rem] flex items-center justify-center text-white shadow-xl shadow-blue-100"><Building2 size={40} /></div>
+              <div className="w-20 h-20 bg-[#e60023] rounded-[2rem] flex items-center justify-center text-white shadow-xl shadow-red-100"><Building2 size={40} /></div>
               <div><h2 className="text-3xl font-black text-slate-900 mb-2">{currentBusiness.name}</h2><p className="text-slate-500 flex items-center gap-2"><MapPin size={16} /> {currentBusiness.address || 'No address'}</p></div>
             </div>
             <Button variant="outline" onClick={() => openModal(currentBusiness as any)} className="rounded-xl h-12 px-6 border-slate-200 font-bold">Edit</Button>
@@ -58,14 +58,14 @@ const BusinessManagement: React.FC = () => {
         <h3 className="text-xl font-black text-slate-900 px-2">All Workspaces</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {businesses?.map((biz: any) => (
-            <div key={biz._id} className={cn("p-6 rounded-[2.5rem] border transition-all cursor-pointer", (currentBusiness as any)?._id === biz._id ? "border-blue-600 ring-4 ring-blue-50 shadow-xl" : "bg-white hover:border-blue-200")} onClick={() => switchBusiness(biz._id)}>
+            <div key={biz._id} className={cn("p-6 rounded-[2.5rem] border transition-all cursor-pointer", (currentBusiness as any)?._id === biz._id ? "border-[#e60023] ring-4 ring-red-50 shadow-xl" : "bg-white hover:border-[#e60023]")} onClick={() => switchBusiness(biz._id)}>
               <div className="flex items-center gap-4 mb-6"><div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center font-black", (currentBusiness as any)?._id === biz._id ? "bg-blue-600 text-white" : "bg-slate-100")}>{biz.name.charAt(0)}</div><div><h4 className="font-black text-slate-900">{biz.name}</h4><p className="text-[10px] text-slate-400 uppercase">{biz.slug}</p></div></div>
-              {(currentBusiness as any)?._id === biz._id && <div className="text-blue-600"><LayoutDashboard size={20} /></div>}
+              {(currentBusiness as any)?._id === biz._id && <div className="text-[#e60023]"><LayoutDashboard size={20} /></div>}
             </div>
           ))}
         </div>
       </div>
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Workspace Details" className="max-w-md" footer={<div className="flex gap-3 w-full"><Button variant="outline" onClick={() => setIsModalOpen(false)} className="flex-1 rounded-xl h-12">Cancel</Button><Button onClick={handleSave} disabled={loading} className="flex-1 rounded-xl h-12 bg-blue-600 text-white font-black">{loading ? '...' : 'Save'}</Button></div>}>
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Workspace Details" className="max-w-md" footer={<div className="flex gap-3 w-full"><Button variant="outline" onClick={() => setIsModalOpen(false)} className="flex-1 rounded-xl h-12">Cancel</Button><Button onClick={handleSave} disabled={loading} className="flex-1 rounded-xl h-12 bg-[#e60023] text-white font-black">{loading ? '...' : 'Save'}</Button></div>}>
         <div className="space-y-4 pt-4">
           <Input label="Name *" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="rounded-xl h-12" />
           <Input label="Legal Name" value={formData.legal_name} onChange={e => setFormData({...formData, legal_name: e.target.value})} className="rounded-xl h-12" />

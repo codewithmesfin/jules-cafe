@@ -40,7 +40,7 @@ export default function CompanySetup() {
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-2xl">
         <div className="text-center mb-10">
-          <div className="w-20 h-20 bg-blue-600 rounded-[2.5rem] flex items-center justify-center text-white shadow-xl shadow-blue-200 mx-auto mb-6">
+          <div className="w-20 h-20 bg-[#e60023] rounded-[2.5rem] flex items-center justify-center text-white shadow-xl shadow-red-200 mx-auto mb-6">
             <Building2 size={40} />
           </div>
           <h1 className="text-4xl font-black text-slate-900 tracking-tight">Setup Your Business</h1>
@@ -98,7 +98,7 @@ export default function CompanySetup() {
             <Button
               type="submit"
               disabled={loading || !formData.name}
-              className="w-full rounded-2xl h-16 bg-blue-600 hover:bg-blue-700 text-white font-black shadow-lg shadow-blue-100 transition-all text-xl gap-3 mt-4"
+              className="w-full rounded-2xl h-16 bg-[#e60023] hover:bg-[#ad081b] text-white font-black shadow-lg shadow-red-100 transition-all text-xl gap-3 mt-4"
             >
               {loading ? (
                 <Loader2 className="animate-spin" />
