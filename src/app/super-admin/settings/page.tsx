@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
+import { useAuth } from '@/context/AuthContext';
 import {
   User,
   Mail,
@@ -20,7 +21,10 @@ import {
   Edit,
   Camera,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Plus,
+  Trash2,
+  X
 } from 'lucide-react';
 
 // Mock profile data
@@ -53,6 +57,7 @@ const securitySettings = {
 };
 
 export default function SuperAdminSettingsPage() {
+  const { user, jwt } = useAuth();
   const [activeTab, setActiveTab] = useState<'profile' | 'notifications' | 'security' | 'billing' | 'system'>('profile');
   const [isEditing, setIsEditing] = useState(false);
   const [profile, setProfile] = useState(mockProfile);
@@ -60,6 +65,16 @@ export default function SuperAdminSettingsPage() {
   const [security, setSecurity] = useState(securitySettings);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [show2FAModal, setShow2FAModal] = useState(false);
+  const [bankAccounts, setBankAccounts] = useState<any[]>([]);
+  const [showAddBankModal, setShowAddBankModal] = useState(false);
+  const [loading, setLoading] = useState(false);
+  
+  // Add bank form state
+  const [newBank, setNewBank] = useState({
+    bank_name: '',
+    account_number: '',
+    account_name: ''
+  });
 
   const tabs = [
     { id: 'profile', label: 'Profile', icon: User },
@@ -72,6 +87,66 @@ export default function SuperAdminSettingsPage() {
   const handleSaveProfile = () => {
     setIsEditing(false);
     // API call to save profile
+  };
+
+  // Fetch bank accounts on mount
+  useEffect(() => {
+    fetchBankAccounts();
+  }, []);
+
+  const fetchBankAccounts = async () => {
+    try {
+      const response = await fetch('http://localhost:8000/api/bank-accounts', {
+        headers: { Authorization: `Bearer ${jwt}` }
+      });
+      const data = await response.json();
+      if (data.success) {
+        setBankAccounts(data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching bank accounts:', error);
+    }
+  };
+
+  const addBankAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const response = await fetch('http://localhost:8000/api/bank-accounts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${jwt}`
+        },
+        body: JSON.stringify(newBank)
+      });
+      const data = await response.json();
+      if (data.success) {
+        setBankAccounts([...bankAccounts, data.data]);
+        setShowAddBankModal(false);
+        setNewBank({ bank_name: '', account_number: '', account_name: '' });
+      }
+    } catch (error) {
+      console.error('Error adding bank account:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteBankAccount = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this bank account?')) return;
+    try {
+      const response = await fetch(`http://localhost:8000/api/bank-accounts/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${jwt}` }
+      });
+      const data = await response.json();
+      if (data.success) {
+        setBankAccounts(bankAccounts.filter(bank => bank._id !== id));
+      }
+    } catch (error) {
+      console.error('Error deleting bank account:', error);
+    }
   };
 
   return (
@@ -527,57 +602,55 @@ export default function SuperAdminSettingsPage() {
 
           {/* Billing Tab */}
           {activeTab === 'billing' && (
-            <Card className="p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-6">
-                Billing Information
-              </h2>
+            <div className="space-y-6">
+              {/* Bank Accounts Card */}
+              <Card className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-lg font-semibold text-gray-900">
+                    Payment Bank Accounts
+                  </h2>
+                  <Button onClick={() => setShowAddBankModal(true)}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Bank Account
+                  </Button>
+                </div>
 
-              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg mb-6">
-                <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-blue-600" />
-                  <div>
-                    <p className="font-medium text-blue-900">Enterprise Plan</p>
-                    <p className="text-sm text-blue-700">
-                      You have full access to all features
-                    </p>
+                <p className="text-sm text-gray-500 mb-6">
+                  These bank accounts will be shown to clients for making payments. Clients can select from these accounts when submitting payment proof.
+                </p>
+
+                {bankAccounts.length === 0 ? (
+                  <div className="p-8 text-center text-gray-500 border-2 border-dashed rounded-xl">
+                    <Building2 className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                    <p>No bank accounts added yet</p>
+                    <p className="text-sm mt-1">Add bank accounts for clients to make payments</p>
                   </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Company Name
-                  </label>
-                  <Input defaultValue="ABC Cafe Technologies" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Tax ID
-                  </label>
-                  <Input defaultValue="TAX-123456789" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Billing Email
-                  </label>
-                  <Input type="email" defaultValue="billing@abccafe.com" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Phone
-                  </label>
-                  <Input defaultValue="+251 912 345 678" />
-                </div>
-              </div>
-
-              <div className="mt-6 pt-6 border-t">
-                <Button>
-                  <Save className="w-4 h-4 mr-2" />
-                  Save Billing Info
-                </Button>
-              </div>
-            </Card>
+                ) : (
+                  <div className="space-y-4">
+                    {bankAccounts.map((bank) => (
+                      <div key={bank._id} className="flex items-center justify-between p-4 border border-gray-200 rounded-xl hover:border-gray-300 transition-colors">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center">
+                            <Building2 className="w-6 h-6 text-gray-600" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-900">{bank.bank_name}</p>
+                            <p className="text-sm text-gray-500">{bank.account_name}</p>
+                            <p className="text-sm font-mono text-gray-700">{bank.account_number}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="success">Active</Badge>
+                          <Button variant="secondary" onClick={() => deleteBankAccount(bank._id)}>
+                            <Trash2 className="w-4 h-4 text-red-500" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </Card>
+            </div>
           )}
 
           {/* System Tab */}
@@ -636,35 +709,49 @@ export default function SuperAdminSettingsPage() {
         </div>
       </div>
 
-      {/* Change Password Modal */}
+      {/* Add Bank Account Modal */}
       <Modal
-        isOpen={showPasswordModal}
-        onClose={() => setShowPasswordModal(false)}
-        title="Change Password"
+        isOpen={showAddBankModal}
+        onClose={() => setShowAddBankModal(false)}
+        title="Add Bank Account"
       >
-        <div className="space-y-4">
-          <Input
-            type="password"
-            label="Current Password"
-            placeholder="Enter current password"
-          />
-          <Input
-            type="password"
-            label="New Password"
-            placeholder="Enter new password"
-          />
-          <Input
-            type="password"
-            label="Confirm New Password"
-            placeholder="Confirm new password"
-          />
+        <form onSubmit={addBankAccount} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Bank Name</label>
+            <Input
+              value={newBank.bank_name}
+              onChange={e => setNewBank({ ...newBank, bank_name: e.target.value })}
+              placeholder="e.g., Commercial Bank of Ethiopia"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Account Number</label>
+            <Input
+              value={newBank.account_number}
+              onChange={e => setNewBank({ ...newBank, account_number: e.target.value })}
+              placeholder="e.g., 1000123456789"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Account Name</label>
+            <Input
+              value={newBank.account_name}
+              onChange={e => setNewBank({ ...newBank, account_name: e.target.value })}
+              placeholder="e.g., ABC Cafe SaaS Services"
+              required
+            />
+          </div>
           <div className="flex justify-end gap-3 pt-4">
-            <Button variant="secondary" onClick={() => setShowPasswordModal(false)}>
+            <Button variant="secondary" type="button" onClick={() => setShowAddBankModal(false)}>
               Cancel
             </Button>
-            <Button>Update Password</Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? 'Adding...' : 'Add Bank Account'}
+            </Button>
           </div>
-        </div>
+        </form>
       </Modal>
     </div>
   );

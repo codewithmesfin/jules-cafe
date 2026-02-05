@@ -21,6 +21,8 @@ import publicRoutes from './routes/publicRoutes';
 import menuRoutes from './routes/menuRoutes';
 import unitRoutes from './routes/unitRoutes';
 import uploadRoutes from './routes/uploadRoutes';
+import billingRoutes from './routes/billingRoutes';
+import bankAccountRoutes from './routes/bankAccountRoutes';
 
 import errorHandler from './middleware/errorHandler';
 
@@ -91,6 +93,8 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/menu', menuRoutes);
 app.use('/api/settings', unitRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/billing', billingRoutes);
+app.use('/api/bank-accounts', bankAccountRoutes);
 
 app.use('/', publicRoutes);
 

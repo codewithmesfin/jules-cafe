@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, Receipt, Package, Database, Users, Settings,
   ChevronDown, ChevronLeft, ChevronRight, LogOut, ChefHat, Utensils,
-  Plus, ClipboardList, Menu, X, Bell, Search, User, Power
+  Plus, ClipboardList, Menu, X, Bell, Search, User, Power, CreditCard
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useAuth } from '@/context/AuthContext';
@@ -128,6 +128,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         { label: 'Business Info', path: '/dashboard/settings/business', roles: ['admin', 'manager'] },
       ]
     },
+    { icon: CreditCard, label: 'Billing', path: '/dashboard/billing', roles: ['admin'] },
   ];
 
   const filteredMenuItems = allMenuItems.filter(item => {
