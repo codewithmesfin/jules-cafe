@@ -37,7 +37,7 @@ const UserSchema: Schema = new Schema({
     enum: ['active', 'inactive', 'pending', 'suspended', 'onboarding'],
     default: 'pending'
   },
-  default_business_id: { type: Schema.Types.ObjectId, ref: 'Business', index: true },
+  default_business_id: { type: Schema.Types.ObjectId, ref: 'Business' },
   assigned_businesses: [{ type: Schema.Types.ObjectId, ref: 'Business' }],
   passwordResetToken: String,
   passwordResetExpires: Date,
@@ -51,7 +51,7 @@ const UserSchema: Schema = new Schema({
   collection: 'users'
 });
 
-UserSchema.index({ email: 1 });
+// Indexes
 UserSchema.index({ default_business_id: 1, role: 1 });
 UserSchema.index({ role: 1, status: 1 });
 

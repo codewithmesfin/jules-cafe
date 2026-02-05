@@ -14,6 +14,7 @@ export default function Navbar(){
               </Link>
               <div className="hidden lg:flex items-center gap-8 font-semibold text-black">
                 <Link href={'/use-cases'} className="hover:text-gray-600 transition-colors">Explore</Link>
+                <Link href={'/pricing'} className="hover:text-gray-600 transition-colors">Pricing</Link>
               </div>
             </div>
 

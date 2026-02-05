@@ -199,7 +199,7 @@ const NewOrder: React.FC = () => {
       if (orderId) {
         await api.orders.update(orderId, orderData);
         showNotification('Order updated successfully!');
-        router.push('/dashboard/orders?mode=queue');
+        router.push('/dashboard/orders');
       } else {
         await api.orders.create(orderData);
         showNotification('Order placed successfully!');

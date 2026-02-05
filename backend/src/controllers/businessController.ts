@@ -76,7 +76,132 @@ export const getMyBusiness = catchAsync(async (req: AuthRequest, res: Response, 
   res.status(200).json({ success: true, data: business });
 });
 
+/**
+ * Get All Business Invoices (Super Admin only)
+ */
+export const getBusinessInvoices = catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
+  const businesses = await Business.find().select('_id name owner_id').lean() as any[];
+  const ownerIds = businesses.map(b => b.owner_id);
+  const owners = await User.find({ _id: { $in: ownerIds } }).select('full_name email').lean() as any[];
+
+  // Mock invoices data based on businesses
+  const invoicesWithDetails = businesses.map((business) => {
+    const owner = owners.find(o => o._id.toString() === business.owner_id?.toString());
+    return {
+      id: `inv-${business._id}`,
+      invoiceNumber: `INV-${business._id.toString().slice(-8)}`,
+      businessId: business._id,
+      businessName: business.name,
+      adminId: business.owner_id,
+      adminName: owner?.full_name || 'Unknown',
+      amount: 599,
+      vatAmount: 89.85,
+      total: 688.85,
+      status: 'paid',
+      invoiceDate: business.created_at,
+      dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+    };
+  });
+
+  res.status(200).json({ success: true, data: invoicesWithDetails });
+});
+
+/**
+ * Get Pending Payments (Super Admin only)
+ */
+export const getPendingPayments = catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
+  const businesses = await Business.find().select('_id name owner_id').lean() as any[];
+  const ownerIds = businesses.map(b => b.owner_id);
+  const owners = await User.find({ _id: { $in: ownerIds } }).select('full_name email').lean() as any[];
+
+  // Mock pending payments
+  const paymentsWithDetails = businesses.slice(0, 2).map((business) => {
+    const owner = owners.find(o => o._id.toString() === business.owner_id?.toString());
+    return {
+      id: `pay-${business._id}`,
+      businessId: business._id,
+      businessName: business.name,
+      adminId: business.owner_id,
+      adminName: owner?.full_name || 'Unknown',
+      amount: 599,
+      paymentDate: new Date(),
+      status: 'pending',
+      bankAccount: 'Commercial Bank of Ethiopia'
+    };
+  });
+
+  res.status(200).json({ success: true, data: paymentsWithDetails });
+});
+
+/**
+ * Toggle Business Status (Super Admin only)
+ */
+export const toggleBusinessStatus = catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
+  const { id } = req.params;
+  const business = await Business.findById(id);
+
+  if (!business) {
+    return next(new AppError('Business not found', 404));
+  }
+
+  // Toggle is_active status
+  business.is_active = !business.is_active;
+  await business.save();
+
+  res.status(200).json({
+    success: true,
+    data: {
+      id: business._id,
+      is_active: business.is_active
+    },
+    message: `Business ${business.is_active ? 'activated' : 'deactivated'} successfully`
+  });
+});
+
+/**
+ * Verify Payment (Super Admin only)
+ */
+export const verifyPayment = catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
+  const { paymentId, status } = req.body;
+
+  // In real implementation, this would update Payment model
+  res.status(200).json({
+    success: true,
+    data: {
+      id: paymentId,
+      status
+    },
+    message: `Payment ${status === 'verified' ? 'verified' : 'rejected'} successfully`
+  });
+});
+
 export const getBusiness = factory.getOne(Business);
-export const getAllBusinesses = factory.getAll(Business);
+
+export const getAllBusinesses = catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
+  // Check if user is active
+  if (req.user && !req.user.is_active) {
+    return next(new AppError('Your account is not active. Please contact the Administrator.', 423));
+  }
+  
+  let businesses = await Business.find().sort('-created_at');
+  
+  // Transform to add owner_name
+  const transformedBusinesses = await Promise.all(businesses.map(async (business: any) => {
+    const doc = business.toObject();
+    doc.id = business._id.toString();
+    
+    // Populate owner name
+    if (doc.owner_id) {
+      const owner = await User.findById(doc.owner_id).select('full_name email');
+      if (owner) {
+        doc.owner_name = owner.full_name || owner.email;
+      }
+    }
+    
+    return doc;
+  }));
+  
+  res.status(200).json(transformedBusinesses);
+});
 export const updateBusiness = factory.updateOne(Business);
 export const deleteBusiness = factory.deleteOne(Business);

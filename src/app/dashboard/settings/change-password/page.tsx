@@ -25,9 +25,16 @@ const ChangePasswordPage: React.FC = () => {
       return;
     }
     
+    const userId = currentUser?.id || currentUser?._id;
+    if (!userId) {
+      showNotification("User not authenticated", "error");
+      setLoading(false);
+      return;
+    }
+    
     setLoading(true);
     try {
-      const response = await api.users.updatePassword(currentUser?.id || currentUser?._id, {
+      const response = await api.users.updatePassword(userId, {
         current_password: formCurrentPassword,
         new_password: formNewPassword
       });

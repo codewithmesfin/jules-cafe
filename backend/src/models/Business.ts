@@ -13,6 +13,7 @@ export interface IBusiness extends Document {
   banner?: string;
   description?: string;
   address?: string;
+  is_active: boolean;
   created_at: Date;
   updated_at: Date;
 }
@@ -26,14 +27,13 @@ const BusinessSchema: Schema = new Schema({
   banner: { type: String },
   description: { type: String },
   address: { type: String },
+  is_active: { type: Boolean, default: true },
 }, {
   timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },
   collection: 'businesses'
 });
 
 // Indexes for efficient queries
-BusinessSchema.index({ slug: 1 });
 BusinessSchema.index({ name: 'text' });
-BusinessSchema.index({ owner_id: 1 });
 
 export default mongoose.model<IBusiness>('Business', BusinessSchema);

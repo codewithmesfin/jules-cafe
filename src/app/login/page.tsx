@@ -23,6 +23,8 @@ export default function LoginPage() {
       const data = await login(email, password);
       if (data.requiresOnboarding) {
         router.push('/company-setup');
+      } else if (data.user?.role === 'saas_admin') {
+        router.push('/super-admin');
       } else {
         router.push('/dashboard');
       }

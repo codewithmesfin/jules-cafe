@@ -186,3 +186,75 @@ export interface ApiResponse<T> {
   message?: string;
   error?: string;
 }
+
+export type SubscriptionPlan = 'starter' | 'professional' | 'enterprise';
+
+export type SubscriptionStatus = 'active' | 'inactive' | 'pending' | 'suspended' | 'past_due';
+
+export type PaymentStatus = 'paid' | 'pending' | 'overdue';
+
+export interface Subscriber {
+  id: string;
+  _id?: string;
+  businessName: string;
+  ownerName: string;
+  email: string;
+  phone: string;
+  plan: SubscriptionPlan;
+  status: SubscriptionStatus;
+  subscriptionStart: Date;
+  subscriptionEnd: Date;
+  paymentStatus: PaymentStatus;
+  lastPaymentDate?: Date;
+  amount: number;
+  location?: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface Invoice {
+  id: string;
+  invoiceNumber: string;
+  subscriberId: string;
+  businessName: string;
+  items: InvoiceItem[];
+  subtotal: number;
+  vatRate: number;
+  vatAmount: number;
+  total: number;
+  status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
+  invoiceDate: Date;
+  dueDate: Date;
+  paymentMethod?: 'bank_transfer' | 'card' | 'mobile' | 'cash';
+  bankAccount?: BankAccount;
+  paymentProofUrl?: string;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface InvoiceItem {
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+}
+
+export interface BankAccount {
+  bankName: string;
+  accountName: string;
+  accountNumber: string;
+  routingNumber?: string;
+  swiftCode?: string;
+  branch?: string;
+}
+
+export interface PricingPlan {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  interval: 'month' | 'year';
+  features: string[];
+  limitations: string[];
+  recommended?: boolean;
+}

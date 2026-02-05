@@ -52,6 +52,7 @@ export const api = {
     switch: (businessId: string) => fetcher('/api/business/switch', { method: 'POST', body: JSON.stringify({ business_id: businessId }) }),
     update: (id: string, data: any) => fetcher(`/api/business/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     create: (data: any) => fetcher('/api/business', { method: 'POST', body: JSON.stringify(data) }),
+    getAll: () => fetcher('/api/business'),
   },
   products: {
     getAll: () => fetcher('/api/products'),
@@ -137,22 +138,42 @@ export const api = {
     updateConversion: (id: string, data: any) => fetcher(`/api/settings/conversions/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     deleteConversion: (id: string) => fetcher(`/api/settings/conversions/${id}`, { method: 'DELETE' }),
   },
+  saasAdmin: {
+    // Admins (Clients)
+    getAdmins: () => fetcher('/api/users/saas-admins'),
+    toggleAdminStatus: (id: string) => fetcher(`/api/users/${id}/toggle-status`, { method: 'PATCH' }),
+    setAdminStatus: (id: string, status: string) => fetcher(`/api/users/${id}/set-status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
+    
+    // Businesses - using /api/business endpoint
+    getBusinesses: () => fetcher('/api/business'),
+    toggleBusinessStatus: (id: string) => fetcher(`/api/business/${id}/toggle-status`, { method: 'PATCH' }),
+    
+    // Invoices
+    getInvoices: () => fetcher('/api/business/invoices'),
+    
+    // Payments
+    getPendingPayments: () => fetcher('/api/business/pending-payments'),
+    verifyPayment: (paymentId: string, status: string) => fetcher('/api/business/verify-payment', { method: 'POST', body: JSON.stringify({ paymentId, status }) }),
+  },
   upload: {
     uploadImage: async (file: File) => {
       const formData = new FormData();
       formData.append('image', file);
       const jwt = typeof window !== 'undefined' ? localStorage.getItem('jwt') : null;
+      
       const response = await fetch(`${API_URL}/api/upload`, {
         method: 'POST',
         headers: {
-          ...(jwt ? { 'Authorization': `Bearer ${jwt}` } : {}),
+          'Authorization': `Bearer ${jwt}`,
         },
         body: formData,
       });
+      
       if (!response.ok) {
         throw new Error('Upload failed');
       }
+      
       return response.json();
     },
-  }
+  },
 };

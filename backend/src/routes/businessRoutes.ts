@@ -8,7 +8,11 @@ import {
   getAllBusinesses,
   getBusiness,
   updateBusiness,
-  deleteBusiness
+  deleteBusiness,
+  getBusinessInvoices,
+  getPendingPayments,
+  toggleBusinessStatus,
+  verifyPayment
 } from '../controllers/businessController';
 import { protect, restrictTo } from '../middleware/auth';
 
@@ -21,12 +25,17 @@ router.get('/me', getMyBusiness);
 router.get('/my-businesses', getMyBusinesses);
 router.post('/switch', switchBusiness);
 
+// SaaS Admin only routes
+router.use(restrictTo('saas_admin'));
+router.get('/invoices', getBusinessInvoices);
+router.get('/pending-payments', getPendingPayments);
+router.patch('/:id/toggle-status', toggleBusinessStatus);
+router.post('/verify-payment', verifyPayment);
+
 // Admin only routes
 router.use(restrictTo('saas_admin', 'admin'));
 router.post('/', addBusiness);
 
-// SaaS Admin only routes
-router.use(restrictTo('saas_admin'));
 router.route('/')
   .get(getAllBusinesses);
 
