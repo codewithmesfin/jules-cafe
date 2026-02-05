@@ -66,7 +66,7 @@ export default function DashboardPage() {
       // Map backend fields to frontend format
       const ordersData = rawOrders.map((order: any) => ({
         id: order._id || order.id,
-        customer_name: order.customer_id?.name || (typeof order.customer_id === 'string' ? order.customer_id : 'Guest'),
+        customer_name: order.customer_id?.full_name || (typeof order.customer_id === 'string' ? order.customer_id : 'Guest'),
         table_id: order.table_id,
         total: order.total_amount || order.total || 0,
         status: order.order_status || order.status || 'pending',
@@ -167,7 +167,7 @@ export default function DashboardPage() {
       <div className="space-y-6">
         
         {/* Quick Actions - Mobile First Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4">
           <Link href="/dashboard/orders/new" className="group">
             <Card hover className="p-4 h-full">
               <div className="flex items-center gap-3">
@@ -196,36 +196,9 @@ export default function DashboardPage() {
             </Card>
           </Link>
 
-          <Link href="/dashboard/products" className="group col-span-2 sm:col-span-1">
-            <Card hover className="p-4 h-full">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 shrink-0">
-                  <Package size={20} className="sm:w-6 sm:h-6" />
-                </div>
-                <div className="min-w-0">
-                  <h3 className="font-semibold text-gray-900 text-sm sm:text-base truncate">Products</h3>
-                  <p className="text-xs text-gray-500">{stats.menu_items} items</p>
-                </div>
-              </div>
-            </Card>
-          </Link>
-
           {/* Stock Entry CTAs - Admin/Manager Only */}
           {(user?.role === 'admin' || user?.role === 'manager') && (
             <>
-              <Link href="/dashboard/ingredients/inventory" className="group">
-                <Card hover className="p-4 h-full">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 shrink-0">
-                      <Box size={20} className="sm:w-6 sm:h-6" />
-                    </div>
-                    <div className="min-w-0">
-                      <h3 className="font-semibold text-gray-900 text-sm sm:text-base truncate">Ingredients</h3>
-                      <p className="text-xs text-gray-500">Stock Entry</p>
-                    </div>
-                  </div>
-                </Card>
-              </Link>
 
               <Link href="/dashboard/ingredients/inventory" className="group">
                 <Card hover className="p-4 h-full">
@@ -234,8 +207,8 @@ export default function DashboardPage() {
                       <FlaskConical size={20} className="sm:w-6 sm:h-6" />
                     </div>
                     <div className="min-w-0">
-                      <h3 className="font-semibold text-gray-900 text-sm sm:text-base truncate">Finished Products</h3>
-                      <p className="text-xs text-gray-500">Stock Entry</p>
+                      <h3 className="font-semibold text-gray-900 text-sm sm:text-base truncate">Stock Entry</h3>
+                      <p className="text-xs text-gray-500">Manage Inventory</p>
                     </div>
                   </div>
                 </Card>
