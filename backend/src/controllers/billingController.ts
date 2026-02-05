@@ -8,11 +8,11 @@ import Business from '../models/Business';
 import AppError from '../utils/appError';
 import catchAsync from '../utils/catchAsync';
 
-// Pricing constants
+// Pricing constants (prices are INCLUDING VAT)
 export const PRICING = {
-  basic: { daily: 100, name: 'Basic' },
-  pro: { daily: 250, name: 'Pro' },
-  enterprise: { daily: 500, name: 'Enterprise' }
+  basic: { daily: 100, name: 'Basic' }, // 100 ETB/day including 15% VAT
+  pro: { daily: 250, name: 'Pro' }, // 250 ETB/day including 15% VAT
+  enterprise: { daily: 500, name: 'Enterprise' } // 500 ETB/day including 15% VAT
 };
 
 export const VAT_RATE = 15; // 15% VAT
@@ -27,12 +27,45 @@ interface AuthRequest extends Request {
   };
 }
 
+// Helper function to calculate price breakdown (prices already include VAT)
+const calculatePriceBreakdown = (dailyRate: number, billingCycle: string) => {
+  const days = billingCycle === 'yearly' ? 365 : 30;
+  const discountPercent = billingCycle === 'yearly' ? YEARLY_DISCOUNT : 0;
+  
+  // Price with VAT
+  const priceWithVAT = dailyRate * days;
+  
+  // Calculate subtotal (remove VAT from the price)
+  const subtotal = priceWithVAT / (1 + VAT_RATE / 100);
+  const vatAmount = priceWithVAT - subtotal;
+  
+  // Apply discount
+  const discount = subtotal * (discountPercent / 100);
+  const subtotalAfterDiscount = subtotal - discount;
+  const total = subtotalAfterDiscount + vatAmount;
+  
+  return {
+    days,
+    subtotal,
+    vat_amount: vatAmount,
+    discount_percent: discountPercent,
+    discount_amount: discount,
+    subtotal_after_discount: subtotalAfterDiscount,
+    total
+  };
+};
+
 // Get current subscription for a business
 export const getCurrentSubscription = catchAsync(async (req: AuthRequest, res: Response) => {
   const businessId = req.user?.default_business_id;
   
   if (!businessId) {
-    throw new AppError('Business ID not found', 400);
+    // Return null if no business associated - user needs to set up a business first
+    return res.json({
+      success: true,
+      data: null,
+      message: 'No business associated with your account. Please set up your business first.'
+    });
   }
 
   const subscription = await Subscription.findOne({ business_id: businessId })
@@ -62,20 +95,12 @@ export const createSubscription = catchAsync(async (req: AuthRequest, res: Respo
   }
 
   const dailyRate = PRICING[plan as keyof typeof PRICING].daily;
-  const days = billing_cycle === 'yearly' ? 365 : 30;
+  const priceBreakdown = calculatePriceBreakdown(dailyRate, billing_cycle);
   
-  // Calculate discount
-  const discountPercent = billing_cycle === 'yearly' ? YEARLY_DISCOUNT : 0;
-  const subtotal = dailyRate * days;
-  const discount = subtotal * (discountPercent / 100);
-  const subtotalAfterDiscount = subtotal - discount;
-  const vatAmount = subtotalAfterDiscount * (VAT_RATE / 100);
-  const total = subtotalAfterDiscount + vatAmount;
-
   // Calculate dates
   const startDate = new Date();
   const endDate = new Date();
-  endDate.setDate(endDate.getDate() + days);
+  endDate.setDate(endDate.getDate() + priceBreakdown.days);
 
   const subscription = await Subscription.create({
     business_id: businessId,
@@ -93,12 +118,12 @@ export const createSubscription = catchAsync(async (req: AuthRequest, res: Respo
     subscription_id: subscription._id,
     plan: PRICING[plan as keyof typeof PRICING].name,
     billing_cycle,
-    days,
-    subtotal,
-    vat_amount: vatAmount,
-    discount,
-    discount_percent: discountPercent,
-    total,
+    days: priceBreakdown.days,
+    subtotal: priceBreakdown.subtotal,
+    vat_amount: priceBreakdown.vat_amount,
+    discount: priceBreakdown.discount_amount,
+    discount_percent: priceBreakdown.discount_percent,
+    total: priceBreakdown.total,
     status: 'pending',
     period_start: startDate,
     period_end: endDate,
@@ -255,14 +280,7 @@ export const calculatePrice = catchAsync(async (req: AuthRequest, res: Response)
   }
 
   const dailyRate = PRICING[planKey as keyof typeof PRICING].daily;
-  const days = cycleKey === 'yearly' ? 365 : 30;
-  const discountPercent = cycleKey === 'yearly' ? YEARLY_DISCOUNT : 0;
-  
-  const subtotal = dailyRate * days;
-  const discount = subtotal * (discountPercent / 100);
-  const subtotalAfterDiscount = subtotal - discount;
-  const vatAmount = subtotalAfterDiscount * (VAT_RATE / 100);
-  const total = subtotalAfterDiscount + vatAmount;
+  const priceBreakdown = calculatePriceBreakdown(dailyRate, cycleKey);
 
   res.json({
     success: true,
@@ -270,15 +288,15 @@ export const calculatePrice = catchAsync(async (req: AuthRequest, res: Response)
       plan: PRICING[planKey as keyof typeof PRICING].name,
       plan_key: planKey,
       billing_cycle: cycleKey,
-      days,
+      days: priceBreakdown.days,
       daily_rate: dailyRate,
-      subtotal,
-      discount_percent: discountPercent,
-      discount_amount: discount,
-      subtotal_after_discount: subtotalAfterDiscount,
+      subtotal: priceBreakdown.subtotal,
+      discount_percent: priceBreakdown.discount_percent,
+      discount_amount: priceBreakdown.discount_amount,
+      subtotal_after_discount: priceBreakdown.subtotal_after_discount,
       vat_rate: VAT_RATE,
-      vat_amount: vatAmount,
-      total
+      vat_amount: priceBreakdown.vat_amount,
+      total: priceBreakdown.total
     }
   });
 });

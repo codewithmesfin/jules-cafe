@@ -1,27 +1,30 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
+import { useNotification } from '@/context/NotificationContext';
 import { 
   CreditCard, Download, FileText, Calendar, CheckCircle, 
   AlertCircle, TrendingUp, Clock, DollarSign, Building2,
-  ChevronRight, X, Loader2, Send
+  X, Loader2, Send, XCircle
 } from 'lucide-react';
 
-// Pricing configuration
+// Pricing configuration (prices are INCLUDING VAT)
 const PRICING = {
-  basic: { daily: 100, name: 'Basic', features: ['Basic Features', 'Up to 5 users', 'Email Support'] },
-  pro: { daily: 250, name: 'Pro', features: ['All Basic features', 'Up to 20 users', 'Priority Support', 'Advanced Analytics'] },
-  enterprise: { daily: 500, name: 'Enterprise', features: ['All Pro features', 'Unlimited users', '24/7 Support', 'Custom Integrations'] }
+  basic: { daily: 100, name: 'Basic', features: ['Up to 5 users', 'Basic POS', 'Inventory', 'Reports', 'Email Support'] },
+  pro: { daily: 250, name: 'Pro', features: ['Up to 20 users', 'Full POS', 'Advanced Inventory', 'Analytics', 'API Access', 'Priority Support'] },
+  enterprise: { daily: 500, name: 'Enterprise', features: ['Unlimited users', 'Full POS', 'Advanced Inventory', 'Custom Analytics', 'Full API', 'Dedicated Support'] }
 };
 
 const VAT_RATE = 15;
 const YEARLY_DISCOUNT = 20;
 
 interface BankAccount {
+  _id: string;
   bank_name: string;
   account_number: string;
   account_name: string;
-  branch: string;
 }
 
 interface Invoice {
@@ -34,7 +37,7 @@ interface Invoice {
   vat_amount: number;
   discount: number;
   total: number;
-  status: 'pending' | 'paid' | 'overdue' | 'cancelled';
+  status: 'pending' | 'paid' | 'overdue' | 'cancelled' | 'rejected';
   period_start: string;
   period_end: string;
   due_date: string;
@@ -80,6 +83,9 @@ interface PriceCalculation {
 }
 
 export default function BillingPage() {
+  const { user, jwt } = useAuth();
+  const { showNotification } = useNotification();
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<'overview' | 'plans' | 'invoices' | 'payment'>('overview');
   const [loading, setLoading] = useState(true);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
@@ -87,8 +93,11 @@ export default function BillingPage() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showSubscribeModal, setShowSubscribeModal] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<{ plan: string; billing_cycle: string } | null>(null);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
   
   // Form state for payment
   const [paymentForm, setPaymentForm] = useState({
@@ -103,15 +112,21 @@ export default function BillingPage() {
     notes: ''
   });
 
-  // Calculate price preview
+  // Calculate price (prices are already including VAT)
   const calculatePrice = (plan: string, billingCycle: string): PriceCalculation => {
     const planData = PRICING[plan as keyof typeof PRICING];
     const days = billingCycle === 'yearly' ? 365 : 30;
-    const subtotal = planData.daily * days;
+    const dailyWithVAT = planData.daily;
+    
+    // Calculate subtotal (remove VAT)
+    const subtotalWithVAT = dailyWithVAT * days;
+    const subtotal = subtotalWithVAT / (1 + VAT_RATE / 100);
+    const vatAmount = subtotalWithVAT - subtotal;
+    
+    // Apply discount for yearly
     const discountPercent = billingCycle === 'yearly' ? YEARLY_DISCOUNT : 0;
     const discount = subtotal * (discountPercent / 100);
     const subtotalAfterDiscount = subtotal - discount;
-    const vatAmount = subtotalAfterDiscount * (VAT_RATE / 100);
     const total = subtotalAfterDiscount + vatAmount;
 
     return {
@@ -130,81 +145,137 @@ export default function BillingPage() {
     };
   };
 
+  // Handle plan query parameter from pricing page
+  useEffect(() => {
+    const planParam = searchParams.get('plan');
+    if (planParam && ['basic', 'pro', 'enterprise'].includes(planParam)) {
+      setSelectedPlan({ plan: planParam, billing_cycle: 'monthly' });
+      setShowSubscribeModal(true);
+    }
+  }, [searchParams]);
+
   // Fetch data
   useEffect(() => {
-    fetchBillingData();
-  }, []);
+    if (jwt) {
+      fetchBillingData();
+    }
+  }, [jwt]);
 
   const fetchBillingData = async () => {
+    if (!jwt) return;
+    
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const headers = { Authorization: `Bearer ${token}` };
+      const headers = { 
+        Authorization: `Bearer ${jwt}`,
+        'Content-Type': 'application/json'
+      };
 
+      console.log('Fetching billing data...');
+      
       const [subRes, invRes, payRes, bankRes] = await Promise.all([
-        fetch('/api/billing/subscription', { headers }),
-        fetch('/api/billing/invoices', { headers }),
-        fetch('/api/billing/payments', { headers }),
-        fetch('/api/billing/bank-accounts', { headers })
+        fetch('http://localhost:8000/api/billing/subscription', { headers }),
+        fetch('http://localhost:8000/api/billing/invoices', { headers }),
+        fetch('http://localhost:8000/api/billing/payments', { headers }),
+        fetch('http://localhost:8000/api/billing/bank-accounts', { headers })
       ]);
+
+      console.log('Response status:', subRes.status, invRes.status, payRes.status, bankRes.status);
 
       const subData = await subRes.json();
       const invData = await invRes.json();
       const payData = await payRes.json();
       const bankData = await bankRes.json();
 
-      if (subData.success) setSubscription(subData.data);
+      console.log('Subscription data:', subData);
+      console.log('Invoices data:', invData);
+      console.log('Payments data:', payData);
+      console.log('Bank accounts data:', bankData);
+
+      if (subData.success) {
+        setSubscription(subData.data);
+        if (subData.message && subData.message.includes('No business')) {
+          showNotification(subData.message, 'warning');
+        }
+      }
       if (invData.success) setInvoices(invData.data);
       if (payData.success) setPayments(payData.data);
       if (bankData.success) setBankAccounts(bankData.data);
     } catch (error) {
       console.error('Error fetching billing data:', error);
+      showNotification('Failed to load billing data. Please check your connection.', 'error');
     } finally {
       setLoading(false);
     }
   };
 
   // Create new subscription
-  const handleCreateSubscription = async (plan: string, billingCycle: string) => {
+  const handleCreateSubscription = async () => {
+    if (!jwt || !selectedPlan) return;
+    
+    setSubmitting(true);
+    console.log('Creating subscription for plan:', selectedPlan.plan, 'cycle:', selectedPlan.billing_cycle);
+
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/billing/subscription', {
+      const response = await fetch('http://localhost:8000/api/billing/subscription', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${jwt}`
         },
-        body: JSON.stringify({ plan, billing_cycle: billingCycle })
+        body: JSON.stringify({ 
+          plan: selectedPlan.plan, 
+          billing_cycle: selectedPlan.billing_cycle 
+        })
       });
 
+      console.log('Subscription response status:', response.status);
+
       const data = await response.json();
+      console.log('Subscription response data:', data);
+
       if (data.success) {
+        showNotification('Subscription created successfully!', 'success');
         fetchBillingData();
+        setShowSubscribeModal(false);
+        setSelectedPlan(null);
         setActiveTab('invoices');
+      } else {
+        showNotification(data.message || 'Failed to create subscription. Please make sure you have a business set up.', 'error');
       }
     } catch (error) {
       console.error('Error creating subscription:', error);
+      showNotification('Failed to create subscription. Please try again.', 'error');
+    } finally {
+      setSubmitting(false);
     }
   };
 
   // Submit payment
   const handleSubmitPayment = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!jwt) return;
+    
     setSubmitting(true);
+    console.log('Submitting payment for invoice:', paymentForm.invoice_id);
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/billing/payments', {
+      const response = await fetch('http://localhost:8000/api/billing/payments', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${jwt}`
         },
         body: JSON.stringify(paymentForm)
       });
 
+      console.log('Payment response status:', response.status);
+
       const data = await response.json();
+      console.log('Payment response data:', data);
+
       if (data.success) {
+        showNotification('Payment submitted successfully!', 'success');
         setShowPaymentModal(false);
         setPaymentForm({
           invoice_id: '',
@@ -218,9 +289,12 @@ export default function BillingPage() {
           notes: ''
         });
         fetchBillingData();
+      } else {
+        showNotification('error', data.message || 'Failed to submit payment');
       }
     } catch (error) {
       console.error('Error submitting payment:', error);
+      showNotification('Failed to submit payment. Please try again.', 'error');
     } finally {
       setSubmitting(false);
     }
@@ -230,6 +304,11 @@ export default function BillingPage() {
     setSelectedInvoice(invoice);
     setPaymentForm(prev => ({ ...prev, invoice_id: invoice._id }));
     setShowPaymentModal(true);
+  };
+
+  const openSubscribeModal = (plan: string) => {
+    setSelectedPlan({ plan, billing_cycle: billingCycle });
+    setShowSubscribeModal(true);
   };
 
   const getStatusBadge = (status: string) => {
@@ -397,6 +476,23 @@ export default function BillingPage() {
         </div>
       )}
 
+      {/* Overview Tab - No Subscription */}
+      {activeTab === 'overview' && !subscription && (
+        <div className="bg-white rounded-2xl border border-gray-200 p-8 text-center">
+          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <CreditCard className="text-gray-400" size={32} />
+          </div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">No Active Subscription</h2>
+          <p className="text-gray-500 mb-6">Subscribe to a plan to start using the system.</p>
+          <button
+            onClick={() => setActiveTab('plans')}
+            className="px-6 py-2.5 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors"
+          >
+            View Plans
+          </button>
+        </div>
+      )}
+
       {/* Plans Tab */}
       {activeTab === 'plans' && (
         <div className="space-y-6">
@@ -405,31 +501,59 @@ export default function BillingPage() {
             <div>
               <h3 className="font-medium text-amber-800">Pricing Information</h3>
               <p className="text-sm text-amber-700 mt-1">
-                All prices are in Ethiopian Birr (ETB). A 15% VAT is applied to all invoices. 
-                Yearly billing gets a 20% discount.
+                All prices are in Ethiopian Birr (ETB). Displayed prices include 15% VAT. 
+                Yearly billing gets a 20% discount on the subtotal.
               </p>
+            </div>
+          </div>
+
+          {/* Billing Toggle */}
+          <div className="flex justify-center">
+            <div className="inline-flex items-center bg-white rounded-full p-1 shadow-sm border border-gray-200">
+              <button
+                onClick={() => setBillingCycle('monthly')}
+                className={`px-6 py-2 rounded-full text-sm font-medium transition-all ${
+                  billingCycle === 'monthly'
+                    ? 'bg-gray-900 text-white'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Monthly
+              </button>
+              <button
+                onClick={() => setBillingCycle('yearly')}
+                className={`px-6 py-2 rounded-full text-sm font-medium transition-all ${
+                  billingCycle === 'yearly'
+                    ? 'bg-gray-900 text-white'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Yearly
+                <span className="ml-2 text-xs bg-emerald-500 text-white px-2 py-0.5 rounded-full">
+                  Save 20%
+                </span>
+              </button>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {Object.entries(PRICING).map(([key, plan]) => {
-              const monthlyPrice = calculatePrice(key, 'monthly');
-              const yearlyPrice = calculatePrice(key, 'yearly');
+              const price = calculatePrice(key, billingCycle);
 
               return (
                 <div key={key} className="bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
                   <div className="p-6 border-b border-gray-100">
                     <h3 className="text-xl font-bold text-gray-900">{plan.name}</h3>
                     <div className="mt-4">
-                      <span className="text-4xl font-bold text-gray-900">{plan.daily}</span>
-                      <span className="text-gray-500 ml-2">ETB/day</span>
+                      <span className="text-4xl font-bold text-gray-900">{price.total.toFixed(0)}</span>
+                      <span className="text-gray-500 ml-2">ETB/{billingCycle === 'yearly' ? 'year' : 'month'}</span>
                     </div>
                     <div className="mt-2 text-sm text-gray-500">
-                      {monthlyPrice.total.toFixed(2)} ETB/month (with VAT)
+                      {plan.daily} ETB/day (includes 15% VAT)
                     </div>
-                    {key !== 'basic' && (
+                    {key === 'pro' && (
                       <div className="mt-2 inline-block px-2 py-1 bg-emerald-100 text-emerald-700 text-xs font-medium rounded">
-                        Save {YEARLY_DISCOUNT}% yearly
+                        Most Popular
                       </div>
                     )}
                   </div>
@@ -444,77 +568,16 @@ export default function BillingPage() {
                       ))}
                     </ul>
 
-                    <div className="space-y-3">
-                      <button
-                        onClick={() => handleCreateSubscription(key, 'monthly')}
-                        className="w-full py-2.5 px-4 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
-                      >
-                        Subscribe Monthly
-                      </button>
-                      <button
-                        onClick={() => handleCreateSubscription(key, 'yearly')}
-                        className="w-full py-2.5 px-4 border border-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
-                      >
-                        Subscribe Yearly
-                      </button>
-                    </div>
+                    <button
+                      onClick={() => openSubscribeModal(key)}
+                      className="w-full py-2.5 px-4 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
+                    >
+                      Subscribe {billingCycle === 'yearly' ? 'Yearly' : 'Monthly'}
+                    </button>
                   </div>
                 </div>
               );
             })}
-          </div>
-
-          {/* Price Breakdown Example */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Example: Pro Plan Price Breakdown</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div>
-                <h4 className="font-medium text-gray-700 mb-3">Monthly Billing</h4>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">250 ETB × 30 days</span>
-                    <span className="text-gray-900">7,500.00 ETB</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">VAT (15%)</span>
-                    <span className="text-gray-900">1,125.00 ETB</span>
-                  </div>
-                  <div className="border-t border-gray-200 pt-2 flex justify-between font-semibold">
-                    <span>Total</span>
-                    <span>8,625.00 ETB/month</span>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <h4 className="font-medium text-gray-700 mb-3">Yearly Billing (20% Discount)</h4>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">250 ETB × 365 days</span>
-                    <span className="text-gray-900">91,250.00 ETB</span>
-                  </div>
-                  <div className="flex justify-between text-emerald-600">
-                    <span>Discount (20%)</span>
-                    <span>-18,250.00 ETB</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Subtotal after discount</span>
-                    <span className="text-gray-900">73,000.00 ETB</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">VAT (15%)</span>
-                    <span className="text-gray-900">10,950.00 ETB</span>
-                  </div>
-                  <div className="border-t border-gray-200 pt-2 flex justify-between font-semibold">
-                    <span>Total</span>
-                    <span>83,950.00 ETB/year</span>
-                  </div>
-                  <div className="text-emerald-600 text-sm font-medium">
-                    You save 15,400.00 ETB!
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       )}
@@ -573,7 +636,7 @@ export default function BillingPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right">
                         <div className="flex items-center justify-end gap-2">
-                          {invoice.status === 'pending' && (
+                          {invoice.status === 'pending' && !payments.some(p => p.invoice_id === invoice._id) && (
                             <button
                               onClick={() => openPaymentModal(invoice)}
                               className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-white bg-gray-900 hover:bg-gray-800 rounded-lg transition-colors"
@@ -582,6 +645,34 @@ export default function BillingPage() {
                               Pay Now
                             </button>
                           )}
+                          {(() => {
+                            const payment = payments.find(p => p.invoice_id === invoice._id);
+                            if (!payment) return null;
+                            
+                            if (payment.status === 'pending') {
+                              return (
+                                <span className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-amber-700 bg-amber-100 rounded-lg">
+                                  <Clock size={14} />
+                                  Payment Pending
+                                </span>
+                              );
+                            } else if (payment.status === 'verified') {
+                              return (
+                                <span className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-emerald-700 bg-emerald-100 rounded-lg">
+                                  <CheckCircle size={14} />
+                                  Payment Verified
+                                </span>
+                              );
+                            } else if (payment.status === 'rejected') {
+                              return (
+                                <span className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-red-700 bg-red-100 rounded-lg">
+                                  <XCircle size={14} />
+                                  Payment Rejected
+                                </span>
+                              );
+                            }
+                            return null;
+                          })()}
                           <button className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
                             <Download size={14} />
                             Download
@@ -656,6 +747,70 @@ export default function BillingPage() {
         </div>
       )}
 
+      {/* Subscribe Modal */}
+      {showSubscribeModal && selectedPlan && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-900">Subscribe to {PRICING[selectedPlan.plan as keyof typeof PRICING]?.name}</h2>
+              <button onClick={() => { setShowSubscribeModal(false); setSelectedPlan(null); }} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                <X size={20} className="text-gray-500" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              {/* Price Breakdown */}
+              <div className="bg-gray-50 rounded-xl p-4 mb-6">
+                <h3 className="font-medium text-gray-900 mb-3">Price Breakdown ({selectedPlan.billing_cycle})</h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">{PRICING[selectedPlan.plan as keyof typeof PRICING]?.daily} ETB × {selectedPlan.billing_cycle === 'yearly' ? '365' : '30'} days (incl. VAT)</span>
+                    <span className="text-gray-900">{(PRICING[selectedPlan.plan as keyof typeof PRICING]?.daily * (selectedPlan.billing_cycle === 'yearly' ? 365 : 30)).toFixed(2)} ETB</span>
+                  </div>
+                  {selectedPlan.billing_cycle === 'yearly' && (
+                    <div className="flex justify-between text-emerald-600">
+                      <span>Subtotal discount (20%)</span>
+                      <span>-{calculatePrice(selectedPlan.plan, selectedPlan.billing_cycle).discount_amount.toFixed(2)} ETB</span>
+                    </div>
+                  )}
+                  <div className="border-t border-gray-200 pt-2 flex justify-between font-bold">
+                    <span>Total (incl. VAT)</span>
+                    <span>{calculatePrice(selectedPlan.plan, selectedPlan.billing_cycle).total.toFixed(2)} ETB</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="text-amber-600 mt-0.5" size={20} />
+                  <div className="text-sm">
+                    <p className="font-medium text-amber-800">Next Steps</p>
+                    <p className="text-amber-700 mt-1">
+                      After subscribing, you will receive an invoice. You can then make a bank transfer using one of our registered bank accounts.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={handleCreateSubscription}
+                disabled={submitting}
+                className="w-full py-3 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 className="animate-spin" size={20} />
+                    Creating...
+                  </>
+                ) : (
+                  'Confirm Subscription'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Payment Modal */}
       {showPaymentModal && selectedInvoice && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -696,7 +851,7 @@ export default function BillingPage() {
                 <div className="space-y-3">
                   {bankAccounts.map((bank, idx) => (
                     <div 
-                      key={idx}
+                      key={bank._id}
                       className={`p-4 border rounded-xl cursor-pointer transition-colors ${
                         paymentForm.bank_name === bank.bank_name && paymentForm.account_number === bank.account_number
                           ? 'border-gray-900 bg-gray-50'
@@ -726,7 +881,7 @@ export default function BillingPage() {
                       type="text"
                       required
                       value={paymentForm.transaction_reference}
-                      onChange={e => setPaymentForm(prev => ({ ...prev, transaction_reference: e.target.value }))}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPaymentForm(prev => ({ ...prev, transaction_reference: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
                       placeholder="e.g., Txn123456"
                     />
@@ -737,7 +892,7 @@ export default function BillingPage() {
                       type="text"
                       required
                       value={paymentForm.payer_name}
-                      onChange={e => setPaymentForm(prev => ({ ...prev, payer_name: e.target.value }))}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPaymentForm(prev => ({ ...prev, payer_name: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
                       placeholder="Full name"
                     />
@@ -747,7 +902,7 @@ export default function BillingPage() {
                     <input
                       type="tel"
                       value={paymentForm.payer_phone}
-                      onChange={e => setPaymentForm(prev => ({ ...prev, payer_phone: e.target.value }))}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPaymentForm(prev => ({ ...prev, payer_phone: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
                       placeholder="e.g., +251911234567"
                     />
@@ -757,7 +912,7 @@ export default function BillingPage() {
                     <input
                       type="email"
                       value={paymentForm.payer_email}
-                      onChange={e => setPaymentForm(prev => ({ ...prev, payer_email: e.target.value }))}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPaymentForm(prev => ({ ...prev, payer_email: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
                       placeholder="email@example.com"
                     />
@@ -768,7 +923,7 @@ export default function BillingPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Notes (Optional)</label>
                   <textarea
                     value={paymentForm.notes}
-                    onChange={e => setPaymentForm(prev => ({ ...prev, notes: e.target.value }))}
+                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setPaymentForm(prev => ({ ...prev, notes: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
                     rows={2}
                     placeholder="Any additional information"

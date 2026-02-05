@@ -22,11 +22,21 @@ export interface IInvoice extends Document {
   updated_at: Date;
 }
 
+// Helper function to generate invoice number
+const generateInvoiceNumber = () => {
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+  return `INV-${year}${month}-${random}`;
+};
+
 const InvoiceSchema = new Schema<IInvoice>({
   invoice_number: {
     type: String,
     required: true,
-    unique: true
+    unique: true,
+    default: generateInvoiceNumber
   },
   business_id: {
     type: Schema.Types.ObjectId,
@@ -111,4 +121,4 @@ InvoiceSchema.pre('save', function(next) {
   next();
 });
 
-export default mongoose.models.Invoice || mongoose.model<IInvoice>('Invoice', InvoiceSchema);
+export default mongoose.model<IInvoice>('Invoice', InvoiceSchema);

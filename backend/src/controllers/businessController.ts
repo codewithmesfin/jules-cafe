@@ -1,6 +1,8 @@
 import { Response, NextFunction } from 'express';
 import Business from '../models/Business';
 import User from '../models/User';
+import Invoice from '../models/Invoice';
+import Payment from '../models/Payment';
 import catchAsync from '../utils/catchAsync';
 import AppError from '../utils/appError';
 import { AuthRequest } from '../middleware/auth';
@@ -80,26 +82,29 @@ export const getMyBusiness = catchAsync(async (req: AuthRequest, res: Response, 
  * Get All Business Invoices (Super Admin only)
  */
 export const getBusinessInvoices = catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
-  const businesses = await Business.find().select('_id name owner_id').lean() as any[];
-  const ownerIds = businesses.map(b => b.owner_id);
-  const owners = await User.find({ _id: { $in: ownerIds } }).select('full_name email').lean() as any[];
-
-  // Mock invoices data based on businesses
-  const invoicesWithDetails = businesses.map((business) => {
-    const owner = owners.find(o => o._id.toString() === business.owner_id?.toString());
+  // Fetch all invoices with populated business and subscription details
+  const invoices = await Invoice.find()
+    .sort({ created_at: -1 })
+    .populate('business_id', 'name owner_id')
+    .lean() as any[];
+  
+  // Transform invoices for the frontend
+  const invoicesWithDetails = invoices.map((invoice) => {
+    const business = invoice.business_id as any;
     return {
-      id: `inv-${business._id}`,
-      invoiceNumber: `INV-${business._id.toString().slice(-8)}`,
-      businessId: business._id,
-      businessName: business.name,
-      adminId: business.owner_id,
-      adminName: owner?.full_name || 'Unknown',
-      amount: 599,
-      vatAmount: 89.85,
-      total: 688.85,
-      status: 'paid',
-      invoiceDate: business.created_at,
-      dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+      id: invoice._id.toString(),
+      invoiceNumber: invoice.invoice_number,
+      businessId: business?._id,
+      businessName: business?.name || 'Unknown Business',
+      adminId: business?.owner_id,
+      adminName: 'Business Owner',
+      amount: invoice.subtotal,
+      vatAmount: invoice.vat_amount,
+      total: invoice.total,
+      status: invoice.status,
+      invoiceDate: invoice.created_at,
+      dueDate: invoice.due_date,
+      paymentDate: invoice.paid_date
     };
   });
 
@@ -110,23 +115,34 @@ export const getBusinessInvoices = catchAsync(async (req: AuthRequest, res: Resp
  * Get Pending Payments (Super Admin only)
  */
 export const getPendingPayments = catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
-  const businesses = await Business.find().select('_id name owner_id').lean() as any[];
-  const ownerIds = businesses.map(b => b.owner_id);
-  const owners = await User.find({ _id: { $in: ownerIds } }).select('full_name email').lean() as any[];
-
-  // Mock pending payments
-  const paymentsWithDetails = businesses.slice(0, 2).map((business) => {
-    const owner = owners.find(o => o._id.toString() === business.owner_id?.toString());
+  // Fetch all payments with populated invoice and business details
+  const payments = await Payment.find()
+    .sort({ created_at: -1 })
+    .populate('business_id', 'name owner_id')
+    .populate('invoice_id', 'invoice_number total status')
+    .lean() as any[];
+  
+  // Transform payments for the frontend
+  const paymentsWithDetails = payments.map((payment) => {
+    const business = payment.business_id as any;
+    const invoice = payment.invoice_id as any;
     return {
-      id: `pay-${business._id}`,
-      businessId: business._id,
-      businessName: business.name,
-      adminId: business.owner_id,
-      adminName: owner?.full_name || 'Unknown',
-      amount: 599,
-      paymentDate: new Date(),
-      status: 'pending',
-      bankAccount: 'Commercial Bank of Ethiopia'
+      id: payment._id.toString(),
+      paymentNumber: `PAY-${payment._id.toString().slice(-8)}`,
+      invoiceNumber: invoice?.invoice_number || 'N/A',
+      businessId: business?._id,
+      businessName: business?.name || 'Unknown Business',
+      adminId: business?.owner_id,
+      amount: payment.amount,
+      paymentMethod: payment.payment_method,
+      status: payment.status,
+      paymentDate: payment.created_at,
+      bankAccount: payment.bank_account?.bank_name || 'N/A',
+      reference: payment.transaction_reference,
+      payerName: payment.payer_name,
+      payerPhone: payment.payer_phone,
+      payerEmail: payment.payer_email,
+      notes: payment.notes
     };
   });
 
@@ -160,16 +176,59 @@ export const toggleBusinessStatus = catchAsync(async (req: AuthRequest, res: Res
 
 /**
  * Verify Payment (Super Admin only)
+ * When verified: updates payment status and marks invoice as paid
+ * When rejected: updates payment status to rejected
  */
 export const verifyPayment = catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
   const { paymentId, status } = req.body;
 
-  // In real implementation, this would update Payment model
+  console.log('🔍 verifyPayment called:', { paymentId, status });
+
+  if (!paymentId) {
+    console.log('❌ Payment ID is required');
+    return next(new AppError('Payment ID is required', 400));
+  }
+
+  if (!['verified', 'rejected'].includes(status)) {
+    console.log('❌ Invalid status:', status);
+    return next(new AppError('Invalid status. Must be verified or rejected', 400));
+  }
+
+  // Find the payment
+  const payment = await Payment.findById(paymentId);
+  if (!payment) {
+    console.log('❌ Payment not found:', paymentId);
+    return next(new AppError('Payment not found', 404));
+  }
+
+  console.log('✅ Found payment:', payment._id, 'Current status:', payment.status);
+
+  // Update payment status
+  payment.status = status;
+  if (status === 'verified') {
+    payment.verified_at = new Date();
+    payment.verified_by = req.user._id;
+  }
+  await payment.save();
+  console.log('💾 Payment saved with status:', payment.status);
+
+  // Update invoice status based on payment verification
+  if (payment.invoice_id) {
+    const invoiceStatus = status === 'verified' ? 'paid' : 'rejected';
+    console.log('📄 Updating invoice:', payment.invoice_id, 'to', invoiceStatus);
+    const updatedInvoice = await Invoice.findByIdAndUpdate(payment.invoice_id, {
+      status: invoiceStatus,
+      paid_date: status === 'verified' ? new Date() : undefined
+    }, { new: true });
+    console.log('✅ Invoice updated:', updatedInvoice);
+  }
+
   res.status(200).json({
     success: true,
     data: {
-      id: paymentId,
-      status
+      id: payment._id,
+      status: payment.status,
+      invoice_id: payment.invoice_id
     },
     message: `Payment ${status === 'verified' ? 'verified' : 'rejected'} successfully`
   });

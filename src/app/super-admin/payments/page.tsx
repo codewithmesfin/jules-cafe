@@ -84,14 +84,15 @@ export default function SuperAdminPaymentsPage() {
   }, [fetchPayments]);
 
   const handleVerifyPayment = async (paymentId: string, status: 'verified' | 'rejected') => {
+    console.log('🔍 Frontend: Calling verifyPayment API...', { paymentId, status });
     try {
-      await api.saasAdmin.verifyPayment(paymentId, status);
-      // Refresh the list
+      const result = await api.saasAdmin.verifyPayment(paymentId, status);
+      console.log('✅ Frontend: verifyPayment success', result);
+      // Refresh the list and close modal
       fetchPayments();
-      if (selectedPayment?.id === paymentId) {
-        setSelectedPayment({ ...selectedPayment, status });
-      }
+      setShowDetailsModal(false);
     } catch (err: any) {
+      console.error('❌ Frontend: verifyPayment failed', err);
       alert(err.message || 'Failed to verify payment');
     }
   };
