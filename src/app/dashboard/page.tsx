@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, Package, Users, BarChart3, ShoppingCart, PlusCircle, Database, ArrowRight, DollarSign } from 'lucide-react';
+import Link from 'next/link';
+import { TrendingUp, Package, Users, BarChart3, ShoppingCart, PlusCircle, Database, ArrowRight, DollarSign, Clock, Zap, CreditCard, Box, FlaskConical } from 'lucide-react';
 import { RoleGuard } from '@/components/RoleGuard';
 import { useAuth } from '@/context/AuthContext';
 import { useNotification } from '@/context/NotificationContext';
-import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -109,7 +109,7 @@ export default function DashboardPage() {
       );
       setRecentOrders(sortedOrders.slice(0, 5));
       
-      // For now, just use the first few products as popular items
+      // Set popular items from real product data
       setPopularItems(productsData.slice(0, 5));
 
     } catch (error) {
@@ -125,7 +125,7 @@ export default function DashboardPage() {
       completed: 'success',
       preparing: 'warning',
       ready: 'success',
-      pending: 'neutral',
+      pending: 'info',
       cancelled: 'error',
       delivered: 'success',
     };
@@ -146,8 +146,8 @@ export default function DashboardPage() {
     const diffMins = Math.floor(diffMs / 60000);
     
     if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins} min ago`;
-    if (diffMins < 1440) return `${Math.floor(diffMins / 60)} hours ago`;
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffMins < 1440) return `${Math.floor(diffMins / 60)}h ago`;
     return date.toLocaleDateString();
   };
 
@@ -155,8 +155,8 @@ export default function DashboardPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-slate-500 font-medium">Loading dashboard...</p>
+          <div className="w-12 h-12 border-4 border-gray-200 border-t-gray-900 rounded-full animate-spin"></div>
+          <p className="text-gray-500 font-medium">Loading dashboard...</p>
         </div>
       </div>
     );
@@ -164,115 +164,147 @@ export default function DashboardPage() {
 
   return (
     <RoleGuard allowedRoles={['admin', 'manager', 'cashier', 'waiter']}>
-      <div className="space-y-8">
-
-          {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-
-
-          <Link href="/dashboard/orders/new" className="group bg-white rounded-2xl border border-slate-200 p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:border-slate-300">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform">
-                <BarChart3 size={28} />
+      <div className="space-y-6">
+        
+        {/* Quick Actions - Mobile First Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+          <Link href="/dashboard/orders/new" className="group">
+            <Card hover className="p-4 h-full">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-900 rounded-xl flex items-center justify-center text-white shrink-0">
+                  <ShoppingCart size={20} className="sm:w-6 sm:h-6" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="font-semibold text-gray-900 text-sm sm:text-base truncate">New Order</h3>
+                  <p className="text-xs text-gray-500">Quick POS</p>
+                </div>
               </div>
-              <div>
-                <h3 className="font-bold text-slate-900 group-hover:text-indigo-700 transition-colors">New Sales</h3>
-                <p className="text-sm text-slate-500">Simplify Order Management</p>
-              </div>
-              <ArrowRight className="ml-auto text-slate-300 group-hover:text-indigo-500 group-hover:translate-x-1 transition-all" size={20} />
-            </div>
+            </Card>
           </Link>
 
-          <Link href="/dashboard/products" className="group bg-white rounded-2xl border border-slate-200 p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:border-slate-300">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-600 group-hover:scale-110 transition-transform">
-                <Package size={28} />
+          <Link href="/dashboard/orders" className="group">
+            <Card hover className="p-4 h-full">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600 shrink-0">
+                  <Clock size={20} className="sm:w-6 sm:h-6" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="font-semibold text-gray-900 text-sm sm:text-base truncate">Active Orders</h3>
+                  <p className="text-xs text-gray-500">{stats.active_orders} pending</p>
+                </div>
               </div>
-              <div>
-                <h3 className="font-bold text-slate-900 group-hover:text-slate-700 transition-colors">Product Catalog</h3>
-                <p className="text-sm text-slate-500">Manage your menu items</p>
-              </div>
-              <ArrowRight className="ml-auto text-slate-300 group-hover:text-slate-500 group-hover:translate-x-1 transition-all" size={20} />
-            </div>
+            </Card>
           </Link>
 
-          <Link href="/dashboard/ingredients/inventory" className="group bg-white rounded-2xl border border-slate-200 p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:border-slate-300">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600 group-hover:scale-110 transition-transform">
-                <Database size={28} />
+          <Link href="/dashboard/products" className="group col-span-2 sm:col-span-1">
+            <Card hover className="p-4 h-full">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 shrink-0">
+                  <Package size={20} className="sm:w-6 sm:h-6" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="font-semibold text-gray-900 text-sm sm:text-base truncate">Products</h3>
+                  <p className="text-xs text-gray-500">{stats.menu_items} items</p>
+                </div>
               </div>
-              <div>
-                <h3 className="font-bold text-slate-900 group-hover:text-emerald-700 transition-colors">Inventory</h3>
-                <p className="text-sm text-slate-500">Stock levels & tracking</p>
-              </div>
-              <ArrowRight className="ml-auto text-slate-300 group-hover:text-emerald-500 group-hover:translate-x-1 transition-all" size={20} />
-            </div>
+            </Card>
           </Link>
+
+          {/* Stock Entry CTAs - Admin/Manager Only */}
+          {(user?.role === 'admin' || user?.role === 'manager') && (
+            <>
+              <Link href="/dashboard/ingredients/inventory" className="group">
+                <Card hover className="p-4 h-full">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 shrink-0">
+                      <Box size={20} className="sm:w-6 sm:h-6" />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="font-semibold text-gray-900 text-sm sm:text-base truncate">Ingredients</h3>
+                      <p className="text-xs text-gray-500">Stock Entry</p>
+                    </div>
+                  </div>
+                </Card>
+              </Link>
+
+              <Link href="/dashboard/ingredients/inventory" className="group">
+                <Card hover className="p-4 h-full">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-50 rounded-xl flex items-center justify-center text-purple-600 shrink-0">
+                      <FlaskConical size={20} className="sm:w-6 sm:h-6" />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="font-semibold text-gray-900 text-sm sm:text-base truncate">Finished Products</h3>
+                      <p className="text-xs text-gray-500">Stock Entry</p>
+                    </div>
+                  </div>
+                </Card>
+              </Link>
+            </>
+          )}
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-            <div className="flex items-start justify-between mb-4">
-              <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center">
-                <DollarSign size={24} className="text-slate-900" />
+        {/* Stats Grid - Mobile First */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+          <div className="bg-white rounded-xl border border-gray-200 p-4">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-9 h-9 bg-emerald-50 rounded-xl flex items-center justify-center">
+                <DollarSign size={18} className="text-emerald-600" />
               </div>
             </div>
-            <p className="text-2xl font-bold text-slate-900">${stats.total_revenue.toFixed(2)}</p>
-            <p className="text-sm text-slate-500 mt-1">Total Revenue</p>
+            <p className="text-xl lg:text-2xl font-bold text-gray-900">${stats.total_revenue.toFixed(2)}</p>
+            <p className="text-xs text-gray-500 mt-1">Today's Revenue</p>
           </div>
 
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-            <div className="flex items-start justify-between mb-4">
-              <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center">
-                <ShoppingCart size={24} className="text-emerald-600" />
+          <div className="bg-white rounded-xl border border-gray-200 p-4">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-9 h-9 bg-amber-50 rounded-xl flex items-center justify-center">
+                <ShoppingCart size={18} className="text-amber-600" />
               </div>
-              <span className="text-xs font-semibold px-2 py-1 rounded-full bg-slate-100 text-slate-600">
-                {stats.active_orders} active
-              </span>
             </div>
-            <p className="text-2xl font-bold text-slate-900">{stats.active_orders}</p>
-            <p className="text-sm text-slate-500 mt-1">Active Orders</p>
+            <p className="text-xl lg:text-2xl font-bold text-gray-900">{stats.active_orders}</p>
+            <p className="text-xs text-gray-500 mt-1">Active Orders</p>
           </div>
 
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-            <div className="flex items-start justify-between mb-4">
-              <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center">
-                <Package size={24} className="text-indigo-600" />
+          <div className="bg-white rounded-xl border border-gray-200 p-4">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-9 h-9 bg-sky-50 rounded-xl flex items-center justify-center">
+                <Package size={18} className="text-sky-600" />
               </div>
             </div>
-            <p className="text-2xl font-bold text-slate-900">{stats.menu_items}</p>
-            <p className="text-sm text-slate-500 mt-1">Menu Items</p>
+            <p className="text-xl lg:text-2xl font-bold text-gray-900">{stats.menu_items}</p>
+            <p className="text-xs text-gray-500 mt-1">Menu Items</p>
           </div>
 
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-            <div className="flex items-start justify-between mb-4">
-              <div className="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center">
-                <Users size={24} className="text-amber-600" />
+          <div className="bg-white rounded-xl border border-gray-200 p-4">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-9 h-9 bg-rose-50 rounded-xl flex items-center justify-center">
+                <Users size={18} className="text-rose-600" />
               </div>
             </div>
-            <p className="text-2xl font-bold text-slate-900">{stats.customers_today}</p>
-            <p className="text-sm text-slate-500 mt-1">Orders Today</p>
+            <p className="text-xl lg:text-2xl font-bold text-gray-900">{stats.customers_today}</p>
+            <p className="text-xs text-gray-500 mt-1">Orders Today</p>
           </div>
         </div>
 
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Recent Orders */}
+        {/* Main Content Grid - Mobile First Stack */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Recent Orders - Card Style for Mobile */}
           <div className="lg:col-span-2">
             <Card
               title="Recent Orders"
-              subtitle="Latest order activities"
+              subtitle="Latest activities"
               headerAction={
-                <Link href="/dashboard/orders" className="text-sm text-slate-600 hover:text-slate-900 font-medium flex items-center gap-1">
+                <Link href="/dashboard/orders" className="text-sm text-gray-600 hover:text-gray-900 font-medium flex items-center gap-1">
                   View All <ArrowRight size={14} />
                 </Link>
               }
+              padding="none"
             >
               {recentOrders.length === 0 ? (
                 <div className="text-center py-12">
-                  <ShoppingCart size={48} className="text-slate-200 mx-auto mb-4" />
-                  <p className="text-slate-500">No orders yet</p>
+                  <ShoppingCart size={48} className="text-gray-200 mx-auto mb-4" />
+                  <p className="text-gray-500">No orders yet</p>
                   <Link href="/dashboard/orders/new">
                     <Button className="mt-4" variant="outline" size="sm">
                       Create First Order
@@ -280,77 +312,81 @@ export default function DashboardPage() {
                   </Link>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-slate-100">
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Order</th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Customer</th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Amount</th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Time</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {recentOrders.map((order) => (
-                        <tr key={order.id} className="hover:bg-slate-50 transition-colors">
-                          <td className="px-6 py-4 font-semibold text-slate-900">{order.id?.slice(-6).toUpperCase() || 'N/A'}</td>
-                          <td className="px-6 py-4">{order.customer_name || 'Guest'}</td>
-                          <td className="px-6 py-4 font-semibold">${(order.total ?? 0).toFixed(2)}</td>
-                          <td className="px-6 py-4">
-                            <Badge variant={getStatusBadge(order.status)} size="sm">
-                              {formatStatus(order.status)}
-                            </Badge>
-                          </td>
-                          <td className="px-6 py-4 text-slate-400">{formatTime(order.created_at)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div className="divide-y divide-gray-100">
+                  {recentOrders.map((order) => (
+                    <div 
+                      key={order.id} 
+                      className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors cursor-pointer"
+                      onClick={() => window.location.href = `/dashboard/orders?id=${order.id}`}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center text-gray-600 font-bold text-sm shrink-0">
+                          {(order.customer_name || 'G')[0].toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-semibold text-gray-900 truncate text-sm">
+                            {order.customer_name || 'Guest'}
+                          </p>
+                          <p className="text-xs text-gray-400">
+                            #{order.id?.slice(-6).toUpperCase() || 'N/A'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="text-right hidden sm:block">
+                          <p className="font-semibold text-gray-900 text-sm">${(order.total ?? 0).toFixed(2)}</p>
+                          <p className="text-xs text-gray-400">{formatTime(order.created_at)}</p>
+                        </div>
+                        <Badge variant={getStatusBadge(order.status)} size="sm">
+                          {formatStatus(order.status)}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </Card>
           </div>
 
-          {/* Popular Items */}
+          {/* Popular Items - Mobile Card */}
           <div>
             <Card
               title="Menu Items"
-              subtitle="Your product catalog"
+              subtitle="Quick access"
               headerAction={
-                <Link href="/dashboard/products" className="text-sm text-slate-600 hover:text-slate-900 font-medium flex items-center gap-1">
-                  View All <ArrowRight size={14} />
+                <Link href="/dashboard/products" className="text-sm text-gray-600 hover:text-gray-900 font-medium flex items-center gap-1">
+                  All <ArrowRight size={14} />
                 </Link>
               }
             >
               {popularItems.length === 0 ? (
-                <div className="text-center py-12">
-                  <Package size={48} className="text-slate-200 mx-auto mb-4" />
-                  <p className="text-slate-500">No products yet</p>
+                <div className="text-center py-8">
+                  <Package size={40} className="text-gray-200 mx-auto mb-3" />
+                  <p className="text-gray-500 text-sm">No products</p>
                   <Link href="/dashboard/products/new">
-                    <Button className="mt-4" variant="outline" size="sm">
+                    <Button className="mt-3" variant="outline" size="sm">
                       Add Product
                     </Button>
                   </Link>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {popularItems.map((item, index) => (
+                  {popularItems.slice(0, 5).map((item, index) => (
                     <Link 
                       key={item.id}
                       href={`/dashboard/products/${item.id}`}
-                      className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer"
+                      className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center text-slate-600 font-bold text-sm">
+                        <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center text-gray-600 font-bold text-xs">
                           {index + 1}
                         </div>
                         <div>
-                          <p className="font-semibold text-slate-900">{item.name}</p>
-                          <p className="text-xs text-slate-500">${item.price.toFixed(2)}</p>
+                          <p className="font-medium text-gray-900 text-sm truncate max-w-[120px] sm:max-w-[150px]">{item.name}</p>
+                          <p className="text-xs text-gray-500">${item.price.toFixed(2)}</p>
                         </div>
                       </div>
-                      <ArrowRight size={16} className="text-slate-300" />
+                      <ArrowRight size={14} className="text-gray-300" />
                     </Link>
                   ))}
                 </div>
@@ -358,8 +394,6 @@ export default function DashboardPage() {
             </Card>
           </div>
         </div>
-
-      
       </div>
     </RoleGuard>
   );

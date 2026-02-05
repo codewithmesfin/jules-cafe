@@ -7,8 +7,17 @@ interface DrawerProps {
   onClose: () => void;
   title: string;
   children: React.ReactNode;
-  position?: 'right' | 'left';
+  position?: 'right' | 'left' | 'bottom';
+  size?: 'sm' | 'md' | 'lg' | 'full';
+  showClose?: boolean;
 }
+
+const sizes = {
+  sm: 'max-w-sm',
+  md: 'max-w-md',
+  lg: 'max-w-lg',
+  full: 'max-w-full',
+};
 
 export const Drawer: React.FC<DrawerProps> = ({
   isOpen,
@@ -16,7 +25,11 @@ export const Drawer: React.FC<DrawerProps> = ({
   title,
   children,
   position = 'right',
+  size = 'md',
+  showClose = true,
 }) => {
+  const isBottom = position === 'bottom';
+  
   return (
     <>
       {/* Backdrop */}
@@ -27,22 +40,43 @@ export const Drawer: React.FC<DrawerProps> = ({
         )}
         onClick={onClose}
       />
+      
       {/* Drawer */}
       <div
         className={cn(
-          'fixed inset-y-0 z-50 w-full max-w-md bg-white shadow-2xl transition-transform duration-300 ease-in-out',
-          position === 'right' ? 'right-0' : 'left-0',
-          isOpen ? 'translate-x-0' : position === 'right' ? 'translate-x-full' : '-translate-x-full'
+          'fixed z-50 bg-white shadow-2xl transition-transform duration-300 ease-out',
+          isBottom 
+            ? 'inset-x-0 bottom-0 rounded-t-3xl max-h-[85vh]' 
+            : `inset-y-0 ${position === 'right' ? 'right-0' : 'left-0'} w-full max-w-md`,
+          isOpen 
+            ? isBottom ? 'translate-y-0' : 'translate-x-0' 
+            : isBottom ? 'translate-y-full' : position === 'right' ? 'translate-x-full' : '-translate-x-full'
         )}
       >
         <div className="flex flex-col h-full">
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-            <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-100 transition-colors">
-              <X className="w-5 h-5 text-gray-500" />
-            </button>
+          {/* Header */}
+          <div className={cn(
+            'flex items-center justify-between px-6 py-4 border-b border-slate-100',
+            isBottom && 'rounded-t-3xl'
+          )}>
+            <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
+            {showClose && (
+              <button 
+                onClick={onClose}
+                className={cn(
+                  'p-2 -mr-2 -my-2 rounded-xl hover:bg-slate-100 transition-colors text-slate-500',
+                  isBottom && 'absolute top-2 right-2'
+                )}
+              >
+                <X className="w-5 h-5" />
+              </button>
+            )}
           </div>
-          <div className="flex-1 overflow-y-auto px-6 py-4">{children}</div>
+          
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto px-6 py-4">
+            {children}
+          </div>
         </div>
       </div>
     </>

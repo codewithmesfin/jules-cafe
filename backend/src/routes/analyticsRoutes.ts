@@ -9,7 +9,7 @@ import { protect, restrictTo } from '../middleware/auth';
 const router = express.Router();
 
 router.use(protect);
-router.use(restrictTo('admin', 'manager', 'saas_admin'));
+router.use(restrictTo('admin', 'manager', 'cashier', 'saas_admin'));
 
 router.get('/sales', getSalesAnalytics);
 router.get('/products', getProductAnalytics);

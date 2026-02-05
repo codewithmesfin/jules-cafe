@@ -1,10 +1,12 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { Clock, Edit2, ShoppingBag, CheckCircle, Play, XCircle, ChevronRight } from 'lucide-react';
+import Link from 'next/link';
+import { Clock, Edit2, ShoppingBag, CheckCircle, Play, XCircle, ChevronRight, Filter } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { api } from '../../utils/api';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
+import { Card } from '../../components/ui/Card';
 import { Modal } from '../../components/ui/Modal';
 import { useAuth } from '@/context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
@@ -20,7 +22,7 @@ const OrderQueue: React.FC = () => {
   const { user } = useAuth();
   const { showNotification } = useNotification();
   const router = useRouter();
-  const [filter, setFilter] = useState('active');
+  const [filter, setFilter] = useState<'active' | 'completed' | 'cancelled'>('active');
   const [orders, setOrders] = useState<ExtendedOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<ExtendedOrder | null>(null);
@@ -109,22 +111,10 @@ const OrderQueue: React.FC = () => {
     }
   };
 
-  const getStatusColor = (status: string): string => {
-    switch (status) {
-      case 'completed':
-      case 'delivered':
-        return 'bg-emerald-500';
-      case 'preparing':
-      case 'ready':
-        return 'bg-amber-500';
-      case 'cancelled':
-        return 'bg-rose-500';
-      case 'pending':
-      case 'accepted':
-        return 'bg-blue-500';
-      default:
-        return 'bg-slate-400';
-    }
+  const formatTime = (dateString: string) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
   return (
@@ -132,45 +122,65 @@ const OrderQueue: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Orders</h1>
-          <p className="text-slate-500">Manage and track your orders</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Orders</h1>
+          <p className="text-slate-500 text-sm">Manage and track orders</p>
         </div>
 
-        {/* Filter Tabs */}
-        <div className="flex gap-1 p-1 bg-slate-100 rounded-xl">
-          {(['active', 'completed', 'cancelled'] as const).map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={cn(
-                'px-4 py-2 text-sm font-medium rounded-lg transition-all capitalize',
-                filter === f
-                  ? 'bg-white text-slate-900 shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'
-              )}
-            >
-              {f}
-            </button>
-          ))}
-        </div>
+        <Link href="/dashboard/orders/new">
+          <Button size="sm">
+            <ShoppingBag size={16} className="mr-1" /> New Order
+          </Button>
+        </Link>
       </div>
 
-      {/* Orders Grid */}
+      {/* Filter Tabs */}
+      <div className="flex gap-2 overflow-x-auto pb-1">
+        {(['active', 'completed', 'cancelled'] as const).map((f) => (
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            className={cn(
+              'px-4 py-2 text-sm font-medium rounded-xl transition-all capitalize whitespace-nowrap',
+              filter === f
+                ? 'bg-slate-900 text-white'
+                : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300'
+            )}
+          >
+            {f}
+            {f === 'active' && (
+              <span className="ml-2 px-1.5 py-0.5 bg-slate-200 text-slate-700 rounded-full text-xs">
+                {orders.filter(o => !['completed', 'cancelled'].includes(o.order_status)).length}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* Orders List - Mobile First */}
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {[...Array(8)].map((_, i) => (
-            <div key={i} className="bg-white rounded-xl h-48 animate-pulse" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="bg-white rounded-2xl border border-slate-200 p-4 h-48 animate-pulse" />
           ))}
         </div>
       ) : filteredOrders.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 bg-white border border-slate-200 rounded-xl">
-          <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-            <ShoppingBag size={32} className="text-slate-400" />
+        <Card className="py-12">
+          <div className="flex flex-col items-center justify-center text-center">
+            <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+              <ShoppingBag size={32} className="text-slate-300" />
+            </div>
+            <p className="text-slate-600 font-medium">No {filter} orders</p>
+            {filter === 'active' && (
+              <Link href="/dashboard/orders/new">
+                <Button className="mt-4" variant="outline" size="sm">
+                  Create New Order
+                </Button>
+              </Link>
+            )}
           </div>
-          <p className="text-slate-600 font-medium">No {filter} orders</p>
-        </div>
+        </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredOrders.map((order) => {
             const customer = order.customer_id as any;
             const table = order.table_id as any;
@@ -180,62 +190,58 @@ const OrderQueue: React.FC = () => {
               <div
                 key={order.id || order._id}
                 onClick={() => handleOrderClick(order)}
-                className="bg-white rounded-xl border border-slate-200 p-4 hover:shadow-lg hover:border-slate-300 transition-all cursor-pointer"
+                className="bg-white rounded-2xl border border-slate-200 p-4 hover:shadow-lg hover:border-slate-300 transition-all cursor-pointer"
               >
                 {/* Header */}
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                        #{((order.id || order._id)?.slice(-6) || '').toUpperCase()}
-                      </span>
-                      <Badge variant={getStatusVariant(order.order_status)} size="sm">
-                        {order.order_status}
-                      </Badge>
-                    </div>
-                    <h3 className="font-semibold text-slate-900">
-                      {customer?.full_name || 'Guest'}
-                    </h3>
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Badge variant={getStatusVariant(order.order_status)} size="sm">
+                      {order.order_status}
+                    </Badge>
+                    <span className="text-xs text-slate-400">
+                      #{((order.id || order._id)?.slice(-6) || '').toUpperCase()}
+                    </span>
                   </div>
                   <div className="text-right">
-                    <p className="text-lg font-bold text-slate-900">${order.total_amount.toFixed(2)}</p>
+                    <p className="text-lg font-bold text-slate-900">${order.total_amount?.toFixed(2) || '0.00'}</p>
                   </div>
                 </div>
 
-                {/* Meta Info */}
-                <div className="flex items-center gap-4 text-sm text-slate-500 mb-4">
-                  <div className="flex items-center gap-1">
-                    <Clock size={14} />
-                    <span>{new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                  </div>
-                  {table && (
-                    <div className="flex items-center gap-1">
-                      <span>Table {table.table_number}</span>
-                    </div>
-                  )}
-                  <div className="flex items-center gap-1">
-                    <ShoppingBag size={14} />
-                    <span>{itemsCount} items</span>
+                {/* Customer & Table */}
+                <div className="mb-3">
+                  <h3 className="font-semibold text-slate-900">
+                    {customer?.full_name || 'Guest'}
+                  </h3>
+                  <div className="flex items-center gap-3 text-xs text-slate-500 mt-1">
+                    {table && (
+                      <span className="flex items-center gap-1">
+                        Table {table.table_number}
+                      </span>
+                    )}
+                    <span className="flex items-center gap-1">
+                      <Clock size={12} />
+                      {formatTime(order.created_at)}
+                    </span>
                   </div>
                 </div>
 
                 {/* Items Preview */}
-                <div className="space-y-2 mb-4">
+                <div className="space-y-1.5 mb-4">
                   {order.items?.slice(0, 3).map((item: any, idx: number) => (
                     <div key={idx} className="flex justify-between text-sm">
                       <span className="text-slate-600">
                         <span className="text-slate-900 font-medium">{item.quantity}x</span> {item.product_id?.name || 'Item'}
                       </span>
-                      <span className="text-slate-400">${(item.price * item.quantity).toFixed(2)}</span>
+                      <span className="text-slate-400 text-xs">${(item.price * item.quantity).toFixed(2)}</span>
                     </div>
                   ))}
                   {(order.items?.length || 0) > 3 && (
-                    <p className="text-xs text-slate-400">+{(order.items?.length || 0) - 3} more</p>
+                    <p className="text-xs text-slate-400">+{(order.items?.length || 0) - 3} more items</p>
                   )}
                 </div>
 
                 {/* Actions */}
-                <div className="pt-4 border-t border-slate-100 flex gap-2">
+                <div className="pt-3 border-t border-slate-100 flex gap-2">
                   {filter === 'active' && (
                     <>
                       {order.order_status === 'pending' && (
@@ -249,18 +255,15 @@ const OrderQueue: React.FC = () => {
                         </Button>
                       )}
                       {order.order_status === 'ready' && (
-                        <Button size="sm" variant="primary" className="flex-1" onClick={(e) => { e.stopPropagation(); handleUpdateStatus(order.id || order._id!, 'completed'); }}>
+                        <Button size="sm" className="flex-1" onClick={(e) => { e.stopPropagation(); handleUpdateStatus(order.id || order._id!, 'completed'); }}>
                           <CheckCircle size={14} /> Complete
                         </Button>
                       )}
-                      <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/orders?mode=new&id=${order.id || order._id}`); }}>
-                        <Edit2 size={16} />
-                      </Button>
                     </>
                   )}
                   {filter !== 'active' && (
-                    <Button size="sm" variant="ghost" className="w-full" onClick={() => handleOrderClick(order)}>
-                      View Details <ChevronRight size={16} />
+                    <Button size="sm" variant="ghost" className="w-full">
+                      View Details <ChevronRight size={14} />
                     </Button>
                   )}
                 </div>
@@ -291,12 +294,12 @@ const OrderQueue: React.FC = () => {
             </div>
 
             {/* Customer & Table */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 bg-slate-50 rounded-xl">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-3 bg-slate-50 rounded-xl">
                 <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Customer</p>
                 <p className="font-medium text-slate-900">{(selectedOrder.customer_id as any)?.full_name || 'Guest'}</p>
               </div>
-              <div className="p-4 bg-slate-50 rounded-xl">
+              <div className="p-3 bg-slate-50 rounded-xl">
                 <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Table</p>
                 <p className="font-medium text-slate-900">{(selectedOrder.table_id as any)?.table_number ? `Table ${(selectedOrder.table_id as any).table_number}` : 'N/A'}</p>
               </div>
@@ -304,8 +307,8 @@ const OrderQueue: React.FC = () => {
 
             {/* Items */}
             <div>
-              <p className="text-sm font-medium text-slate-700 mb-3">Items</p>
-              <div className="space-y-3">
+              <p className="text-sm font-medium text-slate-700 mb-3">Items ({selectedOrder.items?.length || 0})</p>
+              <div className="space-y-2">
                 {selectedOrder.items?.map((item: any, idx: number) => (
                   <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
                     <div className="flex items-center gap-3">
@@ -324,7 +327,7 @@ const OrderQueue: React.FC = () => {
             <div className="pt-4 border-t border-slate-200">
               <div className="flex justify-between text-lg font-bold text-slate-900">
                 <span>Total</span>
-                <span>${selectedOrder.total_amount.toFixed(2)}</span>
+                <span>${selectedOrder.total_amount?.toFixed(2) || '0.00'}</span>
               </div>
             </div>
 

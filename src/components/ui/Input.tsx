@@ -1,12 +1,13 @@
 import React, { useId } from 'react';
 import { cn } from '../../utils/cn';
 
-interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'> {
   label?: string;
   error?: string;
   hint?: string;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
+  size?: 'sm' | 'md' | 'lg';
 }
 
 export const Input: React.FC<InputProps> = ({
@@ -17,10 +18,17 @@ export const Input: React.FC<InputProps> = ({
   rightIcon,
   id,
   className,
+  size = 'md',
   ...props
 }) => {
   const generatedId = useId();
   const inputId = id || generatedId;
+
+  const sizeClasses = {
+    sm: 'px-3 py-2 text-sm',
+    md: 'px-4 py-2.5 text-sm',
+    lg: 'px-4 py-3 text-base',
+  };
 
   return (
     <div className="w-full">
@@ -38,12 +46,13 @@ export const Input: React.FC<InputProps> = ({
         <input
           id={inputId}
           className={cn(
-            'w-full px-4 py-3 bg-white border border-slate-300 rounded-xl text-slate-900 placeholder:text-slate-400 transition-all duration-200',
-            'focus:outline-none focus:ring-2 focus:ring-slate-500/20 focus:border-slate-500',
+            'w-full bg-white border border-slate-200 rounded-lg text-slate-900 placeholder:text-slate-400 transition-all duration-200',
+            'focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500',
             'disabled:bg-slate-50 disabled:cursor-not-allowed',
-            error && 'border-rose-500 focus:ring-rose-500/20 focus:border-rose-500',
+            error && 'border-error-500 focus:ring-error-500/20 focus:border-error-500',
             leftIcon && 'pl-10',
             rightIcon && 'pr-10',
+            sizeClasses[size],
             className
           )}
           {...props}
@@ -54,7 +63,7 @@ export const Input: React.FC<InputProps> = ({
           </div>
         )}
       </div>
-      {error && <p className="mt-1.5 text-sm text-rose-500">{error}</p>}
+      {error && <p className="mt-1.5 text-sm text-error-500">{error}</p>}
       {hint && !error && <p className="mt-1.5 text-sm text-slate-400">{hint}</p>}
     </div>
   );

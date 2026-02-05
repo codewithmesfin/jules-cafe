@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Edit, Trash2, Filter } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, Filter, Grid3X3, Folder, FolderX } from 'lucide-react';
 import { api } from '../../utils/api';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -9,6 +9,7 @@ import { Table } from '../../components/ui/Table';
 import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
 import { ConfirmationDialog } from '../../components/ui/ConfirmationDialog';
+import { Card } from '../../components/ui/Card';
 import { useNotification } from '../../context/NotificationContext';
 import { usePermission } from '../../hooks/usePermission';
 import { cn } from '../../utils/cn';
@@ -40,7 +41,8 @@ const Categories: React.FC = () => {
     try {
       setLoading(true);
       const data = await api.categories.getAll();
-      setCategories(data);
+      const catData = Array.isArray(data) ? data : (data?.data || []);
+      setCategories(catData);
     } catch (error) {
       showNotification("Failed to load categories", "error");
     } finally {
@@ -111,52 +113,103 @@ const Categories: React.FC = () => {
     setIsModalOpen(true);
   };
 
+  // Stats
+  const totalCategories = categories.length;
+  const activeCategories = categories.filter(c => c.is_active).length;
+  const inactiveCategories = categories.filter(c => !c.is_active).length;
+
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-        <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto flex-1">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
-            <input
-              placeholder="Search categories..."
-              className="w-full pl-12 pr-4 py-3 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-blue-500/20 transition-all"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <div className="relative">
-            <Filter className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-            <select
-              className="pl-10 pr-10 py-3 bg-slate-50 border-none rounded-2xl text-sm appearance-none focus:ring-2 focus:ring-blue-500/20 transition-all cursor-pointer min-w-[160px]"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-            >
-              <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
-          </div>
+    <div className="space-y-6 animate-in fade-in duration-500">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Categories</h1>
+          <p className="text-gray-500">Organize your products into categories</p>
         </div>
-        {canCreate('categories') && (
-          <Button
-            onClick={() => openModal()}
-            className="bg-[#e60023] hover:bg-[#ad081b] text-white rounded-2xl px-6 py-3 font-bold flex items-center gap-2 shadow-lg shadow-red-200 transition-all active:scale-95"
-          >
-            <Plus size={20} /> Add Category
-          </Button>
-        )}
       </div>
 
-      <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden">
+      {/* Stats Overview */}
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+        <Card className="bg-white border border-gray-200 p-5 rounded-xl">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gray-100 text-gray-600 rounded-lg flex items-center justify-center">
+              <Grid3X3 size={20} />
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 font-medium">Total Categories</p>
+              <p className="text-xl font-bold text-gray-900">{totalCategories}</p>
+            </div>
+          </div>
+        </Card>
+        <Card className="bg-white border border-gray-200 p-5 rounded-xl">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center">
+              <Folder size={20} />
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 font-medium">Active</p>
+              <p className="text-xl font-bold text-emerald-600">{activeCategories}</p>
+            </div>
+          </div>
+        </Card>
+        <Card className="bg-white border border-gray-200 p-5 rounded-xl">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gray-100 text-gray-400 rounded-lg flex items-center justify-center">
+              <FolderX size={20} />
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 font-medium">Inactive</p>
+              <p className="text-xl font-bold text-gray-400">{inactiveCategories}</p>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Search and Actions */}
+      <div className="flex flex-col sm:flex-row gap-3 justify-between">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+          <input
+            type="text"
+            placeholder="Search categories..."
+            className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <div className="flex gap-2">
+          <select
+            className="px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            <option value="all">All Status</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+          {canCreate('categories') && (
+            <Button onClick={() => openModal()}>
+              <Plus size={18} className="mr-1" /> Add Category
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-24 gap-4">
-             <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-             <p className="text-slate-500 font-medium">Loading categories...</p>
+          <div className="py-12 flex justify-center">
+            <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
           </div>
         ) : filteredCategories.length === 0 ? (
-          <div className="text-center py-24">
-            <h3 className="text-xl font-bold text-slate-900 mb-2">No categories found</h3>
-            <p className="text-slate-500">Add categories to organize your products.</p>
+          <div className="text-center py-12">
+            <Grid3X3 className="mx-auto h-10 w-10 text-gray-200 mb-3" />
+            <p className="text-gray-500">No categories found</p>
+            {canCreate('categories') && (
+              <Button variant="outline" className="mt-3" onClick={() => openModal()}>
+                Add first category
+              </Button>
+            )}
           </div>
         ) : (
           <Table
@@ -164,21 +217,26 @@ const Categories: React.FC = () => {
             columns={[
               {
                 header: 'Name',
-                accessor: (cat) => <span className="font-bold text-slate-900">{cat.name}</span>
-              },
-              {
-                header: 'Description',
-                accessor: (cat) => <span className="text-slate-500 text-sm">{cat.description || "—"}</span>
+                accessor: (cat) => (
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                      <Grid3X3 size={18} className="text-gray-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">{cat.name}</p>
+                      {cat.description && (
+                        <p className="text-xs text-gray-500 truncate max-w-xs">{cat.description}</p>
+                      )}
+                    </div>
+                  </div>
+                )
               },
               {
                 header: 'Status',
                 accessor: (cat) => (
-                  <div className="flex items-center gap-2">
-                    <div className={cn("w-2 h-2 rounded-full", cat.is_active ? "bg-green-500" : "bg-slate-300")} />
-                    <span className={cn("text-xs font-bold uppercase tracking-wider", cat.is_active ? "text-green-600" : "text-slate-400")}>
-                      {cat.is_active ? "Active" : "Inactive"}
-                    </span>
-                  </div>
+                  <Badge variant={cat.is_active ? 'success' : 'neutral'} size="sm">
+                    {cat.is_active ? 'Active' : 'Inactive'}
+                  </Badge>
                 )
               },
               {
@@ -188,17 +246,19 @@ const Categories: React.FC = () => {
                     {canUpdate('categories') && (
                       <button
                         onClick={() => openModal(cat)}
-                        className="p-2 hover:bg-slate-50 rounded-xl text-slate-400 hover:text-blue-600 transition-colors"
+                        className="p-2 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-blue-600 transition-colors"
+                        title="Edit"
                       >
-                        <Edit size={18} />
+                        <Edit size={16} />
                       </button>
                     )}
                     {canDelete('categories') && (
                       <button
                         onClick={() => setCategoryToDelete(cat)}
-                        className="p-2 hover:bg-red-50 rounded-xl text-slate-400 hover:text-red-600 transition-colors"
+                        className="p-2 hover:bg-red-50 rounded-lg text-gray-400 hover:text-red-600 transition-colors"
+                        title="Delete"
                       >
-                        <Trash2 size={18} />
+                        <Trash2 size={16} />
                       </button>
                     )}
                   </div>
@@ -209,25 +269,24 @@ const Categories: React.FC = () => {
         )}
       </div>
 
+      {/* Modal */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title={editingCategory ? "Edit Category" : "New Category"}
-        className="max-w-xl"
       >
-        <div className="space-y-6 pt-4">
+        <div className="space-y-4 pt-2">
           <Input
             label="Category Name"
             placeholder="e.g. Beverages"
-            className="rounded-2xl"
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           />
           <div>
-            <label className="block text-sm font-bold text-slate-700 mb-2">Description</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
             <textarea
-              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 min-h-[120px]"
-              placeholder="Describe what's in this category..."
+              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 min-h-[80px]"
+              placeholder="Describe this category..."
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             />
@@ -236,31 +295,34 @@ const Categories: React.FC = () => {
             <input
               type="checkbox"
               id="is_active"
-              className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500/20"
+              className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
               checked={formData.is_active}
               onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
             />
-            <label htmlFor="is_active" className="text-sm font-bold text-slate-700">Active and visible</label>
+            <label htmlFor="is_active" className="text-sm font-medium text-gray-700">
+              Active and visible
+            </label>
           </div>
 
-          <div className="flex items-center gap-4 pt-4">
-            <Button variant="outline" onClick={() => setIsModalOpen(false)} className="flex-1 rounded-2xl py-4 font-bold">
+          <div className="flex items-center gap-3 pt-2">
+            <Button variant="outline" onClick={() => setIsModalOpen(false)} className="flex-1">
               Cancel
             </Button>
-            <Button onClick={handleSave} className="flex-1 rounded-2xl py-4 font-bold bg-[#e60023] hover:bg-[#ad081b] shadow-lg shadow-red-200">
+            <Button onClick={handleSave} className="flex-1">
               {editingCategory ? "Save Changes" : "Create Category"}
             </Button>
           </div>
         </div>
       </Modal>
 
+      {/* Confirmation Dialog */}
       <ConfirmationDialog
         isOpen={!!categoryToDelete}
         onClose={() => setCategoryToDelete(null)}
         onConfirm={handleDelete}
         title="Delete Category"
-        description={`Are you sure you want to delete "${categoryToDelete?.name}"? Items in this category might become uncategorized.`}
-        confirmLabel="Delete Category"
+        description={`Are you sure you want to delete "${categoryToDelete?.name}"?`}
+        confirmLabel="Delete"
         variant="danger"
       />
     </div>

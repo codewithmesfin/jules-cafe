@@ -6,6 +6,7 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
+import { Card } from '../../components/ui/Card';
 import { useAuth } from '@/context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { usePermission } from '../../hooks/usePermission';
@@ -138,87 +139,91 @@ const Tables: React.FC = () => {
     return `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(menuUrl)}`;
   };
 
+  // Loading skeleton
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div className="h-8 bg-slate-100 rounded w-40 animate-pulse" />
+          <div className="h-10 bg-slate-100 rounded w-28 animate-pulse" />
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+            <div key={i} className="aspect-square bg-white rounded-2xl border border-slate-200 animate-pulse" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Table Management</h1>
-          <p className="text-slate-500">Manage your restaurant tables and QR codes</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Tables</h1>
+          <p className="text-slate-500 text-sm">Manage restaurant tables and QR codes</p>
         </div>
         {canCreate('tables') && (
-          <Button
-            className="gap-2"
-            onClick={() => handleOpenModal()}
-          >
-            <Plus size={18} /> Add Table
+          <Button onClick={() => handleOpenModal()}>
+            <Plus size={18} className="mr-2" /> Add Table
           </Button>
         )}
       </div>
 
       {/* Search */}
-      <div className="relative max-w-md">
+      <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
         <input
           type="text"
           placeholder="Search tables..."
-          className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900/20 text-sm"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
       </div>
 
       {/* Tables Grid */}
-      {loading ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(i => (
-            <div key={i} className="aspect-square bg-slate-100 rounded-2xl animate-pulse" />
-          ))}
-        </div>
-      ) : filteredTables.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-2xl border border-slate-200">
-          <Grid className="mx-auto h-12 w-12 text-slate-200 mb-4" />
-          <p className="text-slate-500 font-medium">No tables found</p>
-          {canCreate('tables') && (
-            <Button variant="outline" className="mt-4" onClick={() => handleOpenModal()}>
-              Add your first table
-            </Button>
-          )}
-        </div>
+      {filteredTables.length === 0 ? (
+        <Card className="py-12">
+          <div className="text-center">
+            <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Grid size={32} className="text-slate-300" />
+            </div>
+            <p className="text-slate-500 mb-4">No tables found</p>
+            {canCreate('tables') && (
+              <Button variant="outline" onClick={() => handleOpenModal()}>
+                Add your first table
+              </Button>
+            )}
+          </div>
+        </Card>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          {filteredTables.map(table => (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+          {filteredTables.map((table) => (
             <div
               key={table.id || table._id}
               className={cn(
-                "bg-white border rounded-2xl p-5 transition-all hover:shadow-lg",
-                "border-slate-200 hover:border-blue-200"
+                "bg-white border rounded-2xl p-4 transition-all hover:shadow-lg",
+                "border-slate-200 hover:border-slate-300 cursor-pointer"
               )}
+              onClick={() => canUpdate('tables') && handleOpenModal(table)}
             >
               <div className="flex items-start justify-between mb-3">
                 <div className={cn(
                   "w-12 h-12 rounded-xl flex items-center justify-center",
-                  getTableStatus(table) === 'available' ? "bg-green-50 text-green-600" :
-                  getTableStatus(table) === 'occupied' ? "bg-red-50 text-red-600" : "bg-amber-50 text-amber-600"
+                  getTableStatus(table) === 'available' ? "bg-emerald-50 text-emerald-600" :
+                  getTableStatus(table) === 'occupied' ? "bg-rose-50 text-rose-600" : "bg-amber-50 text-amber-600"
                 )}>
                   <Grid size={24} />
                 </div>
                 <div className="flex gap-1">
                   <button
-                    onClick={() => handleOpenQrModal(table)}
-                    className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                    onClick={(e) => { e.stopPropagation(); handleOpenQrModal(table); }}
+                    className="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-colors"
                     title="View QR Code"
                   >
                     <QrCode size={16} />
-                  </button>
-                  <button
-                    onClick={() => handleOpenModal(table)}
-                    className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                    title="Edit"
-                  >
-                    {canUpdate('tables') && (
-                     <Edit size={16} />
-                   )}
                   </button>
                 </div>
               </div>
@@ -227,15 +232,15 @@ const Tables: React.FC = () => {
                 Table {table.table_number || table.name}
               </h3>
               
-              <div className="flex items-center gap-4 text-sm text-slate-500 mb-3">
+              <div className="flex items-center gap-3 text-sm text-slate-500 mb-3">
                 <div className="flex items-center gap-1">
                   <Users size={14} />
-                  <span>{table.capacity || table.seats} seats</span>
+                  <span>{table.capacity || table.seats}</span>
                 </div>
                 {(table as any).location && (
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 truncate">
                     <MapPin size={14} />
-                    <span className="truncate">{(table as any).location}</span>
+                    <span className="truncate text-xs">{(table as any).location}</span>
                   </div>
                 )}
               </div>
@@ -246,6 +251,7 @@ const Tables: React.FC = () => {
                   getTableStatus(table) === 'occupied' ? 'error' : 'warning'
                 }
                 className="w-full justify-center"
+                size="sm"
               >
                 {getTableStatus(table)}
               </Badge>
@@ -259,7 +265,6 @@ const Tables: React.FC = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title={selectedTable ? 'Edit Table' : 'Add New Table'}
-        className="max-w-md"
         footer={
           <div className="flex gap-3 w-full">
             <Button variant="outline" className="flex-1" onClick={() => setIsModalOpen(false)}>
@@ -271,7 +276,7 @@ const Tables: React.FC = () => {
           </div>
         }
       >
-        <div className="space-y-4 py-2">
+        <div className="space-y-4">
           <Input
             label="Table Name *"
             placeholder="e.g., Main Dining"
@@ -304,7 +309,7 @@ const Tables: React.FC = () => {
               id="isActive"
               checked={formIsActive}
               onChange={(e) => setFormIsActive(e.target.checked)}
-              className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
+              className="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
             />
             <label htmlFor="isActive" className="text-sm font-medium text-slate-700">
               Table is active
@@ -318,11 +323,10 @@ const Tables: React.FC = () => {
         isOpen={isQrModalOpen}
         onClose={() => setIsQrModalOpen(false)}
         title="Table QR Code"
-        className="max-w-sm"
       >
         {selectedTable && (
           <div className="flex flex-col items-center py-4">
-            <div className="bg-white p-6 rounded-2xl shadow-lg border border-slate-100 mb-4">
+            <div className="bg-white p-4 rounded-2xl shadow-lg border border-slate-100 mb-4">
               <img
                 src={generateQrUrl(selectedTable)}
                 alt="Table QR Code"

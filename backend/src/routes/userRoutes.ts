@@ -15,7 +15,7 @@ router.use(protect);
 router.post('/staff', restrictTo('admin', 'manager'), createStaff);
 
 router.route('/')
-  .get(restrictTo('admin', 'manager', 'saas_admin'), getAllUsers);
+  .get(restrictTo('admin', 'manager', 'cashier', 'saas_admin'), getAllUsers);
 
 router.route('/:id')
   .get(getUser)

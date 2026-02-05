@@ -5,11 +5,13 @@ import { Search, Plus, Coffee, Edit, Trash2 } from 'lucide-react';
 import { api } from '../../utils/api';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import { Table } from '../../components/ui/Table';
+import { Table, MobileTableCard } from '../../components/ui/Table';
 import { Modal } from '../../components/ui/Modal';
 import { Badge } from '../../components/ui/Badge';
+import { Card } from '../../components/ui/Card';
 import { useNotification } from '../../context/NotificationContext';
 import { usePermission } from '../../hooks/usePermission';
+import { cn } from '../../utils/cn';
 import type { Ingredient } from '../../types';
 
 const IngredientsListView: React.FC = () => {
@@ -102,13 +104,61 @@ const IngredientsListView: React.FC = () => {
     ing.unit.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const columns = [
+    {
+      header: 'Ingredient',
+      accessor: (ing: Ingredient) => (
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center">
+            <Coffee size={18} className="text-amber-600" />
+          </div>
+          <div>
+            <p className="font-medium text-slate-900">{ing.name}</p>
+            <p className="text-xs text-slate-500">{ing.unit}</p>
+          </div>
+        </div>
+      )
+    },
+    {
+      header: 'Status',
+      accessor: (ing: Ingredient) => (
+        <Badge variant={(ing as any).is_active !== false ? 'success' : 'neutral'} size="sm">
+          {(ing as any).is_active !== false ? 'Active' : 'Inactive'}
+        </Badge>
+      )
+    },
+    {
+      header: 'Actions',
+      accessor: (ing: Ingredient) => (
+        <div className="flex items-center gap-2">
+          {canUpdate('ingredients') && (
+            <button
+              onClick={() => openModal(ing)}
+              className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-900 transition-colors"
+            >
+              <Edit size={16} />
+            </button>
+          )}
+          {canDelete('ingredients') && (
+            <button
+              onClick={() => handleDelete(ing.id || ing._id!)}
+              className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-rose-600 transition-colors"
+            >
+              <Trash2 size={16} />
+            </button>
+          )}
+        </div>
+      )
+    }
+  ];
+
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Ingredients</h1>
-          <p className="text-slate-500">Manage your ingredient catalog</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Ingredients</h1>
+          <p className="text-slate-500 text-sm">Manage your ingredient catalog</p>
         </div>
         {canCreate('ingredients') && (
           <Button onClick={() => openModal()}>
@@ -118,86 +168,60 @@ const IngredientsListView: React.FC = () => {
       </div>
 
       {/* Search */}
-      <div className="relative max-w-md">
+      <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
         <input
           type="text"
           placeholder="Search ingredients..."
-          className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900/20 text-sm"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        {loading ? (
-          <div className="py-12 flex justify-center">
-            <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-          </div>
-        ) : filteredIngredients.length === 0 ? (
-          <div className="text-center py-12">
-            <Coffee className="mx-auto h-10 w-10 text-slate-200 mb-3" />
-            <p className="text-slate-500">No ingredients found</p>
-            {canCreate('ingredients') && (
-              <Button variant="outline" className="mt-3" onClick={() => openModal()}>
-                Add your first ingredient
-              </Button>
-            )}
-          </div>
-        ) : (
-          <Table
-            data={filteredIngredients}
-            columns={[
-              {
-                header: 'Ingredient',
-                accessor: (ing) => (
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center">
-                      <Coffee size={18} className="text-amber-600" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-slate-900">{ing.name}</p>
-                      <p className="text-xs text-slate-500">{ing.unit}</p>
-                    </div>
-                  </div>
-                )
-              },
-              {
-                header: 'Status',
-                accessor: (ing) => (
-                   <Badge variant={(ing as any).is_active !== false ? 'success' : 'neutral'}>
-                     {(ing as any).is_active !== false ? 'Active' : 'Inactive'}
-                   </Badge>
-                 )
-              },
-              {
-                header: 'Actions',
-                accessor: (ing) => (
-                  <div className="flex items-center gap-2">
-                    {canUpdate('ingredients') && (
-                      <button
-                        onClick={() => openModal(ing)}
-                        className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-blue-600 transition-colors"
-                      >
-                        <Edit size={16} />
-                      </button>
-                    )}
-                    {canDelete('ingredients') && (
-                      <button
-                        onClick={() => handleDelete(ing.id || ing._id!)}
-                        className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-red-600 transition-colors"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    )}
-                  </div>
-                )
-              }
-            ]}
-          />
-        )}
+      {/* Desktop Table View */}
+      <div className="hidden lg:block bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <Table
+          data={filteredIngredients}
+          columns={columns}
+          loading={loading}
+          emptyMessage="No ingredients found"
+        />
       </div>
+
+      {/* Mobile Card View */}
+      <MobileTableCard
+        data={filteredIngredients}
+        columns={columns}
+        loading={loading}
+        emptyMessage="No ingredients found"
+        renderCard={(ing) => (
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center">
+                <Coffee size={20} className="text-amber-600" />
+              </div>
+              <div>
+                <p className="font-semibold text-slate-900">{ing.name}</p>
+                <p className="text-sm text-slate-500">{ing.unit}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant={(ing as any).is_active !== false ? 'success' : 'neutral'} size="sm">
+                {(ing as any).is_active !== false ? 'Active' : 'Inactive'}
+              </Badge>
+              {canUpdate('ingredients') && (
+                <button
+                  onClick={() => openModal(ing)}
+                  className="p-2 hover:bg-slate-100 rounded-lg text-slate-500"
+                >
+                  <Edit size={16} />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+      />
 
       {/* Modal */}
       <Modal
@@ -206,16 +230,16 @@ const IngredientsListView: React.FC = () => {
         title={editingIngredient ? 'Edit Ingredient' : 'Add Ingredient'}
         footer={
           <div className="flex gap-3 w-full">
-            <Button variant="outline" onClick={() => setIsModalOpen(false)} className="flex-1">
+            <Button variant="outline" className="flex-1" onClick={() => setIsModalOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSave} className="flex-1">
+            <Button className="flex-1" onClick={handleSave}>
               {editingIngredient ? 'Update' : 'Create'}
             </Button>
           </div>
         }
       >
-        <div className="space-y-4 py-2">
+        <div className="space-y-4">
           <Input
             label="Ingredient Name"
             placeholder="e.g., Coffee Beans, Fresh Milk"
@@ -234,7 +258,7 @@ const IngredientsListView: React.FC = () => {
               type="number"
               step="0.01"
               placeholder="0.00"
-              value={formData.cost_per_unit || ""}
+              value={formData.cost_per_unit || ''}
               onChange={(e) => setFormData({ ...formData, cost_per_unit: parseFloat(e.target.value) || 0 })}
             />
           </div>
@@ -247,12 +271,12 @@ const IngredientsListView: React.FC = () => {
           <div className="flex items-center gap-3">
             <input
               type="checkbox"
-              id="is_active"
-              className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+              id="ing_is_active"
+              className="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
               checked={formData.is_active}
               onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
             />
-            <label htmlFor="is_active" className="text-sm font-medium text-slate-700">
+            <label htmlFor="ing_is_active" className="text-sm font-medium text-slate-700">
               Active
             </label>
           </div>

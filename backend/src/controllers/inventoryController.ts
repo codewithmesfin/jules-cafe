@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Inventory from '../models/Inventory';
 import InventoryTransaction from '../models/InventoryTransaction';
 import * as factory from '../utils/controllerFactory';
@@ -27,32 +28,63 @@ export const createInventory = catchAsync(async (req: AuthRequest, res: Response
   const { item_id, item_type, quantity_available, reorder_level } = req.body;
   const businessId = req.user.default_business_id;
 
-  // Use atomic upsert to prevent race conditions
-  const inventory = await Inventory.findOneAndUpdate(
-    { business_id: businessId, item_id: item_id, item_type: item_type },
-    { 
-      $set: { 
-        quantity_available: quantity_available || 0,
-        reorder_level: reorder_level || 0
-      },
-      $setOnInsert: { 
-        creator_id: req.user._id,
-        business_id: businessId,
-        item_id: item_id,
-        item_type: item_type
-      }
-    },
-    { 
-      upsert: true,
-      new: true,
-      runValidators: true
-    }
-  );
-
-  res.status(201).json({
-    success: true,
-    data: { ...inventory.toObject(), id: inventory._id.toString() }
+  // Check if inventory already exists
+  const existingInventory = await Inventory.findOne({
+    business_id: businessId,
+    item_id: item_id,
+    item_type: item_type
   });
+
+  if (existingInventory) {
+    // Inventory exists - ADD to existing quantity using atomic increment
+    const inventory = await Inventory.findByIdAndUpdate(
+      existingInventory._id,
+      { $inc: { quantity_available: quantity_available } },
+      { new: true }
+    );
+
+    // Record transaction
+    await InventoryTransaction.create({
+      business_id: businessId,
+      item_id: item_id,
+      item_type: item_type,
+      change_quantity: quantity_available,
+      reference_type: 'purchase',
+      creator_id: req.user._id,
+      note: 'Stock entry'
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: { ...inventory!.toObject(), id: inventory!._id.toString() }
+    });
+  } else {
+    // Inventory doesn't exist - create new
+    const inventory = await Inventory.create([{
+      creator_id: req.user._id,
+      business_id: businessId,
+      item_id: item_id,
+      item_type: item_type,
+      quantity_available: quantity_available || 0,
+      reorder_level: reorder_level || 0
+    }]);
+
+    // Record transaction
+    await InventoryTransaction.create({
+      business_id: businessId,
+      item_id: item_id,
+      item_type: item_type,
+      change_quantity: quantity_available,
+      reference_type: 'purchase',
+      creator_id: req.user._id,
+      note: 'Stock entry'
+    });
+
+    return res.status(201).json({
+      success: true,
+      data: { ...inventory[0].toObject(), id: inventory[0]._id.toString() }
+    });
+  }
 });
 
 export const updateInventory = factory.updateOne(Inventory);
@@ -107,12 +139,24 @@ export const getInventoryTransactions = catchAsync(async (req: AuthRequest, res:
   const businessId = req.user.default_business_id;
   
   const transactions = await InventoryTransaction.find({ business_id: businessId })
-    .populate('item_id')
     .sort('-created_at');
 
-  const transformed = transactions.map(t => ({
-    ...t.toObject(),
-    id: t._id.toString()
+  // Transform and populate item_id based on item_type
+  const transformed = await Promise.all(transactions.map(async (t) => {
+    let populatedItem = null;
+    if (t.item_type === 'ingredient') {
+      const Ingredient = mongoose.model('Ingredient');
+      populatedItem = await Ingredient.findById(t.item_id);
+    } else if (t.item_type === 'product') {
+      const Product = mongoose.model('Product');
+      populatedItem = await Product.findById(t.item_id);
+    }
+    
+    return {
+      ...t.toObject(),
+      id: t._id.toString(),
+      item_id: populatedItem ? { ...populatedItem.toObject(), id: populatedItem._id.toString() } : null
+    };
   }));
 
   res.status(200).json(transformed);
