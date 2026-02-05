@@ -79,31 +79,54 @@ export default function ReportsPage() {
   const fetchStats = async () => {
     try {
       setLoading(true);
-      // Mock data for demonstration
-      const mockData = {
-        revenue: 45280,
-        orders: 156,
-        customers: 89,
-        avgOrder: 290,
-        topProducts: [
-          { name: 'Burger Special', quantity: 45, revenue: 6750 },
-          { name: 'Cappuccino', quantity: 78, revenue: 4680 },
-          { name: 'Caesar Salad', quantity: 32, revenue: 4160 },
-          { name: 'Grilled Chicken', quantity: 28, revenue: 5600 },
-          { name: 'Pasta Carbonara', quantity: 24, revenue: 4320 },
-        ],
-        recentOrders: [
-          { id: '1', number: 'ORD-2024-001', customer: { name: 'John Doe' }, items: [1, 2], total: 45, status: 'completed' },
-          { id: '2', number: 'ORD-2024-002', customer: { name: 'Jane Smith' }, items: [1], total: 28, status: 'pending' },
-          { id: '3', number: 'ORD-2024-003', customer: { name: 'Mike Johnson' }, items: [3], total: 32, status: 'completed' },
-          { id: '4', number: 'ORD-2024-004', customer: { name: 'Sarah Wilson' }, items: [2], total: 55, status: 'completed' },
-          { id: '5', number: 'ORD-2024-005', customer: { name: 'Tom Brown' }, items: [1, 2], total: 67, status: 'completed' },
-        ],
-        orderTrends: []
-      };
-      setStats(mockData);
+      const params = `period=${period}`;
+      
+      // Fetch analytics data from API
+      const [salesData, productsData] = await Promise.all([
+        api.analytics.getSales(params),
+        api.analytics.getProducts(params)
+      ]);
+      
+      // Transform API data to stats format
+      const revenue = salesData?.totalRevenue || 0;
+      const orders = salesData?.totalOrders || 0;
+      const customers = salesData?.totalCustomers || 0;
+      const avgOrder = orders > 0 ? revenue / orders : 0;
+      
+      const topProducts = (productsData?.products || []).slice(0, 5).map((p: any) => ({
+        name: p.name,
+        quantity: p.totalSold || 0,
+        revenue: p.totalRevenue || 0
+      }));
+      
+      setStats({
+        revenue,
+        orders,
+        customers,
+        avgOrder,
+        topProducts,
+        recentOrders: (salesData?.recentOrders || []).map((o: any) => ({
+          id: o.id,
+          number: o.order_number || `ORD-${o.id}`,
+          customer: { name: o.customer_name || 'Guest' },
+          items: o.item_count || 0,
+          total: o.total,
+          status: o.status
+        })),
+        orderTrends: salesData?.trends || []
+      });
     } catch (error) {
       showNotification('Failed to fetch analytics', 'error');
+      // Fallback to empty data
+      setStats({
+        revenue: 0,
+        orders: 0,
+        customers: 0,
+        avgOrder: 0,
+        topProducts: [],
+        recentOrders: [],
+        orderTrends: []
+      });
     } finally {
       setLoading(false);
     }

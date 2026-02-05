@@ -315,7 +315,6 @@ const InventoryView: React.FC = () => {
                     Add first stock entry
                   </Button>
                 )}
-                </Button>
               </div>
             ) : (
               <Table

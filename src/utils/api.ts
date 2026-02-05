@@ -101,6 +101,7 @@ export const api = {
     getOne: (id: string) => fetcher(`/api/users/${id}`),
     createStaff: (data: any) => fetcher('/api/users/staff', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: string, data: any) => fetcher(`/api/users/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    updatePassword: (id: string, data: any) => fetcher(`/api/users/${id}/password`, { method: 'PATCH', body: JSON.stringify(data) }),
     delete: (id: string) => fetcher(`/api/users/${id}`, { method: 'DELETE' }),
   },
   tables: {
