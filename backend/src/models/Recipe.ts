@@ -6,6 +6,7 @@ export interface IRecipe extends Document {
   product_id: mongoose.Types.ObjectId;
   ingredient_id: mongoose.Types.ObjectId;
   quantity_required: number;
+  unit: string; // The unit used in the recipe (e.g., 'kg', 'g', 'ml')
   created_at: Date;
   updated_at: Date;
 }
@@ -16,6 +17,7 @@ const RecipeSchema: Schema = new Schema({
   product_id: { type: Schema.Types.ObjectId, ref: 'Product', required: true },
   ingredient_id: { type: Schema.Types.ObjectId, ref: 'Ingredient', required: true },
   quantity_required: { type: Number, required: true },
+  unit: { type: String },
 }, { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } });
 
 RecipeSchema.index({ business_id: 1, product_id: 1 });

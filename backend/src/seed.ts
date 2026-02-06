@@ -3,6 +3,8 @@ import dotenv from 'dotenv';
 import bcrypt from 'bcryptjs';
 import User from './models/User';
 import Business from './models/Business';
+import Unit from './models/Unit';
+import UnitConversion from './models/UnitConversion';
 
 dotenv.config();
 
@@ -15,6 +17,8 @@ async function seed() {
   // Clear existing data
   await User.deleteMany({});
   await Business.deleteMany({});
+  await Unit.deleteMany({});
+  await UnitConversion.deleteMany({});
   console.log('Cleared existing data');
 
   // Create SaaS Admin (primary super admin)
@@ -122,6 +126,122 @@ async function seed() {
   await admin3.save();
   console.log('Created Business 3:', business3.name);
 
+  // Create default units for each business
+  const businesses = [business1._id, business2._id, business3._id];
+  
+  const defaultUnits = [
+    { name: 'kg', description: 'Kilogram' },
+    { name: 'g', description: 'Gram' },
+    { name: 'mg', description: 'Milligram' },
+    { name: 'L', description: 'Liter' },
+    { name: 'ml', description: 'Milliliter' },
+    { name: 'pcs', description: 'Pieces' },
+    { name: 'box', description: 'Box' },
+    { name: 'pack', description: 'Pack' },
+    { name: 'dozen', description: 'Dozen' },
+    { name: 'cup', description: 'Cup' },
+    { name: 'tablespoon', description: 'Tablespoon' },
+    { name: 'teaspoon', description: 'Teaspoon' }
+  ];
+
+  for (const businessId of businesses) {
+    // Create units
+    const createdUnits = await Unit.insertMany(
+      defaultUnits.map(unit => ({
+        ...unit,
+        business_id: businessId,
+        is_active: true
+      }))
+    );
+
+    // Create common unit conversions (weight)
+    const kg = createdUnits.find(u => u.name === 'kg');
+    const g = createdUnits.find(u => u.name === 'g');
+    const mg = createdUnits.find(u => u.name === 'mg');
+
+    if (kg && g) {
+      await UnitConversion.create({
+        business_id: businessId,
+        from_unit: 'kg',
+        to_unit: 'g',
+        factor: 1000
+      });
+    }
+    if (kg && mg) {
+      await UnitConversion.create({
+        business_id: businessId,
+        from_unit: 'kg',
+        to_unit: 'mg',
+        factor: 1000000
+      });
+    }
+    if (g && mg) {
+      await UnitConversion.create({
+        business_id: businessId,
+        from_unit: 'g',
+        to_unit: 'mg',
+        factor: 1000
+      });
+    }
+
+    // Volume conversions
+    const L = createdUnits.find(u => u.name === 'L');
+    const ml = createdUnits.find(u => u.name === 'ml');
+
+    if (L && ml) {
+      await UnitConversion.create({
+        business_id: businessId,
+        from_unit: 'L',
+        to_unit: 'ml',
+        factor: 1000
+      });
+    }
+
+    // Pieces to dozen
+    const pcs = createdUnits.find(u => u.name === 'pcs');
+    const dozen = createdUnits.find(u => u.name === 'dozen');
+
+    if (pcs && dozen) {
+      await UnitConversion.create({
+        business_id: businessId,
+        from_unit: 'dozen',
+        to_unit: 'pcs',
+        factor: 12
+      });
+    }
+
+    // Cooking volume conversions
+    const cup = createdUnits.find(u => u.name === 'cup');
+    const tablespoon = createdUnits.find(u => u.name === 'tablespoon');
+    const teaspoon = createdUnits.find(u => u.name === 'teaspoon');
+    const mlUnit = createdUnits.find(u => u.name === 'ml');
+
+    if (cup && mlUnit) {
+      await UnitConversion.create({
+        business_id: businessId,
+        from_unit: 'cup',
+        to_unit: 'ml',
+        factor: 240
+      });
+    }
+    if (tablespoon && mlUnit) {
+      await UnitConversion.create({
+        business_id: businessId,
+        from_unit: 'tablespoon',
+        to_unit: 'ml',
+        factor: 15
+      });
+    }
+    if (teaspoon && mlUnit) {
+      await UnitConversion.create({
+        business_id: businessId,
+        from_unit: 'teaspoon',
+        to_unit: 'ml',
+        factor: 5
+      });
+    }
+  }
+
   console.log('\n✅ Seed completed successfully!');
   console.log('\nTest accounts:');
   console.log('  Primary SaaS Admin: admin@lunixpos.com / admin123');
@@ -129,6 +249,8 @@ async function seed() {
   console.log('  Business 1: business1@abccafe.com / admin123');
   console.log('  Business 2: business2@abccafe.com / admin123');
   console.log('  Business 3: business3@abccafe.com / admin123');
+  console.log('\nDefault units created: kg, g, mg, L, ml, pcs, box, pack, dozen, cup, tablespoon, teaspoon');
+  console.log('Unit conversions seeded for weight, volume, and cooking measurements');
 
   await mongoose.disconnect();
   console.log('\nDisconnected from MongoDB');

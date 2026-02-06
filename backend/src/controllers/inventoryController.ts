@@ -1,6 +1,8 @@
 import mongoose from 'mongoose';
 import Inventory from '../models/Inventory';
 import InventoryTransaction from '../models/InventoryTransaction';
+import Ingredient from '../models/Ingredient';
+import UnitConversion from '../models/UnitConversion';
 import * as factory from '../utils/controllerFactory';
 import catchAsync from '../utils/catchAsync';
 import { AuthRequest } from '../middleware/auth';
@@ -25,8 +27,27 @@ export const getAllInventory = catchAsync(async (req: AuthRequest, res: Response
 export const getInventory = factory.getOne(Inventory, { populate: 'item_id' });
 
 export const createInventory = catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
-  const { item_id, item_type, quantity_available, reorder_level } = req.body;
+  const { item_id, item_type, quantity_available, reorder_level, unit } = req.body;
   const businessId = req.user.default_business_id;
+
+  // Get the unit from the ingredient if item_type is 'ingredient'
+  let unitName = unit;
+  if (item_type === 'ingredient') {
+    const ingredient = await Ingredient.findById(item_id).populate('unit_id');
+    if (!ingredient) {
+      return next(new AppError('Ingredient not found', 404));
+    }
+    // Get the unit name from the populated unit
+    unitName = (ingredient.unit_id as any)?.name ||
+      (typeof ingredient.unit_id === 'object' ? (ingredient.unit_id as any).name : '');
+    if (!unitName) {
+      return next(new AppError('Ingredient has no unit assigned', 400));
+    }
+  }
+
+  if (!unitName) {
+    return next(new AppError('Unit is required', 400));
+  }
 
   // Check if inventory already exists
   const existingInventory = await Inventory.findOne({
@@ -65,6 +86,7 @@ export const createInventory = catchAsync(async (req: AuthRequest, res: Response
       business_id: businessId,
       item_id: item_id,
       item_type: item_type,
+      unit: unitName,
       quantity_available: quantity_available || 0,
       reorder_level: reorder_level || 0
     }]);
@@ -91,46 +113,136 @@ export const updateInventory = factory.updateOne(Inventory);
 
 export const deleteInventory = factory.deleteOne(Inventory);
 
+/**
+ * Helper function to convert quantity between units
+ */
+const convertQuantityBetweenUnits = async (
+  businessId: string,
+  quantity: number,
+  fromUnit: string,
+  toUnit: string
+): Promise<{ quantity: number; converted: boolean }> => {
+  if (fromUnit === toUnit) {
+    return { quantity, converted: false };
+  }
+
+  // Try to find conversion factor (from_unit -> to_unit)
+  const conversion = await UnitConversion.findOne({
+    business_id: businessId,
+    from_unit: fromUnit,
+    to_unit: toUnit
+  });
+
+  if (conversion) {
+    return { quantity: quantity * conversion.factor, converted: true };
+  }
+
+  // Try reverse conversion (to_unit -> from_unit)
+  const reverseConversion = await UnitConversion.findOne({
+    business_id: businessId,
+    from_unit: toUnit,
+    to_unit: fromUnit
+  });
+
+  if (reverseConversion) {
+    return { quantity: quantity / reverseConversion.factor, converted: true };
+  }
+
+  // If no conversion found, return original quantity with warning
+  console.warn(`No conversion found between ${fromUnit} and ${toUnit}, assuming 1:1`);
+  return { quantity, converted: false };
+};
+
 export const addStock = catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
-  const { item_id, item_type, quantity, note } = req.body;
+  const { item_id, item_type, quantity, unit, note } = req.body;
   const businessId = req.user.default_business_id;
 
-  // Use atomic upsert to prevent race conditions
-  const inventory = await Inventory.findOneAndUpdate(
-    { business_id: businessId, item_id: item_id, item_type: item_type },
-    { 
-      $inc: { quantity_available: quantity },
-      $setOnInsert: { 
-        creator_id: req.user._id,
-        business_id: businessId,
-        item_id: item_id,
-        item_type: item_type,
-        reorder_level: 0
-      }
-    },
-    { 
-      upsert: true,
-      new: true
+  if (!unit) {
+    return next(new AppError('Unit is required for stock entry', 400));
+  }
+
+  // For ingredients, always convert to the ingredient's base unit
+  let baseUnit = unit;
+  let ingredientBaseUnit = '';
+
+  if (item_type === 'ingredient') {
+    const ingredient = await Ingredient.findById(item_id).populate('unit_id');
+    if (!ingredient) {
+      return next(new AppError('Ingredient not found', 404));
     }
-  );
+    // Get the ingredient's base unit name
+    ingredientBaseUnit = (ingredient.unit_id as any)?.name ||
+      (typeof ingredient.unit_id === 'object' ? (ingredient.unit_id as any).name : '');
+    if (!ingredientBaseUnit) {
+      return next(new AppError('Ingredient has no unit assigned', 400));
+    }
+    baseUnit = ingredientBaseUnit;
+  }
+
+  // Check if inventory exists
+  const existingInventory = await Inventory.findOne({
+    business_id: businessId,
+    item_id: item_id,
+    item_type: item_type
+  });
+
+  let quantityToAdd = quantity;
+  let converted = false;
+
+  if (existingInventory) {
+    // Inventory exists - convert to inventory's stored unit (which is the ingredient's base unit)
+    if (unit !== existingInventory.unit) {
+      const result = await convertQuantityBetweenUnits(businessId, quantity, unit, existingInventory.unit);
+      quantityToAdd = result.quantity;
+      converted = result.converted;
+    }
+
+    // Use atomic increment
+    await Inventory.findByIdAndUpdate(existingInventory._id, {
+      $inc: { quantity_available: quantityToAdd }
+    });
+  } else {
+    // New inventory - convert to ingredient's base unit
+    if (unit !== baseUnit) {
+      const result = await convertQuantityBetweenUnits(businessId, quantity, unit, baseUnit);
+      quantityToAdd = result.quantity;
+      converted = result.converted;
+    }
+
+    await Inventory.create([{
+      creator_id: req.user._id,
+      business_id: businessId,
+      item_id: item_id,
+      item_type: item_type,
+      unit: baseUnit,
+      quantity_available: quantityToAdd,
+      reorder_level: 0
+    }]);
+  }
 
   // Record transaction
   await InventoryTransaction.create({
     business_id: businessId,
     item_id: item_id,
     item_type: item_type,
-    change_quantity: quantity,
+    change_quantity: converted ? quantityToAdd : quantity,
     reference_type: 'purchase',
     creator_id: req.user._id,
-    note
+    note: note || `Added ${quantity} ${unit} → ${quantityToAdd.toFixed(2)} ${baseUnit}`
+  });
+
+  // Return updated inventory
+  const updatedInventory = await Inventory.findOne({
+    business_id: businessId,
+    item_id: item_id,
+    item_type: item_type
   });
 
   res.status(200).json({
     success: true,
     data: {
-      ...inventory.toObject(),
-      id: inventory._id.toString(),
-      transaction: { quantity, note }
+      ...updatedInventory!.toObject(),
+      id: updatedInventory!._id.toString()
     }
   });
 });

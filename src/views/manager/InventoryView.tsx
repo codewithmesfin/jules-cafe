@@ -14,6 +14,12 @@ import { usePermission } from '../../hooks/usePermission';
 import { cn } from '../../utils/cn';
 import type { Inventory, Ingredient, Product } from '../../types';
 
+interface Unit {
+  id: string;
+  _id: string;
+  name: string;
+}
+
 type InventoryType = 'ingredient' | 'product';
 
 // Helper to safely get item ID from both old (ingredient_id) and new (item_id) formats
@@ -80,8 +86,11 @@ const InventoryView: React.FC = () => {
     item_id: '',
     item_type: 'ingredient' as InventoryType,
     quantity_available: 0,
-    reorder_level: 0
+    reorder_level: 0,
+    unit: ''
   });
+
+  const [units, setUnits] = useState<Unit[]>([]);
 
   const [ingForm, setIngForm] = useState({
     name: '',
@@ -95,19 +104,21 @@ const InventoryView: React.FC = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [invRes, ingRes, prodRes, transRes] = await Promise.all([
+      const [invRes, ingRes, prodRes, transRes, unitsRes] = await Promise.all([
         api.inventory.getAll(),
         api.ingredients.getAll(),
         api.products.getAll(),
-        api.inventory.getTransactions()
+        api.inventory.getTransactions(),
+        api.settings.getUnits()
       ]);
-      
+
       // Ensure inventory is an array
       const invData = Array.isArray(invRes) ? invRes : (invRes?.data || []);
       setInventory(invData);
       setIngredients(Array.isArray(ingRes) ? ingRes : (ingRes?.data || []));
       setProducts(Array.isArray(prodRes) ? prodRes : (prodRes?.data || []));
       setTransactions(Array.isArray(transRes) ? transRes : (transRes?.data || []));
+      setUnits(Array.isArray(unitsRes) ? unitsRes : unitsRes.data || []);
     } catch (error: any) {
       showNotification('Failed to fetch inventory data', 'error');
     } finally {
@@ -116,6 +127,11 @@ const InventoryView: React.FC = () => {
   };
 
   const handleSaveInventory = async () => {
+    if (!invForm.unit) {
+      showNotification('Please select a unit for the stock entry', 'error');
+      return;
+    }
+
     try {
       if (selectedInventory) {
         // Add to existing stock using addStock endpoint (creates transaction)
@@ -123,6 +139,7 @@ const InventoryView: React.FC = () => {
           item_id: invForm.item_id,
           item_type: invForm.item_type,
           quantity: invForm.quantity_available,
+          unit: invForm.unit,
           note: 'Stock adjustment'
         });
         showNotification('Stock added successfully');
@@ -132,7 +149,8 @@ const InventoryView: React.FC = () => {
           item_id: invForm.item_id,
           item_type: invForm.item_type,
           quantity_available: invForm.quantity_available,
-          reorder_level: invForm.reorder_level
+          reorder_level: invForm.reorder_level,
+          unit: invForm.unit
         });
         showNotification('Stock entry added successfully');
       }
@@ -162,13 +180,30 @@ const InventoryView: React.FC = () => {
       setInvForm({
         item_id: itemId,
         item_type: activeTab,
-        quantity_available: inv.quantity_available,
-        reorder_level: inv.reorder_level
+        quantity_available: 0,
+        reorder_level: inv.reorder_level,
+        unit: ''
       });
     } else {
-      setInvForm({ item_id: '', item_type: activeTab, quantity_available: 0, reorder_level: 0 });
+      setInvForm({ item_id: '', item_type: activeTab, quantity_available: 0, reorder_level: 0, unit: '' });
     }
     setIsModalOpen(true);
+  };
+
+  // Get the base unit for an ingredient (for display purposes)
+  const getIngredientBaseUnit = (ingredientId: string): string => {
+    const ingredient = ingredients.find(i => (i.id === ingredientId || i._id === ingredientId));
+    if (ingredient) {
+      // Check if unit is populated
+      const unitId = (ingredient as any).unit_id;
+      if (typeof unitId === 'object' && unitId?.name) {
+        return unitId.name;
+      }
+      // Find unit from units list
+      const unit = units.find(u => u.id === unitId || u._id === unitId);
+      return unit?.name || '';
+    }
+    return '';
   };
 
   const filteredInventory = inventory.filter(item => {
@@ -465,11 +500,13 @@ const InventoryView: React.FC = () => {
                 >
                   <option value="">Choose...</option>
                   {activeTab === 'ingredient' ? (
-                    ingredients.map(i => (
-                      <option key={i.id || i._id} value={i.id || i._id}>
-                        {i.name} ({i.unit})
+                    ingredients.map(i => {
+                      const ingId = i.id || i._id;
+                      return (
+                      <option key={ingId} value={ingId}>
+                        {i.name} ({getIngredientBaseUnit(ingId || '')})
                       </option>
-                    ))
+                    )})
                   ) : (
                     products.map(p => (
                       <option key={p.id || p._id} value={p.id || p._id}>
@@ -489,6 +526,25 @@ const InventoryView: React.FC = () => {
               />
             </>
           )}
+
+          {/* Unit Selector for all stock entries */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Unit <span className="text-red-500">*</span>
+            </label>
+            <select
+              className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={invForm.unit}
+              onChange={(e) => setInvForm({ ...invForm, unit: e.target.value })}
+            >
+              <option value="">Select Unit</option>
+              {units.map(unit => (
+                <option key={unit.id || unit._id} value={unit.name}>
+                  {unit.name}
+                </option>
+              ))}
+            </select>
+          </div>
 
           <Input
             label="Quantity to Add"

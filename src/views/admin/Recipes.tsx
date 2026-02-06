@@ -12,18 +12,35 @@ import { usePermission } from '../../hooks/usePermission';
 import { cn } from '../../utils/cn';
 import type { Recipe, Product, Ingredient } from '../../types';
 
+interface IngredientWithUnit extends Ingredient {
+  unit_name?: string;
+}
+
+interface Unit {
+  id: string;
+  _id: string;
+  name: string;
+}
+
+interface RecipeIngredient {
+  ingredient_id: string;
+  quantity_required: number;
+  unit?: string;
+}
+
 const Recipes: React.FC = () => {
   const { showNotification } = useNotification();
   const { canCreate, canUpdate } = usePermission();
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
-  const [ingredients, setIngredients] = useState<Ingredient[]>([]);
+  const [ingredients, setIngredients] = useState<IngredientWithUnit[]>([]);
+  const [units, setUnits] = useState<Unit[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   // Editor state
-  const [editingIngredients, setEditingIngredients] = useState<{ ingredient_id: string, quantity_required: number }[]>([]);
+  const [editingIngredients, setEditingIngredients] = useState<RecipeIngredient[]>([]);
 
   useEffect(() => {
     fetchData();
@@ -32,14 +49,16 @@ const Recipes: React.FC = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [recData, prodData, ingData] = await Promise.all([
+      const [recData, prodData, ingData, unitsData] = await Promise.all([
         api.recipes.getAll(),
         api.products.getAll(),
-        api.ingredients.getAll()
+        api.ingredients.getAll(),
+        api.settings.getUnits()
       ]);
       setRecipes(recData);
       setProducts(prodData);
       setIngredients(ingData);
+      setUnits(Array.isArray(unitsData) ? unitsData : unitsData.data || []);
     } catch (error) {
       showNotification("Failed to load recipe data", "error");
     } finally {
@@ -56,12 +75,13 @@ const Recipes: React.FC = () => {
     const productRecipes = recipes.filter(r => r.product_id === product.id);
     setEditingIngredients(productRecipes.map(r => ({
       ingredient_id: r.ingredient_id,
-      quantity_required: r.quantity_required
+      quantity_required: r.quantity_required,
+      unit: r.unit || ''
     })));
   };
 
   const addIngredientRow = () => {
-    setEditingIngredients([...editingIngredients, { ingredient_id: '', quantity_required: 0 }]);
+    setEditingIngredients([...editingIngredients, { ingredient_id: '', quantity_required: 0, unit: '' }]);
   };
 
   const removeIngredientRow = (index: number) => {
@@ -89,7 +109,8 @@ const Recipes: React.FC = () => {
         .map(ing => api.recipes.create({
           product_id: selectedProduct.id,
           ingredient_id: ing.ingredient_id,
-          quantity_required: ing.quantity_required
+          quantity_required: ing.quantity_required,
+          unit: ing.unit || ''
         }))
       );
 
@@ -227,19 +248,36 @@ const Recipes: React.FC = () => {
                         disabled={!canUpdate('recipes')}
                       >
                         <option value="">Select ingredient</option>
-                        {ingredients.map(i => (
-                          <option key={i.id} value={i.id}>{i.name} ({i.unit})</option>
-                        ))}
+                        {ingredients.map(i => {
+                          // Get unit name from populated unit_id or fallback
+                          const unitName = (i as any).unit_name || (i as any).unit || '';
+                          return (
+                            <option key={i.id} value={i.id}>{i.name} ({unitName})</option>
+                          );
+                        })}
                       </select>
                       <div className="flex items-center gap-2">
                         <input
                           type="number"
+                          step="0.001"
+                          min="0"
                           placeholder="Qty"
                           className="w-20 rounded-lg border border-slate-200 px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-slate-900/20"
                           value={ing.quantity_required || ''}
                           onChange={(e) => updateIngredientRow(idx, 'quantity_required', parseFloat(e.target.value) || 0)}
                           disabled={!canUpdate('recipes')}
                         />
+                        <select
+                          className="w-24 rounded-lg border border-slate-200 px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/20"
+                          value={ing.unit || ''}
+                          onChange={(e) => updateIngredientRow(idx, 'unit', e.target.value)}
+                          disabled={!canUpdate('recipes')}
+                        >
+                          <option value="">Unit</option>
+                          {units.map(u => (
+                            <option key={u.id || u._id} value={u.name}>{u.name}</option>
+                          ))}
+                        </select>
                         {canUpdate('recipes') && (
                           <button
                             onClick={() => removeIngredientRow(idx)}

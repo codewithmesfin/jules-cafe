@@ -80,6 +80,16 @@ export const getSalesSummary = catchAsync(async (req: AuthRequest, res: Response
     .populate('customer_id', 'name')
     .lean();
   
+  // Get order item counts from OrderItem collection
+  const orderIds = recentOrders.map(o => o._id);
+  const itemCounts = await OrderItem.aggregate([
+    { $match: { order_id: { $in: orderIds } } },
+    { $group: { _id: '$order_id', count: { $sum: 1 } } }
+  ]);
+  
+  // Create a map of order ID to item count
+  const itemCountMap = new Map(itemCounts.map(item => [item._id.toString(), item.count]));
+  
   // Get trends (daily data)
   const trends = await Order.aggregate([
     { $match: query },
@@ -102,7 +112,7 @@ export const getSalesSummary = catchAsync(async (req: AuthRequest, res: Response
       id: o._id,
       order_number: o.order_number || `ORD-${o._id.toString().slice(-6).toUpperCase()}`,
       customer_name: o.customer_id?.name || 'Guest',
-      item_count: o.items?.length || 0,
+      item_count: itemCountMap.get(o._id.toString()) || 0,
       total: o.total_amount,
       status: o.order_status,
       created_at: o.created_at

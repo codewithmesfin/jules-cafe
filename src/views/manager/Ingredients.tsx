@@ -14,10 +14,17 @@ import { usePermission } from '../../hooks/usePermission';
 import { cn } from '../../utils/cn';
 import type { Ingredient } from '../../types';
 
+interface Unit {
+  id: string;
+  _id: string;
+  name: string;
+}
+
 const IngredientsListView: React.FC = () => {
   const { showNotification } = useNotification();
   const { canCreate, canUpdate, canDelete } = usePermission();
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
+  const [units, setUnits] = useState<Unit[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -25,15 +32,32 @@ const IngredientsListView: React.FC = () => {
 
   const [formData, setFormData] = useState({
     name: '',
-    unit: '',
+    unit_id: '',
+    unit_name: '',
     cost_per_unit: 0,
     sku: '',
     is_active: true
   });
 
   useEffect(() => {
-    fetchIngredients();
+    fetchData();
   }, []);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [ingRes, unitsRes] = await Promise.all([
+        api.ingredients.getAll(),
+        api.settings.getUnits()
+      ]);
+      setIngredients(Array.isArray(ingRes) ? ingRes : ingRes.data || []);
+      setUnits(Array.isArray(unitsRes) ? unitsRes : unitsRes.data || []);
+    } catch (error: any) {
+      showNotification('Failed to fetch data', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchIngredients = async () => {
     try {
@@ -48,22 +72,30 @@ const IngredientsListView: React.FC = () => {
   };
 
   const handleSave = async () => {
-    if (!formData.name || !formData.unit) {
+    if (!formData.name || !formData.unit_id) {
       showNotification('Please fill in all required fields', 'error');
       return;
     }
 
     try {
+      const payload = {
+        name: formData.name,
+        unit_id: formData.unit_id,
+        cost_per_unit: formData.cost_per_unit,
+        sku: formData.sku,
+        is_active: formData.is_active
+      };
+
       if (editingIngredient) {
-        await api.ingredients.update(editingIngredient.id || editingIngredient._id!, formData);
+        await api.ingredients.update(editingIngredient.id || editingIngredient._id!, payload);
         showNotification('Ingredient updated successfully');
       } else {
-        await api.ingredients.create(formData);
+        await api.ingredients.create(payload);
         showNotification('Ingredient created successfully');
       }
       setIsModalOpen(false);
       setEditingIngredient(null);
-      setFormData({ name: '', unit: '', cost_per_unit: 0, sku: '', is_active: true });
+      setFormData({ name: '', unit_id: '', unit_name: '', cost_per_unit: 0, sku: '', is_active: true });
       fetchIngredients();
     } catch (error: any) {
       showNotification(error.message || 'Failed to save ingredient', 'error');
@@ -85,39 +117,55 @@ const IngredientsListView: React.FC = () => {
   const openModal = (ingredient?: Ingredient) => {
     if (ingredient) {
       setEditingIngredient(ingredient);
+      // Find the unit from the populated unit_id or from units list
+      let unitId = '';
+      let unitName = '';
+      if ((ingredient as any).unit_id) {
+        if (typeof (ingredient as any).unit_id === 'object') {
+          unitId = (ingredient as any).unit_id._id || (ingredient as any).unit_id.id;
+          unitName = (ingredient as any).unit_id.name;
+        } else {
+          unitId = (ingredient as any).unit_id;
+          const foundUnit = units.find(u => u.id === unitId || u._id === unitId);
+          unitName = foundUnit?.name || '';
+        }
+      }
       setFormData({
         name: ingredient.name,
-        unit: ingredient.unit,
+        unit_id: unitId,
+        unit_name: unitName,
         cost_per_unit: (ingredient as any).cost_per_unit || 0,
         sku: (ingredient as any).sku || '',
         is_active: (ingredient as any).is_active !== false
       });
     } else {
       setEditingIngredient(null);
-      setFormData({ name: '', unit: '', cost_per_unit: 0, sku: '', is_active: true });
+      setFormData({ name: '', unit_id: '', unit_name: '', cost_per_unit: 0, sku: '', is_active: true });
     }
     setIsModalOpen(true);
   };
 
   const filteredIngredients = ingredients.filter(ing =>
     ing.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    ing.unit.toLowerCase().includes(searchTerm.toLowerCase())
+    ((ing as any).unit_name || (ing as any).unit || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const columns = [
     {
       header: 'Ingredient',
-      accessor: (ing: Ingredient) => (
+      accessor: (ing: Ingredient) => {
+        const unitName = (ing as any).unit_name || (ing as any).unit || '';
+        return (
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center">
             <Coffee size={18} className="text-amber-600" />
           </div>
           <div>
             <p className="font-medium text-slate-900">{ing.name}</p>
-            <p className="text-xs text-slate-500">{ing.unit}</p>
+            <p className="text-xs text-slate-500">{unitName}</p>
           </div>
         </div>
-      )
+      )}
     },
     {
       header: 'Status',
@@ -203,7 +251,7 @@ const IngredientsListView: React.FC = () => {
               </div>
               <div>
                 <p className="font-semibold text-slate-900">{ing.name}</p>
-                <p className="text-sm text-slate-500">{ing.unit}</p>
+                <p className="text-sm text-slate-500">{formData.unit_name || (ing as any).unit_name || (ing as any).unit}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -247,12 +295,26 @@ const IngredientsListView: React.FC = () => {
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           />
           <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Unit"
-              placeholder="e.g., kg, liters, pieces"
-              value={formData.unit}
-              onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-            />
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Unit <span className="text-red-500">*</span>
+              </label>
+              <select
+                className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/20"
+                value={formData.unit_id}
+                onChange={(e) => {
+                  const selectedUnit = units.find(u => u.id === e.target.value || u._id === e.target.value);
+                  setFormData({ ...formData, unit_id: e.target.value, unit_name: selectedUnit?.name || '' });
+                }}
+              >
+                <option value="">Select Unit</option>
+                {units.map(unit => (
+                  <option key={unit.id || unit._id} value={unit.id || unit._id}>
+                    {unit.name}
+                  </option>
+                ))}
+              </select>
+            </div>
             <Input
               label="Cost per Unit"
               type="number"
