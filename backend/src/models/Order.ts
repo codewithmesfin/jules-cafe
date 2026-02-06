@@ -11,6 +11,7 @@ export interface IOrder extends Document {
   payment_status: 'unpaid' | 'partial' | 'paid';
   payment_method?: 'cash' | 'card' | 'mobile' | 'other';
   notes?: string;
+  order_number?: string;
   created_at: Date;
   updated_at: Date;
 }
@@ -41,6 +42,7 @@ const OrderSchema: Schema = new Schema({
     enum: ['cash', 'card', 'mobile', 'other']
   },
   notes: { type: String },
+  order_number: { type: String, unique: true },
 }, { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } });
 
 OrderSchema.index({ business_id: 1, order_status: 1 });

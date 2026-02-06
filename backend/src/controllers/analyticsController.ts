@@ -8,6 +8,14 @@ import { AuthRequest } from '../middleware/auth';
 import mongoose from 'mongoose';
 
 /**
+ * Generate Order Number
+ */
+const generateOrderNumber = async () => {
+  const count = await Order.countDocuments();
+  return `ORD-${String(count + 1).padStart(6, '0')}`;
+};
+
+/**
  * Get Date Range from Period
  */
 const getDateRangeFromPeriod = (period: string) => {
@@ -92,7 +100,7 @@ export const getSalesSummary = catchAsync(async (req: AuthRequest, res: Response
     avgOrderValue: totals[0]?.avgOrderValue || 0,
     recentOrders: recentOrders.map(o => ({
       id: o._id,
-      order_number: o.order_number,
+      order_number: o.order_number || `ORD-${o._id.toString().slice(-6).toUpperCase()}`,
       customer_name: o.customer_id?.name || 'Guest',
       item_count: o.items?.length || 0,
       total: o.total_amount,
