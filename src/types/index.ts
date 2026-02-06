@@ -120,6 +120,7 @@ export interface Recipe {
   product_id: string;
   ingredient_id: string;
   quantity_required: number;
+  unit?: string;
 }
 
 export interface Table {

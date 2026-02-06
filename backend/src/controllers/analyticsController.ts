@@ -77,7 +77,7 @@ export const getSalesSummary = catchAsync(async (req: AuthRequest, res: Response
   const recentOrders = await Order.find(query)
     .sort({ created_at: -1 })
     .limit(10)
-    .populate('customer_id', 'name')
+    .populate('customer_id', 'full_name')
     .lean();
   
   // Get order item counts from OrderItem collection
@@ -111,7 +111,9 @@ export const getSalesSummary = catchAsync(async (req: AuthRequest, res: Response
     recentOrders: recentOrders.map(o => ({
       id: o._id,
       order_number: o.order_number || `ORD-${o._id.toString().slice(-6).toUpperCase()}`,
-      customer_name: o.customer_id?.name || 'Guest',
+      customer_name: o.customer_id && typeof o.customer_id === 'object' && 'full_name' in o.customer_id 
+        ? (o.customer_id as { full_name: string }).full_name 
+        : 'Guest',
       item_count: itemCountMap.get(o._id.toString()) || 0,
       total: o.total_amount,
       status: o.order_status,
