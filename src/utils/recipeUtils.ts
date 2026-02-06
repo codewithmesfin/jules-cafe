@@ -1,24 +1,25 @@
-import type { Recipe, InventoryItem } from '../types';
+import type { Recipe, Ingredient, InventoryItem } from '../types';
 
 /**
  * Calculates how many portions of a menu item can be made based on current inventory.
  * BOM (Bill of Materials) logic.
  */
-export const calculateAvailablePortions = (recipe: Recipe, inventory: InventoryItem[]): number => {
-  if (!recipe.ingredients || recipe.ingredients.length === 0) return 0;
+export const calculateAvailablePortions = (
+  recipe: Recipe,
+  inventory: InventoryItem[],
+  ingredients: Ingredient[]
+): number => {
+  if (!recipe.ingredient_id || !recipe.quantity_required) return 0;
 
-  const portionsPerIngredient = recipe.ingredients.map(req => {
-    // Note: In a real app, we'd match by ingredient ID.
-    // Here we match by name as per mock data structure.
-    const invItem = inventory.find(i => i.item_name.toLowerCase() === req.item_name.toLowerCase());
+  // Find the ingredient name from the ingredients list
+  const ingredient = ingredients.find(ing => ing.id === recipe.ingredient_id);
+  if (!ingredient) return 0;
 
-    if (!invItem) return 0;
+  // Find the inventory item by ingredient name
+  const invItem = inventory.find(i => i.item_name.toLowerCase() === ingredient.name.toLowerCase());
+  if (!invItem) return 0;
 
-    // Calculate how many times we can satisfy this requirement
-    return Math.floor(invItem.quantity / req.quantity);
-  });
-
-  const availablePortions = Math.min(...portionsPerIngredient);
-
-  return availablePortions < 0 ? 0 : availablePortions;
+  // Calculate how many times we can satisfy this requirement
+  const portions = Math.floor(invItem.quantity / recipe.quantity_required);
+  return portions < 0 ? 0 : portions;
 };

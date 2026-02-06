@@ -55,7 +55,7 @@ const Recipes: React.FC = () => {
     setSelectedProduct(product);
     const productRecipes = recipes.filter(r => r.product_id === product.id);
     setEditingIngredients(productRecipes.map(r => ({
-      ingredient_id: typeof r.ingredient_id === 'string' ? r.ingredient_id : (r.ingredient_id as any).id,
+      ingredient_id: r.ingredient_id,
       quantity_required: r.quantity_required
     })));
   };

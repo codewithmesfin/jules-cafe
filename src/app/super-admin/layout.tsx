@@ -33,7 +33,7 @@ interface MenuItem {
 
 const menuItems: MenuItem[] = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/super-admin' },
-  { icon: Users, label: 'Admins (Clients)', path: '/super-admin/admins' },
+  { icon: Users, label: 'Clients', path: '/super-admin/admins' },
   { icon: Building2, label: 'Businesses', path: '/super-admin/businesses' },
   { icon: FileText, label: 'Invoices', path: '/super-admin/invoices' },
   { icon: CreditCard, label: 'Payments', path: '/super-admin/payments' },

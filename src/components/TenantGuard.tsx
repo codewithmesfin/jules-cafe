@@ -33,7 +33,7 @@ const TenantGuard: React.FC<TenantGuardProps> = ({ children }) => {
       }
 
       try {
-        const company = await api.public.company.getOne(tenantId);
+        const company = await api.public.getBusiness(tenantId);
         setCompanyData(company);
         // Store company data in sessionStorage for use in layout
         sessionStorage.setItem('tenantCompany', JSON.stringify(company));

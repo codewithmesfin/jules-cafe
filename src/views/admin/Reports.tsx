@@ -81,10 +81,10 @@ export default function ReportsPage() {
       setLoading(true);
       const params = `period=${period}`;
       
-      // Fetch analytics data from API
+      // Fetch analytics data from new summary endpoints
       const [salesData, productsData] = await Promise.all([
-        api.analytics.getSales(params),
-        api.analytics.getProducts(params)
+        api.analytics.getSalesSummary(params),
+        api.analytics.getProductsSummary(params)
       ]);
       
       // Transform API data to stats format
@@ -93,7 +93,7 @@ export default function ReportsPage() {
       const customers = salesData?.totalCustomers || 0;
       const avgOrder = orders > 0 ? revenue / orders : 0;
       
-      const topProducts = (productsData?.products || []).slice(0, 5).map((p: any) => ({
+      const topProducts = (productsData || []).map((p: any) => ({
         name: p.name,
         quantity: p.totalSold || 0,
         revenue: p.totalRevenue || 0
@@ -106,8 +106,8 @@ export default function ReportsPage() {
         avgOrder,
         topProducts,
         recentOrders: (salesData?.recentOrders || []).map((o: any) => ({
-          id: o.id,
-          number: o.order_number || `ORD-${o.id}`,
+          id: o.id || o._id,
+          number: o.order_number || `ORD-${o.id || o._id}`,
           customer: { name: o.customer_name || 'Guest' },
           items: o.item_count || 0,
           total: o.total,

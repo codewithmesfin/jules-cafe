@@ -1,135 +1,69 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
-import { Save, Upload, MapPin, Phone, Mail, Globe, Clock, FileText } from 'lucide-react';
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Save, Upload, MapPin, Phone, Mail, Globe, Clock, ArrowLeft } from 'lucide-react';
 import { api } from '@/utils/api';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
-import { useAuth } from '@/context/AuthContext';
 import { useNotification } from '@/context/NotificationContext';
 
-export default function BusinessSettingsPage() {
-  const { currentBusiness, refreshUser } = useAuth();
+export default function AddBusinessPage() {
+  const router = useRouter();
   const { showNotification } = useNotification();
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [uploadingLogo, setUploadingLogo] = useState(false);
-  const [uploadingBanner, setUploadingBanner] = useState(false);
-  const logoInputRef = useRef<HTMLInputElement>(null);
-  const bannerInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
-    name: '', legal_name: '', address: '', phone: '', email: '', website: '', 
-    opening_hours: { open: '', close: '' }, tax_rate: 0, currency: 'ETB',
-    description: '', logo: '', banner: ''
+    name: '',
+    legal_name: '',
+    address: '',
+    phone: '',
+    email: '',
+    website: '',
+    opening_hours: { open: '', close: '' },
+    tax_rate: 0,
+    currency: 'ETB',
+    description: '',
+    logo: '',
+    banner: ''
   });
 
-  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    
-    try {
-      setUploadingLogo(true);
-      const result = await api.upload.uploadImage(file);
-      setFormData({...formData, logo: result.data?.url || result.url});
-      showNotification('Logo uploaded successfully');
-    } catch (error: any) {
-      showNotification(error.message || 'Failed to upload logo', 'error');
-    } finally {
-      setUploadingLogo(false);
-      if (logoInputRef.current) logoInputRef.current.value = '';
-    }
-  };
-
-  const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    
-    try {
-      setUploadingBanner(true);
-      const result = await api.upload.uploadImage(file);
-      setFormData({...formData, banner: result.data?.url || result.url});
-      showNotification('Banner uploaded successfully');
-    } catch (error: any) {
-      showNotification(error.message || 'Failed to upload banner', 'error');
-    } finally {
-      setUploadingBanner(false);
-      if (bannerInputRef.current) bannerInputRef.current.value = '';
-    }
-  };
-
-  useEffect(() => {
-    const fetchBusiness = async () => {
-      try {
-        setLoading(true);
-        const businessId = currentBusiness?._id || currentBusiness?.id;
-        if (!businessId) {
-          setLoading(false);
-          return;
-        }
-        const response = await api.business.getOne(businessId);
-        const business = response.data || response;
-        
-        setFormData({
-          name: business.name || '',
-          legal_name: business.legal_name || '',
-          address: business.address || '',
-          phone: business.phone || '',
-          email: business.email || '',
-          website: business.website || '',
-          opening_hours: { 
-            open: business.opening_hours?.open || '', 
-            close: business.opening_hours?.close || '' 
-          },
-          tax_rate: business.tax_rate || 0,
-          currency: business.currency || 'ETB',
-          description: business.description || '',
-          logo: business.logo || '',
-          banner: business.banner || ''
-        });
-      } catch (error: any) {
-        showNotification(error.message || 'Failed to load business data', 'error');
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchBusiness();
-  }, [currentBusiness]);
-
   const handleSave = async () => {
+    if (!formData.name) {
+      showNotification('Business name is required', 'error');
+      return;
+    }
+
     try {
       setSaving(true);
-      await api.business.update((currentBusiness as any)?._id || (currentBusiness as any)?.id, formData);
-      await refreshUser();
-      showNotification('Settings saved successfully');
+      await api.business.create(formData);
+      showNotification('Business created successfully');
+      router.push('/dashboard/settings/businesses');
     } catch (error: any) {
-      showNotification(error.message || 'Failed to save settings', 'error');
+      showNotification(error.message || 'Failed to create business', 'error');
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="space-y-6 animate-pulse">
-        <div className="h-8 bg-slate-100 rounded w-48" />
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 h-96" />
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Business Settings</h1>
-          <p className="text-slate-500 text-sm">Manage your business profile and settings</p>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => router.push('/dashboard/settings/businesses')}
+            className="p-2 hover:bg-slate-100 rounded-xl transition-colors"
+          >
+            <ArrowLeft size={20} className="text-slate-600" />
+          </button>
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Add New Business</h1>
+            <p className="text-slate-500 text-sm">Create a new business for your account</p>
+          </div>
         </div>
         <Button onClick={handleSave} disabled={saving}>
-          <Save size={16} className="mr-2" /> {saving ? 'Saving...' : 'Save Changes'}
+          <Save size={16} className="mr-2" /> {saving ? 'Creating...' : 'Create Business'}
         </Button>
       </div>
 
@@ -138,10 +72,11 @@ export default function BusinessSettingsPage() {
         <Card title="Basic Information" className="lg:col-span-2" padding="comfortable">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
-              label="Business Name"
+              label="Business Name *"
               placeholder="Your business name"
               value={formData.name}
               onChange={e => setFormData({...formData, name: e.target.value})}
+              required
             />
             <Input
               label="Legal Name"
@@ -244,30 +179,20 @@ export default function BusinessSettingsPage() {
             <div className="space-y-4">
               <label className="block text-sm font-medium text-slate-700">Logo</label>
               <div className="flex items-center gap-4">
-                <div className="w-20 h-20 bg-slate-100 rounded-xl flex items-center justify-center border border-slate-200 overflow-hidden">
+                <div className="w-20 h-20 bg-slate-100 rounded-xl flex items-center justify-center border border-slate-200">
                   {formData.logo ? (
-                    <img src={formData.logo} alt="Logo" className="w-full h-full object-cover" />
+                    <img src={formData.logo} alt="Logo" className="w-full h-full object-cover rounded-xl" />
                   ) : (
                     <Upload size={24} className="text-slate-400" />
                   )}
                 </div>
-                <div className="flex-1 space-y-2">
-                  <Button variant="outline" size="sm" onClick={() => logoInputRef.current?.click()}>
-                    <Upload size={14} className="mr-1" /> {uploadingLogo ? 'Uploading...' : 'Upload'}
-                  </Button>
-                  <input
-                    ref={logoInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleLogoUpload}
-                    disabled={uploadingLogo}
-                    className="hidden"
-                  />
+                <div className="flex-1">
                   <Input
                     placeholder="Logo URL"
                     value={formData.logo}
                     onChange={e => setFormData({...formData, logo: e.target.value})}
                   />
+                  <p className="text-xs text-slate-400 mt-1">Paste image URL or upload from settings</p>
                 </div>
               </div>
             </div>
@@ -280,24 +205,11 @@ export default function BusinessSettingsPage() {
                   <div className="text-slate-400 text-sm">No banner set</div>
                 )}
               </div>
-              <div className="space-y-2">
-                <Button variant="outline" size="sm" onClick={() => bannerInputRef.current?.click()}>
-                  <Upload size={14} className="mr-1" /> {uploadingBanner ? 'Uploading...' : 'Upload'}
-                </Button>
-                <input
-                  ref={bannerInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleBannerUpload}
-                  disabled={uploadingBanner}
-                  className="hidden"
-                />
-                <Input
-                  placeholder="Banner URL"
-                  value={formData.banner}
-                  onChange={e => setFormData({...formData, banner: e.target.value})}
-                />
-              </div>
+              <Input
+                placeholder="Banner URL"
+                value={formData.banner}
+                onChange={e => setFormData({...formData, banner: e.target.value})}
+              />
             </div>
           </div>
         </Card>

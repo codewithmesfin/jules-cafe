@@ -26,22 +26,20 @@ router.get('/my-businesses', getMyBusinesses);
 router.post('/switch', switchBusiness);
 
 // SaaS Admin only routes
-router.use(restrictTo('saas_admin'));
-router.get('/invoices', getBusinessInvoices);
-router.get('/pending-payments', getPendingPayments);
-router.patch('/:id/toggle-status', toggleBusinessStatus);
-router.post('/verify-payment', verifyPayment);
+router.get('/invoices', restrictTo('saas_admin'), getBusinessInvoices);
+router.get('/pending-payments', restrictTo('saas_admin'), getPendingPayments);
+router.patch('/:id/toggle-status', restrictTo('saas_admin'), toggleBusinessStatus);
+router.post('/verify-payment', restrictTo('saas_admin'), verifyPayment);
 
 // Admin only routes
-router.use(restrictTo('saas_admin', 'admin'));
-router.post('/', addBusiness);
+router.post('/', restrictTo('saas_admin', 'admin'), addBusiness);
 
 router.route('/')
-  .get(getAllBusinesses);
+  .get(restrictTo('saas_admin', 'admin'), getAllBusinesses);
 
 router.route('/:id')
   .get(getBusiness)
-  .patch(updateBusiness)
-  .delete(deleteBusiness);
+  .patch(restrictTo('saas_admin', 'admin'), updateBusiness)
+  .delete(restrictTo('saas_admin', 'admin'), deleteBusiness);
 
 export default router;

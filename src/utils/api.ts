@@ -48,6 +48,7 @@ export const api = {
   business: {
     setup: (data: any) => fetcher('/api/business/setup', { method: 'POST', body: JSON.stringify(data) }),
     getMe: () => fetcher('/api/business/me'),
+    getOne: (id: string) => fetcher(`/api/business/${id}`),
     getMyBusinesses: () => fetcher('/api/business/my-businesses'),
     switch: (businessId: string) => fetcher('/api/business/switch', { method: 'POST', body: JSON.stringify({ business_id: businessId }) }),
     update: (id: string, data: any) => fetcher(`/api/business/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
@@ -118,7 +119,9 @@ export const api = {
     delete: (id: string) => fetcher(`/api/customers/${id}`, { method: 'DELETE' }),
   },
   analytics: {
+    getSalesSummary: (params?: string) => fetcher(`/api/analytics/sales/summary${params ? `?${params}` : ''}`),
     getSales: (params?: string) => fetcher(`/api/analytics/sales${params ? `?${params}` : ''}`),
+    getProductsSummary: (params?: string) => fetcher(`/api/analytics/products/summary${params ? `?${params}` : ''}`),
     getProducts: (params?: string) => fetcher(`/api/analytics/products${params ? `?${params}` : ''}`),
     getStock: (params?: string) => fetcher(`/api/analytics/stock${params ? `?${params}` : ''}`),
   },

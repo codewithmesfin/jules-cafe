@@ -1,0 +1,67 @@
+
+
+services:
+  mongodb:
+    image: mongo:7
+    container_name: abc-cafe-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      - MONGO_INITDB_DATABASE=${MONGO_INITDB_DATABASE:-abc_cafe}
+    networks:
+      - abc-cafe-network
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: abc-cafe-backend
+    restart: unless-stopped
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    depends_on:
+      - mongodb
+    environment:
+      - PORT=${BACKEND_PORT:-8000}
+      - MONGO_URI=${MONGO_URI}
+      - JWT_SECRET=${JWT_SECRET}
+      - BASE_URL=${BASE_URL}
+      - FRONTEND_URL=${FRONTEND_URL}
+      - EMAIL_HOST=${EMAIL_HOST}
+      - EMAIL_PORT=${EMAIL_PORT}
+      - EMAIL_USER=${EMAIL_USER}
+      - EMAIL_PASS=${EMAIL_PASS}
+      - NODE_ENV=${NODE_ENV:-development}
+      - SAAS_ADMIN_EMAIL=${SAAS_ADMIN_EMAIL}
+      - SAAS_ADMIN_PASSWORD=${SAAS_ADMIN_PASSWORD}
+    volumes:
+      - backend_uploads:/app/uploads
+    networks:
+      - abc-cafe-network
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: abc-cafe-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    depends_on:
+      - backend
+    environment:
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+      - NEXT_PUBLIC_SOCKET_URL=${NEXT_PUBLIC_SOCKET_URL}
+    networks:
+      - abc-cafe-network
+
+volumes:
+  mongodb_data:
+  backend_uploads:
+
+networks:
+  abc-cafe-network:
+    driver: bridge

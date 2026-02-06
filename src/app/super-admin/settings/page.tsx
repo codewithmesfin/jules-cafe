@@ -682,7 +682,6 @@ export default function SuperAdminSettingsPage() {
                       className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 bg-white text-gray-900"
                       defaultValue="ETB"
                     >
-                      <option value="USD">USD - US Dollar</option>
                       <option value="ETB">ETB - Ethiopian Birr</option>
                       <option value="EUR">EUR - Euro</option>
                     </select>

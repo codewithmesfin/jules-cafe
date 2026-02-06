@@ -13,6 +13,12 @@ export interface IBusiness extends Document {
   banner?: string;
   description?: string;
   address?: string;
+  phone?: string;
+  email?: string;
+  website?: string;
+  opening_hours?: { open: string; close: string };
+  tax_rate?: number;
+  currency?: string;
   is_active: boolean;
   created_at: Date;
   updated_at: Date;
@@ -27,6 +33,15 @@ const BusinessSchema: Schema = new Schema({
   banner: { type: String },
   description: { type: String },
   address: { type: String },
+  phone: { type: String },
+  email: { type: String },
+  website: { type: String },
+  opening_hours: {
+    open: { type: String },
+    close: { type: String }
+  },
+  tax_rate: { type: Number, default: 0 },
+  currency: { type: String, default: 'ETB' },
   is_active: { type: Boolean, default: true },
 }, {
   timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },

@@ -281,5 +281,56 @@ export const getAllBusinesses = catchAsync(async (req: AuthRequest, res: Respons
   
   res.status(200).json(transformedBusinesses);
 });
-export const updateBusiness = factory.updateOne(Business);
-export const deleteBusiness = factory.deleteOne(Business);
+
+export const updateBusiness = catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
+  const { id } = req.params;
+  
+  // Check if user is active
+  if (req.user && !req.user.is_active) {
+    return next(new AppError('Your account is not active. Please contact the Administrator.', 423));
+  }
+  
+  let doc = await Business.findById(id);
+  if (!doc) {
+    return next(new AppError('Business not found', 404));
+  }
+  
+  // Ownership check: admins can only update their own business
+  if (req.user.role === 'admin') {
+    if (doc.owner_id.toString() !== req.user._id.toString()) {
+      return next(new AppError('You can only update your own business', 403));
+    }
+  }
+  
+  doc = await Business.findByIdAndUpdate(id, req.body, {
+    new: true,
+    runValidators: true,
+  });
+  
+  res.status(200).json(doc);
+});
+
+export const deleteBusiness = catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
+  const { id } = req.params;
+  
+  // Check if user is active
+  if (req.user && !req.user.is_active) {
+    return next(new AppError('Your account is not active. Please contact the Administrator.', 423));
+  }
+  
+  let doc = await Business.findById(id);
+  if (!doc) {
+    return next(new AppError('Business not found', 404));
+  }
+  
+  // Ownership check: admins can only delete their own business
+  if (req.user.role === 'admin') {
+    if (doc.owner_id.toString() !== req.user._id.toString()) {
+      return next(new AppError('You can only delete your own business', 403));
+    }
+  }
+  
+  await Business.findByIdAndDelete(id);
+  
+  res.status(200).json({ success: true, message: 'Business deleted successfully' });
+});

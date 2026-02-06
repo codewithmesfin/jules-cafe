@@ -33,6 +33,12 @@ export interface Business {
   logo?: string;
   banner?: string;
   owner_id?: string;
+  phone?: string;
+  email?: string;
+  website?: string;
+  opening_hours?: { open?: string; close?: string };
+  tax_rate?: number;
+  currency?: string;
   is_active?: boolean;
   created_at: string;
 }
@@ -86,6 +92,14 @@ export interface Inventory {
   updated_at?: string;
 }
 
+// Simplified inventory item type for frontend calculations
+export interface InventoryItem {
+  id: string;
+  item_name: string;
+  quantity: number;
+  unit?: string;
+}
+
 export interface InventoryTransaction {
   id: string;
   _id?: string;
@@ -104,7 +118,7 @@ export interface Recipe {
   _id?: string;
   business_id: string;
   product_id: string;
-  ingredient_id: string | Ingredient;
+  ingredient_id: string;
   quantity_required: number;
 }
 

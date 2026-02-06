@@ -356,7 +356,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 {user.role === 'admin' && (
                   <div className="pt-2 mt-2 border-t border-gray-100">
                     <button
-                      onClick={() => router.push('/dashboard/settings/business')}
+                      onClick={() => router.push('/dashboard/settings/businesses/new')}
                       className="w-full flex items-center gap-3 px-3 py-2 mx-2 rounded-lg text-left text-gray-600 hover:bg-gray-50 transition-all"
                     >
                       <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
