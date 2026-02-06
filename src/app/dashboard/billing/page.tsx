@@ -1,14 +1,15 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useNotification } from '@/context/NotificationContext';
 import { 
-  CreditCard, Download, FileText, Calendar, CheckCircle, 
+  CreditCard, FileText, Calendar, CheckCircle, 
   AlertCircle, TrendingUp, Clock, DollarSign, Building2,
-  X, Loader2, Send, XCircle, RefreshCw
+  X, Loader2, Send, RefreshCw
 } from 'lucide-react';
+import { API_URL } from '@/utils/api';
 
 // Pricing configuration - Only 100 ETB/day including VAT
 const PRICING = {
@@ -84,7 +85,6 @@ export default function BillingPage() {
   const { user, jwt, refreshUser } = useAuth();
   const router = useRouter();
   const { showNotification } = useNotification();
-  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<'overview' | 'invoices' | 'payment'>('overview');
   const [loading, setLoading] = useState(true);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
@@ -101,7 +101,6 @@ export default function BillingPage() {
   // Redirect if business is inactive and user tries to access other pages
   useEffect(() => {
     if (user && user.businessInactive) {
-      // User is on billing page - show full message but allow access
       return;
     }
   }, [user]);
@@ -120,9 +119,9 @@ export default function BillingPage() {
   });
 
   // Calculate price (prices are already including VAT)
-  const calculatePrice = (billingCycle: string): PriceCalculation => {
+  const calculatePrice = (cycle: string): PriceCalculation => {
     const planData = PRICING.standard;
-    const days = billingCycle === 'yearly' ? 365 : 30;
+    const days = cycle === 'yearly' ? 365 : 30;
     const dailyWithVAT = planData.daily;
     
     // Calculate subtotal (remove VAT)
@@ -131,7 +130,7 @@ export default function BillingPage() {
     const vatAmount = subtotalWithVAT - subtotal;
     
     // Apply discount for yearly
-    const discountPercent = billingCycle === 'yearly' ? YEARLY_DISCOUNT : 0;
+    const discountPercent = cycle === 'yearly' ? YEARLY_DISCOUNT : 0;
     const discount = subtotal * (discountPercent / 100);
     const subtotalAfterDiscount = subtotal - discount;
     const total = subtotalAfterDiscount + vatAmount;
@@ -139,7 +138,7 @@ export default function BillingPage() {
     return {
       plan: planData.name,
       plan_key: 'standard',
-      billing_cycle: billingCycle,
+      billing_cycle: cycle,
       days,
       daily_rate: planData.daily,
       subtotal,
@@ -158,7 +157,7 @@ export default function BillingPage() {
     
     setAutoCreating(true);
     try {
-      const response = await fetch('http://localhost:8000/api/billing/subscription/auto', {
+      const response = await fetch(`${API_URL}/api/billing/subscription/auto`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -174,8 +173,7 @@ export default function BillingPage() {
       } else if (data.message !== 'Subscription already exists') {
         showNotification(data.message || 'Failed to create subscription', 'error');
       }
-    } catch (error) {
-      console.error('Error creating subscription:', error);
+    } catch {
       showNotification('Failed to create subscription. Please try again.', 'error');
     } finally {
       setAutoCreating(false);
@@ -198,27 +196,18 @@ export default function BillingPage() {
         Authorization: `Bearer ${jwt}`,
         'Content-Type': 'application/json'
       };
-
-      console.log('Fetching billing data...');
       
       const [subRes, invRes, payRes, bankRes] = await Promise.all([
-        fetch('http://localhost:8000/api/billing/subscription', { headers }),
-        fetch('http://localhost:8000/api/billing/invoices', { headers }),
-        fetch('http://localhost:8000/api/billing/payments', { headers }),
-        fetch('http://localhost:8000/api/billing/bank-accounts', { headers })
+        fetch(`${API_URL}/api/billing/subscription`, { headers }),
+        fetch(`${API_URL}/api/billing/invoices`, { headers }),
+        fetch(`${API_URL}/api/billing/payments`, { headers }),
+        fetch(`${API_URL}/api/billing/bank-accounts`, { headers })
       ]);
-
-      console.log('Response status:', subRes.status, invRes.status, payRes.status, bankRes.status);
 
       const subData = await subRes.json();
       const invData = await invRes.json();
       const payData = await payRes.json();
       const bankData = await bankRes.json();
-
-      console.log('Subscription data:', subData);
-      console.log('Invoices data:', invData);
-      console.log('Payments data:', payData);
-      console.log('Bank accounts data:', bankData);
 
       if (subData.success) {
         setSubscription(subData.data);
@@ -229,8 +218,7 @@ export default function BillingPage() {
       if (invData.success) setInvoices(invData.data);
       if (payData.success) setPayments(payData.data);
       if (bankData.success) setBankAccounts(bankData.data);
-    } catch (error) {
-      console.error('Error fetching billing data:', error);
+    } catch {
       showNotification('Failed to load billing data. Please check your connection.', 'error');
     } finally {
       setLoading(false);
@@ -242,10 +230,8 @@ export default function BillingPage() {
     if (!jwt) return;
     
     setSubmitting(true);
-    console.log('Creating subscription with cycle:', billingCycle);
-
     try {
-      const response = await fetch('http://localhost:8000/api/billing/subscription', {
+      const response = await fetch(`${API_URL}/api/billing/subscription`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -257,10 +243,7 @@ export default function BillingPage() {
         })
       });
 
-      console.log('Subscription response status:', response.status);
-
       const data = await response.json();
-      console.log('Subscription response data:', data);
 
       if (data.success) {
         showNotification('Subscription created successfully!', 'success');
@@ -270,8 +253,7 @@ export default function BillingPage() {
       } else {
         showNotification(data.message || 'Failed to create subscription. Please make sure you have a business set up.', 'error');
       }
-    } catch (error) {
-      console.error('Error creating subscription:', error);
+    } catch {
       showNotification('Failed to create subscription. Please try again.', 'error');
     } finally {
       setSubmitting(false);
@@ -284,10 +266,8 @@ export default function BillingPage() {
     if (!jwt) return;
     
     setSubmitting(true);
-    console.log('Submitting payment for invoice:', paymentForm.invoice_id);
-
     try {
-      const response = await fetch('http://localhost:8000/api/billing/payments', {
+      const response = await fetch(`${API_URL}/api/billing/payments`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -296,10 +276,7 @@ export default function BillingPage() {
         body: JSON.stringify(paymentForm)
       });
 
-      console.log('Payment response status:', response.status);
-
       const data = await response.json();
-      console.log('Payment response data:', data);
 
       if (data.success) {
         showNotification('Payment submitted successfully!', 'success');
@@ -316,21 +293,18 @@ export default function BillingPage() {
           notes: ''
         });
         fetchBillingData();
-        // Refresh user data to update businessInactive status
         if (refreshUser) {
           await refreshUser();
         }
-        // Check if business is now active and redirect to dashboard
         setTimeout(() => {
           if (user && !user.businessInactive) {
             router.push('/dashboard');
           }
         }, 1500);
       } else {
-        showNotification('error', data.message || 'Failed to submit payment');
+        showNotification(data.message || 'Failed to submit payment', 'error');
       }
-    } catch (error) {
-      console.error('Error submitting payment:', error);
+    } catch {
       showNotification('Failed to submit payment. Please try again.', 'error');
     } finally {
       setSubmitting(false);
@@ -421,7 +395,6 @@ export default function BillingPage() {
                   onClick={async () => {
                     if (refreshUser) {
                       await refreshUser();
-                      // Check if business is now active
                       setTimeout(() => {
                         window.location.reload();
                       }, 500);
@@ -447,7 +420,7 @@ export default function BillingPage() {
           ].map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => setActiveTab(tab.id as typeof activeTab)}
               className={`flex items-center gap-2 pb-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === tab.id
                   ? 'border-gray-900 text-gray-900'
@@ -556,83 +529,111 @@ export default function BillingPage() {
             <div className="bg-white rounded-2xl border border-gray-200 p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500">Completed Payments</p>
-                  <p className="text-3xl font-bold text-gray-900">{payments.filter(p => p.status === 'verified').length}</p>
+                  <p className="text-sm text-gray-500">Total Paid</p>
+                  <p className="text-3xl font-bold text-gray-900">ETB {invoices.filter(i => i.status === 'paid').reduce((acc, inv) => acc + inv.total, 0).toFixed(2)}</p>
                 </div>
                 <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
-                  <CheckCircle className="text-emerald-600" size={24} />
+                  <DollarSign className="text-emerald-600" size={24} />
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
 
-      {/* Overview Tab - No Subscription */}
-      {activeTab === 'overview' && !subscription && (
-        <div className="bg-white rounded-2xl border border-gray-200 p-8">
-          <div className="text-center">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <CreditCard className="text-gray-400" size={32} />
-            </div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">No Active Subscription</h2>
-            <p className="text-gray-500 mb-6">Subscribe to access the full features of the system.</p>
-            
-            {/* Pricing Card */}
-            <div className="max-w-md mx-auto bg-gray-50 rounded-xl p-6 mb-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-2">Standard Plan</h3>
-              <div className="flex items-baseline justify-center gap-1 mb-4">
-                <span className="text-4xl font-bold text-gray-900">100</span>
-                <span className="text-gray-500">ETB/day</span>
-              </div>
-              <p className="text-sm text-gray-500 mb-4">Including 15% VAT</p>
-              
-              <div className="flex justify-center gap-4 mb-4">
-                <button
-                  onClick={() => setBillingCycle('monthly')}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    billingCycle === 'monthly'
-                      ? 'bg-gray-900 text-white'
-                      : 'bg-white border border-gray-300 text-gray-700'
-                  }`}
-                >
-                  Monthly
-                </button>
-                <button
-                  onClick={() => setBillingCycle('yearly')}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    billingCycle === 'yearly'
-                      ? 'bg-gray-900 text-white'
-                      : 'bg-white border border-gray-300 text-gray-700'
-                  }`}
-                >
-                  Yearly
-                  <span className="ml-1 text-xs text-emerald-600">(Save 20%)</span>
-                </button>
-              </div>
-
-              <div className="text-lg font-semibold text-gray-900 mb-4">
-                Total: {priceCalculation.total.toFixed(0)} ETB / {billingCycle === 'yearly' ? 'year' : 'month'}
-              </div>
-
-              <button
-                onClick={handleCreateSubscription}
-                disabled={submitting}
-                className="w-full px-6 py-2.5 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:opacity-50"
-              >
-                {submitting ? 'Creating...' : 'Subscribe Now'}
-              </button>
-            </div>
-
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-left">
-              <div className="flex items-start gap-2">
-                <AlertCircle className="text-amber-600 mt-0.5" size={20} />
-                <div className="text-sm text-amber-700">
-                  <p className="font-medium">Important</p>
-                  <p>Your business will be activated only after payment is verified. Please make a bank transfer after subscribing.</p>
+          {/* Pricing Card */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-6">Subscription Plans</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Standard Plan */}
+              <div className={`relative bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-6 border-2 transition-all ${billingCycle === 'monthly' ? 'border-gray-900 shadow-lg' : 'border-gray-200'}`}>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-gray-900 rounded-xl flex items-center justify-center">
+                      <TrendingUp className="text-white" size={24} />
+                    </div>
+                    <div>
+                      <p className="font-bold text-gray-900 text-lg">{PRICING.standard.name}</p>
+                      <p className="text-sm text-gray-500">Daily rate including VAT</p>
+                    </div>
+                  </div>
+                  <input 
+                    type="radio" 
+                    name="billing-cycle"
+                    checked={billingCycle === 'monthly'}
+                    onChange={() => setBillingCycle('monthly')}
+                    className="w-5 h-5 text-gray-900 focus:ring-gray-900"
+                  />
                 </div>
+                <div className="mb-6">
+                  <p className="text-4xl font-black text-gray-900 mb-1">100 ETB<span className="text-lg font-normal text-gray-500">/day</span></p>
+                  <p className="text-sm text-gray-500">3,000 ETB/month (30 days)</p>
+                  <p className="text-xs text-gray-400 mt-1">Including 15% VAT</p>
+                </div>
+                <ul className="space-y-3 mb-6">
+                  {PRICING.standard.features.map((feature, index) => (
+                    <li key={index} className="flex items-center gap-2 text-sm text-gray-600">
+                      <CheckCircle size={16} className="text-emerald-500" />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Yearly Plan */}
+              <div className={`relative bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl p-6 border-2 transition-all ${billingCycle === 'yearly' ? 'border-[#e60023] shadow-lg' : 'border-orange-200'}`}>
+                <div className="absolute -top-3 right-4 px-3 py-1 bg-[#e60023] text-white text-xs font-bold rounded-full">
+                  20% DISCOUNT
+                </div>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-[#e60023] rounded-xl flex items-center justify-center">
+                      <TrendingUp className="text-white" size={24} />
+                    </div>
+                    <div>
+                      <p className="font-bold text-gray-900 text-lg">Yearly</p>
+                      <p className="text-sm text-gray-500">Annual subscription</p>
+                    </div>
+                  </div>
+                  <input 
+                    type="radio" 
+                    name="billing-cycle"
+                    checked={billingCycle === 'yearly'}
+                    onChange={() => setBillingCycle('yearly')}
+                    className="w-5 h-5 text-[#e60023] focus:ring-[#e60023]"
+                  />
+                </div>
+                <div className="mb-6">
+                  <p className="text-4xl font-black text-gray-900 mb-1">80 ETB<span className="text-lg font-normal text-gray-500">/day</span></p>
+                  <p className="text-sm text-gray-500">29,200 ETB/year (365 days)</p>
+                  <p className="text-xs text-gray-400 mt-1">Including 15% VAT • Save 6,000 ETB/year</p>
+                </div>
+                <ul className="space-y-3 mb-6">
+                  {PRICING.standard.features.map((feature, index) => (
+                    <li key={index} className="flex items-center gap-2 text-sm text-gray-600">
+                      <CheckCircle size={16} className="text-[#e60023]" />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
               </div>
             </div>
+
+            <button
+              onClick={handleCreateSubscription}
+              disabled={submitting}
+              className="mt-6 w-full py-3 bg-gray-900 text-white rounded-xl font-bold hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {submitting ? (
+                <>
+                  <Loader2 size={20} className="animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <CreditCard size={20} />
+                  Subscribe Now - {billingCycle === 'yearly' ? '29,200 ETB/year' : '3,000 ETB/month'}
+                </>
+              )}
+            </button>
           </div>
         </div>
       )}
@@ -640,22 +641,28 @@ export default function BillingPage() {
       {/* Invoices Tab */}
       {activeTab === 'invoices' && (
         <div className="space-y-6">
-          {invoices.length === 0 ? (
+          {!subscription ? (
+            <div className="bg-white rounded-2xl border border-gray-200 p-8 text-center">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <FileText className="text-gray-400" size={32} />
+              </div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">No Subscription Yet</h2>
+              <p className="text-gray-500 mb-4">Create a subscription to start using the platform.</p>
+              <button
+                onClick={autoCreateSubscription}
+                disabled={autoCreating}
+                className="px-6 py-2 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors"
+              >
+                {autoCreating ? 'Creating...' : 'Create Subscription'}
+              </button>
+            </div>
+          ) : invoices.length === 0 ? (
             <div className="bg-white rounded-2xl border border-gray-200 p-8 text-center">
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <FileText className="text-gray-400" size={32} />
               </div>
               <h2 className="text-xl font-semibold text-gray-900 mb-2">No Invoices Yet</h2>
-              <p className="text-gray-500 mb-4">Create a subscription to generate your first invoice.</p>
-              {!subscription && (
-                <button
-                  onClick={autoCreateSubscription}
-                  disabled={autoCreating}
-                  className="px-6 py-2.5 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors"
-                >
-                  {autoCreating ? 'Creating...' : 'Create Subscription'}
-                </button>
-              )}
+              <p className="text-gray-500">Your invoices will appear here after you create a subscription.</p>
             </div>
           ) : (
             <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
@@ -686,16 +693,16 @@ export default function BillingPage() {
                   {invoices.map((invoice) => (
                     <tr key={invoice._id} className="hover:bg-gray-50">
                       <td className="px-6 py-4">
-                        <p className="text-sm font-medium text-gray-900">#{invoice.invoice_number || invoice._id.slice(-8)}</p>
+                        <p className="text-sm font-medium text-gray-900">{invoice.invoice_number}</p>
                         <p className="text-xs text-gray-500">{new Date(invoice.created_at).toLocaleDateString()}</p>
                       </td>
                       <td className="px-6 py-4">
-                        <p className="text-sm text-gray-900">{invoice.plan}</p>
-                        <p className="text-xs text-gray-500">{invoice.billing_cycle}</p>
+                        <p className="text-sm text-gray-900">{PRICING[invoice.plan as keyof typeof PRICING]?.name || invoice.plan}</p>
+                        <p className="text-xs text-gray-500">{invoice.billing_cycle === 'yearly' ? 'Yearly' : 'Monthly'}</p>
                       </td>
                       <td className="px-6 py-4">
-                        <p className="text-sm font-medium text-gray-900">{invoice.total} ETB</p>
-                        <p className="text-xs text-gray-500">{invoice.days} days</p>
+                        <p className="text-sm font-medium text-gray-900">ETB {invoice.total.toFixed(2)}</p>
+                        {invoice.discount > 0 && <p className="text-xs text-green-600">Discount: ETB {invoice.discount.toFixed(2)}</p>}
                       </td>
                       <td className="px-6 py-4">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadge(invoice.status)}`}>
@@ -898,10 +905,72 @@ export default function BillingPage() {
                   disabled={submitting}
                   className="flex-1 px-4 py-2 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:opacity-50"
                 >
-                  {submitting ? 'Submitting...' : 'Submit Payment'}
+                  {submitting ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <Loader2 size={16} className="animate-spin" />
+                      Submitting...
+                    </span>
+                  ) : (
+                    <span className="flex items-center justify-center gap-2">
+                      <Send size={16} />
+                      Submit Payment
+                    </span>
+                  )}
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Subscribe Modal */}
+      {showSubscribeModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">Confirm Subscription</h2>
+              <button onClick={() => setShowSubscribeModal(false)} className="p-2 hover:bg-gray-100 rounded-lg">
+                <X size={20} className="text-gray-500" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              <div className="bg-gray-50 rounded-xl p-4 mb-4">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-sm text-gray-500">Plan</p>
+                  <p className="font-semibold text-gray-900">{PRICING.standard.name}</p>
+                </div>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-sm text-gray-500">Billing Cycle</p>
+                  <p className="font-semibold text-gray-900">{billingCycle === 'yearly' ? 'Yearly (20% off)' : 'Monthly'}</p>
+                </div>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-sm text-gray-500">Duration</p>
+                  <p className="font-semibold text-gray-900">{billingCycle === 'yearly' ? '365 days' : '30 days'}</p>
+                </div>
+                <div className="flex items-center justify-between pt-3 border-t border-gray-200">
+                  <p className="font-bold text-gray-900">Total</p>
+                  <p className="font-bold text-xl text-[#e60023]">{billingCycle === 'yearly' ? '29,200 ETB' : '3,000 ETB'}</p>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowSubscribeModal(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCreateSubscription}
+                  disabled={submitting}
+                  className="flex-1 px-4 py-2 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:opacity-50"
+                >
+                  {submitting ? 'Processing...' : 'Confirm & Subscribe'}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

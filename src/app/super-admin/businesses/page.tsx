@@ -22,6 +22,7 @@ import {
   ToggleLeft,
   ToggleRight
 } from 'lucide-react';
+import { API_URL } from '@/utils/api';
 import { format } from 'date-fns';
 
 // Helper function to safely format dates
@@ -95,7 +96,7 @@ export default function SuperAdminBusinessesPage() {
   const fetchBusinessSubscription = async (businessId: string) => {
     try {
       const savedJwt = localStorage.getItem('jwt');
-      const response = await fetch(`http://localhost:8000/api/billing/subscription`, {
+      const response = await fetch(`${API_URL}/api/billing/subscription`, {
         headers: {
           'Authorization': `Bearer ${savedJwt}`,
         },
@@ -104,8 +105,8 @@ export default function SuperAdminBusinessesPage() {
       if (data.success && data.data) {
         setSelectedSubscription(data.data);
       }
-    } catch (err) {
-      console.error('Error fetching subscription:', err);
+    } catch {
+      // Silently fail - subscription details are optional
     }
   };
 

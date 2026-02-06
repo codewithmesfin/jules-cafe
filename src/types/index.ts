@@ -132,7 +132,7 @@ export interface Order {
   customer_id?: string | Customer;
   table_id?: string;
   order_type: 'dine-in' | 'takeaway' | 'delivery';
-  order_status: 'pending' | 'accepted' | 'preparing' | 'ready' | 'delivered' | 'completed' | 'cancelled';
+  order_status: 'preparing' | 'ready' | 'delivered' | 'completed' | 'cancelled';
   total_amount: number;
   discount_percent: number;
   discount_amount: number;

@@ -6,7 +6,7 @@ export interface IOrder extends Document {
   customer_id?: mongoose.Types.ObjectId;
   table_id?: mongoose.Types.ObjectId;
   order_type: 'dine-in' | 'takeaway' | 'delivery';
-  order_status: 'pending' | 'accepted' | 'preparing' | 'ready' | 'delivered' | 'completed' | 'cancelled';
+  order_status: 'preparing' | 'ready' | 'delivered' | 'completed' | 'cancelled';
   total_amount: number;
   payment_status: 'unpaid' | 'partial' | 'paid';
   payment_method?: 'cash' | 'card' | 'mobile' | 'other';
@@ -27,8 +27,8 @@ const OrderSchema: Schema = new Schema({
   },
   order_status: {
     type: String,
-    enum: ['pending', 'accepted', 'preparing', 'ready', 'delivered', 'completed', 'cancelled'],
-    default: 'pending'
+    enum: ['preparing', 'ready', 'delivered', 'completed', 'cancelled'],
+    default: 'preparing'
   },
   total_amount: { type: Number, default: 0 },
   payment_status: {

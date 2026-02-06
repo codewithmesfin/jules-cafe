@@ -183,26 +183,19 @@ export const toggleBusinessStatus = catchAsync(async (req: AuthRequest, res: Res
 export const verifyPayment = catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
   const { paymentId, status } = req.body;
 
-  console.log('🔍 verifyPayment called:', { paymentId, status });
-
   if (!paymentId) {
-    console.log('❌ Payment ID is required');
     return next(new AppError('Payment ID is required', 400));
   }
 
   if (!['verified', 'rejected'].includes(status)) {
-    console.log('❌ Invalid status:', status);
     return next(new AppError('Invalid status. Must be verified or rejected', 400));
   }
 
   // Find the payment
   const payment = await Payment.findById(paymentId);
   if (!payment) {
-    console.log('❌ Payment not found:', paymentId);
     return next(new AppError('Payment not found', 404));
   }
-
-  console.log('✅ Found payment:', payment._id, 'Current status:', payment.status);
 
   // Update payment status
   payment.status = status;
@@ -211,27 +204,21 @@ export const verifyPayment = catchAsync(async (req: AuthRequest, res: Response, 
     payment.verified_by = req.user._id;
   }
   await payment.save();
-  console.log('💾 Payment saved with status:', payment.status);
 
   // Update invoice status based on payment verification
   if (payment.invoice_id) {
     const invoiceStatus = status === 'verified' ? 'paid' : 'rejected';
-    console.log('📄 Updating invoice:', payment.invoice_id, 'to', invoiceStatus);
     const updatedInvoice = await Invoice.findByIdAndUpdate(payment.invoice_id, {
       status: invoiceStatus,
       paid_date: status === 'verified' ? new Date() : undefined
     }, { new: true });
-    console.log('✅ Invoice updated:', updatedInvoice);
 
     // If payment is verified, activate the business and create new subscription
     if (status === 'verified' && updatedInvoice) {
-      console.log('🚀 Activating business and creating new subscription...');
-      
       // Activate the business
       await Business.findByIdAndUpdate(payment.business_id, {
         is_active: true
       });
-      console.log('✅ Business activated:', payment.business_id);
 
       // Get the original subscription to determine billing cycle
       const originalSubscription = await Subscription.findById(updatedInvoice.subscription_id);
@@ -252,7 +239,6 @@ export const verifyPayment = catchAsync(async (req: AuthRequest, res: Response, 
         billing_cycle,
         daily_rate: 100
       });
-      console.log('✅ New subscription created');
     }
   }
 

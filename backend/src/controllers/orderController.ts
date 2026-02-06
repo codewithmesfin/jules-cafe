@@ -56,7 +56,7 @@ export const createOrder = catchAsync(async (req: AuthRequest, res: Response, ne
       notes,
       total_amount: totalAmount,
       payment_method,
-      order_status: 'pending'
+      order_status: 'preparing'
     }]);
 
     // 4. Create Order Items

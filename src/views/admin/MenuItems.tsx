@@ -30,17 +30,12 @@ const MenuAvailability: React.FC = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      console.log('Fetching menu items...');
       const menuRes = await api.menu.getAll();
-      console.log('Menu response:', menuRes);
       setMenuItems(Array.isArray(menuRes) ? menuRes : []);
-      
-      console.log('Fetching products...');
+       
       const prodRes = await api.products.getAll();
-      console.log('Products response:', prodRes);
       setProducts(Array.isArray(prodRes) ? prodRes : (prodRes.data || []));
     } catch (error) {
-      console.error('Fetch error:', error);
       showNotification('Failed to load menu data', 'error');
     } finally {
       setLoading(false);
@@ -90,8 +85,6 @@ const MenuAvailability: React.FC = () => {
     const prodName = prod?.name?.toLowerCase() || m.product_id?.name?.toLowerCase() || '';
     return prodName.includes(searchTerm.toLowerCase());
   });
-
-  console.log('Filtered menu items:', filteredMenu.length);
 
   return (
     <div className="space-y-6">

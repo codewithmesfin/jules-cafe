@@ -69,7 +69,7 @@ export default function DashboardPage() {
         customer_name: order.customer_id?.full_name || (typeof order.customer_id === 'string' ? order.customer_id : 'Guest'),
         table_id: order.table_id,
         total: order.total_amount || order.total || 0,
-        status: order.order_status || order.status || 'pending',
+        status: order.order_status || order.status || 'preparing',
         created_at: order.created_at || order.createdAt,
       }));
       
@@ -89,7 +89,7 @@ export default function DashboardPage() {
       });
 
       const activeOrders = ordersData.filter((order: Order) => 
-        ['pending', 'preparing', 'ready'].includes(order.status)
+        ['preparing', 'ready'].includes(order.status)
       );
 
       // Calculate revenue from completed orders
@@ -125,7 +125,6 @@ export default function DashboardPage() {
       completed: 'success',
       preparing: 'warning',
       ready: 'success',
-      pending: 'info',
       cancelled: 'error',
       delivered: 'success',
     };
@@ -190,7 +189,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="min-w-0">
                   <h3 className="font-semibold text-gray-900 text-sm sm:text-base truncate">Active Orders</h3>
-                  <p className="text-xs text-gray-500">{stats.active_orders} pending</p>
+                  <p className="text-xs text-gray-500">{stats.active_orders} preparing</p>
                 </div>
               </div>
             </Card>

@@ -32,7 +32,7 @@ const OrdersArchive: React.FC = () => {
       // Mock data for demonstration
       const mockOrders = [
         { id: '1', number: 'ORD-2024-001', customer: { name: 'John Doe' }, total: 45, status: 'completed', created_at: new Date().toISOString(), items: [{ name: 'Burger', quantity: 2, price: 15 }, { name: 'Coke', quantity: 1, price: 5 }] },
-        { id: '2', number: 'ORD-2024-002', customer: { name: 'Jane Smith' }, total: 32, status: 'pending', created_at: new Date().toISOString(), items: [{ name: 'Pizza', quantity: 1, price: 25 }, { name: 'Salad', quantity: 1, price: 7 }] },
+        { id: '2', number: 'ORD-2024-002', customer: { name: 'Jane Smith' }, total: 32, status: 'preparing', created_at: new Date().toISOString(), items: [{ name: 'Pizza', quantity: 1, price: 25 }, { name: 'Salad', quantity: 1, price: 7 }] },
         { id: '3', number: 'ORD-2024-003', customer: { name: 'Mike Johnson' }, total: 67, status: 'completed', created_at: new Date().toISOString(), items: [{ name: 'Steak', quantity: 2, price: 30 }, { name: 'Wine', quantity: 1, price: 7 }] },
         { id: '4', number: 'ORD-2024-004', customer: { name: 'Sarah Wilson' }, total: 28, status: 'cancelled', created_at: new Date().toISOString(), items: [{ name: 'Pasta', quantity: 1, price: 18 }, { name: 'Soup', quantity: 1, price: 5 }] },
         { id: '5', number: 'ORD-2024-005', customer: { name: 'Tom Brown' }, total: 55, status: 'completed', created_at: new Date().toISOString(), items: [{ name: 'Fish', quantity: 1, price: 35 }, { name: 'Rice', quantity: 1, price: 5 }] },
@@ -111,8 +111,8 @@ const OrdersArchive: React.FC = () => {
           <p className="text-xl font-bold text-emerald-600">{orders.filter(o => o.status === 'completed').length}</p>
         </Card>
         <Card className="p-4">
-          <p className="text-xs text-slate-500">Pending</p>
-          <p className="text-xl font-bold text-amber-600">{orders.filter(o => o.status === 'pending').length}</p>
+          <p className="text-xs text-slate-500">Preparing</p>
+          <p className="text-xl font-bold text-amber-600">{orders.filter(o => o.status === 'preparing').length}</p>
         </Card>
         <Card className="p-4">
           <p className="text-xs text-slate-500">Cancelled</p>

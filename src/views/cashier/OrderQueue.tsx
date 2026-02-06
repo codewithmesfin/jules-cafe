@@ -103,9 +103,6 @@ const OrderQueue: React.FC = () => {
         return 'warning';
       case 'cancelled':
         return 'error';
-      case 'pending':
-      case 'accepted':
-        return 'info';
       default:
         return 'neutral';
     }
@@ -244,11 +241,6 @@ const OrderQueue: React.FC = () => {
                 <div className="pt-3 border-t border-slate-100 flex gap-2">
                   {filter === 'active' && (
                     <>
-                      {order.order_status === 'pending' && (
-                        <Button size="sm" className="flex-1" onClick={(e) => { e.stopPropagation(); handleUpdateStatus(order.id || order._id!, 'preparing'); }}>
-                          <Play size={14} /> Accept
-                        </Button>
-                      )}
                       {order.order_status === 'preparing' && (
                         <Button size="sm" variant="secondary" className="flex-1" onClick={(e) => { e.stopPropagation(); handleUpdateStatus(order.id || order._id!, 'ready'); }}>
                           <CheckCircle size={14} /> Ready
@@ -334,11 +326,6 @@ const OrderQueue: React.FC = () => {
             {/* Actions */}
             {filter === 'active' && (
               <div className="flex gap-3 pt-4">
-                {selectedOrder.order_status === 'pending' && (
-                  <Button className="flex-1" onClick={() => handleUpdateStatus(selectedOrder.id || selectedOrder._id!, 'preparing')}>
-                    <Play size={16} /> Accept Order
-                  </Button>
-                )}
                 {selectedOrder.order_status === 'preparing' && (
                   <Button variant="secondary" className="flex-1" onClick={() => handleUpdateStatus(selectedOrder.id || selectedOrder._id!, 'ready')}>
                     <CheckCircle size={16} /> Mark Ready
@@ -349,7 +336,7 @@ const OrderQueue: React.FC = () => {
                     <CheckCircle size={16} /> Complete
                   </Button>
                 )}
-                {['pending', 'preparing'].includes(selectedOrder.order_status) && (
+                {['preparing'].includes(selectedOrder.order_status) && (
                   <Button variant="danger" onClick={() => handleUpdateStatus(selectedOrder.id || selectedOrder._id!, 'cancelled')}>
                     <XCircle size={16} /> Cancel
                   </Button>

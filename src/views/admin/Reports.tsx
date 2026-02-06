@@ -260,7 +260,7 @@ export default function ReportsPage() {
                   <div className="text-right">
                     <p className="font-semibold text-slate-900 text-sm">{formatCurrency(order.total)}</p>
                     <Badge 
-                      variant={order.status === 'completed' ? 'success' : order.status === 'pending' ? 'warning' : 'neutral'} 
+                      variant={order.status === 'completed' ? 'success' : order.status === 'preparing' ? 'warning' : order.status === 'ready' ? 'info' : 'neutral'} 
                       size="sm"
                     >
                       {order.status}
