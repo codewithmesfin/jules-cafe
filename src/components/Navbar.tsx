@@ -13,13 +13,14 @@ export default function Navbar(){
                 <span className="hidden sm:inline">Abc Cafe</span>
               </Link>
               <div className="hidden lg:flex items-center gap-8 font-semibold text-black">
-                <Link href={'/use-cases'} className="hover:text-gray-600 transition-colors">Explore</Link>
+                <Link href={'/businesses'} className="hover:text-gray-600 transition-colors">Explore</Link>
                 <Link href={'/pricing'} className="hover:text-gray-600 transition-colors">Pricing</Link>
               </div>
             </div>
 
             <div className="flex items-center gap-3 md:gap-6 lg:gap-8 font-semibold text-black">
               <div className="hidden md:flex items-center gap-4 lg:gap-8">
+                 <Link href={'/businesses'} className="hover:text-gray-600 transition-colors">Clients</Link>
                 <Link href={'/features'} className="hover:text-gray-600 transition-colors">Features</Link>
                 <Link href={'/use-cases'} className="hover:text-gray-600 transition-colors">Use Cases</Link>
               </div>

@@ -23,8 +23,10 @@ const connectDB = async () => {
     }
 
     // Clean up documents with null ingredient_id (legacy data)
+    // Use $type to only match documents where ingredient_id explicitly exists and is null
+    // Note: { ingredient_id: null } would also match documents where field doesn't exist
     try {
-      const result = await Inventory.deleteMany({ ingredient_id: null });
+      const result = await Inventory.deleteMany({ ingredient_id: { $type: 'null' } });
       if (result.deletedCount > 0) {
         console.log(`Cleaned up ${result.deletedCount} legacy documents with null ingredient_id`);
       }

@@ -156,7 +156,57 @@ export const setUserStatus = catchAsync(async (req: AuthRequest, res: Response, 
   });
 });
 
-export const getAllUsers = factory.getAll(User);
+export const getAllUsers = catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
+  // Check if user is active
+  if (req.user && !req.user.is_active) {
+    return next(new AppError('Your account is not active. Please contact the Administrator.', 423));
+  }
+
+  let users;
+
+  if (req.user.role === 'saas_admin') {
+    // Super admin sees all users
+    users = await User.find().sort('-created_at');
+  } else if (req.user.role === 'admin') {
+    // Business admin sees users in their businesses AND their own account
+    // Get businesses owned by this admin
+    const adminBusinesses = await Business.find({ owner_id: req.user._id }).select('_id');
+    const businessIds = adminBusinesses.map(b => b._id);
+    
+    // Include users assigned to any of the admin's businesses OR created by the admin OR the admin themselves
+    users = await User.find({
+      $or: [
+        { assigned_businesses: { $in: businessIds } },
+        { created_by: req.user._id },
+        { _id: req.user._id }  // Include own account
+      ]
+    }).sort('-created_at');
+  } else {
+    // Staff users (manager, cashier, waiter) - filter by their default business
+    if (!req.user.default_business_id) {
+      return next(new AppError('No business assigned to your account', 400));
+    }
+    
+    users = await User.find({
+      assigned_businesses: req.user.default_business_id
+    }).sort('-created_at');
+  }
+
+  // Transform for frontend
+  const transformedUsers = users.map(user => ({
+    id: user._id,
+    email: user.email,
+    full_name: user.full_name,
+    phone: user.phone,
+    role: user.role,
+    status: user.status,
+    is_active: user.is_active,
+    created_at: user.created_at,
+    last_login: user.last_login
+  }));
+
+  res.status(200).json(transformedUsers);
+});
 export const getUser = factory.getOne(User);
 export const updateUser = factory.updateOne(User);
 export const deleteUser = factory.deleteOne(User);
