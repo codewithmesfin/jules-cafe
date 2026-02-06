@@ -8,11 +8,9 @@ import Business from '../models/Business';
 import AppError from '../utils/appError';
 import catchAsync from '../utils/catchAsync';
 
-// Pricing constants (prices are INCLUDING VAT)
+// Pricing constants - Only 100 ETB/day including 15% VAT
 export const PRICING = {
-  basic: { daily: 100, name: 'Basic' }, // 100 ETB/day including 15% VAT
-  pro: { daily: 250, name: 'Pro' }, // 250 ETB/day including 15% VAT
-  enterprise: { daily: 500, name: 'Enterprise' } // 500 ETB/day including 15% VAT
+  standard: { daily: 100, name: 'Standard' } // 100 ETB/day including 15% VAT
 };
 
 export const VAT_RATE = 15; // 15% VAT
@@ -77,24 +75,21 @@ export const getCurrentSubscription = catchAsync(async (req: AuthRequest, res: R
   });
 });
 
-// Create new subscription (upgrade/downgrade)
+// Create new subscription (only standard plan available)
 export const createSubscription = catchAsync(async (req: AuthRequest, res: Response) => {
   const businessId = req.user?.default_business_id;
-  const { plan, billing_cycle } = req.body;
+  const { billing_cycle } = req.body;
 
   if (!businessId) {
     throw new AppError('Business ID not found', 400);
-  }
-
-  if (!['basic', 'pro', 'enterprise'].includes(plan)) {
-    throw new AppError('Invalid plan selected', 400);
   }
 
   if (!['monthly', 'yearly'].includes(billing_cycle)) {
     throw new AppError('Invalid billing cycle', 400);
   }
 
-  const dailyRate = PRICING[plan as keyof typeof PRICING].daily;
+  // Only standard plan available (100 ETB/day)
+  const dailyRate = PRICING.standard.daily;
   const priceBreakdown = calculatePriceBreakdown(dailyRate, billing_cycle);
   
   // Calculate dates
@@ -104,7 +99,7 @@ export const createSubscription = catchAsync(async (req: AuthRequest, res: Respo
 
   const subscription = await Subscription.create({
     business_id: businessId,
-    plan,
+    plan: 'standard',
     status: 'pending',
     start_date: startDate,
     end_date: endDate,
@@ -116,7 +111,7 @@ export const createSubscription = catchAsync(async (req: AuthRequest, res: Respo
   const invoice = await Invoice.create({
     business_id: businessId,
     subscription_id: subscription._id,
-    plan: PRICING[plan as keyof typeof PRICING].name,
+    plan: PRICING.standard.name,
     billing_cycle,
     days: priceBreakdown.days,
     subtotal: priceBreakdown.subtotal,
@@ -262,31 +257,26 @@ export const getBankAccountInfo = catchAsync(async (req: AuthRequest, res: Respo
 
 // Calculate subscription price
 export const calculatePrice = catchAsync(async (req: AuthRequest, res: Response) => {
-  const { plan, billing_cycle } = req.query;
+  const { billing_cycle } = req.query;
 
-  if (!plan || !billing_cycle) {
-    throw new AppError('Plan and billing cycle are required', 400);
+  if (!billing_cycle) {
+    throw new AppError('Billing cycle is required', 400);
   }
 
-  const planKey = plan as string;
   const cycleKey = billing_cycle as 'monthly' | 'yearly';
-
-  if (!['basic', 'pro', 'enterprise'].includes(planKey)) {
-    throw new AppError('Invalid plan', 400);
-  }
 
   if (!['monthly', 'yearly'].includes(cycleKey)) {
     throw new AppError('Invalid billing cycle', 400);
   }
 
-  const dailyRate = PRICING[planKey as keyof typeof PRICING].daily;
+  const dailyRate = PRICING.standard.daily;
   const priceBreakdown = calculatePriceBreakdown(dailyRate, cycleKey);
 
   res.json({
     success: true,
     data: {
-      plan: PRICING[planKey as keyof typeof PRICING].name,
-      plan_key: planKey,
+      plan: PRICING.standard.name,
+      plan_key: 'standard',
       billing_cycle: cycleKey,
       days: priceBreakdown.days,
       daily_rate: dailyRate,
@@ -322,5 +312,120 @@ export const cancelSubscription = catchAsync(async (req: AuthRequest, res: Respo
   res.json({
     success: true,
     data: subscription
+  });
+});
+
+// Auto-create subscription for new businesses (100 ETB/day, monthly)
+export const autoCreateSubscription = catchAsync(async (req: AuthRequest, res: Response) => {
+  const businessId = req.user?.default_business_id;
+
+  if (!businessId) {
+    throw new AppError('Business ID not found', 400);
+  }
+
+  // Check if subscription already exists
+  const existingSubscription = await Subscription.findOne({ business_id: businessId });
+  if (existingSubscription) {
+    return res.json({
+      success: true,
+      data: existingSubscription,
+      message: 'Subscription already exists'
+    });
+  }
+
+  // Create subscription with default monthly billing
+  const dailyRate = PRICING.standard.daily;
+  const billing_cycle = 'monthly';
+  const priceBreakdown = calculatePriceBreakdown(dailyRate, billing_cycle);
+  
+  const startDate = new Date();
+  const endDate = new Date();
+  endDate.setDate(endDate.getDate() + priceBreakdown.days);
+
+  const subscription = await Subscription.create({
+    business_id: businessId,
+    plan: 'standard',
+    status: 'pending',
+    start_date: startDate,
+    end_date: endDate,
+    billing_cycle,
+    daily_rate: dailyRate
+  });
+
+  // Create invoice
+  const invoice = await Invoice.create({
+    business_id: businessId,
+    subscription_id: subscription._id,
+    plan: PRICING.standard.name,
+    billing_cycle,
+    days: priceBreakdown.days,
+    subtotal: priceBreakdown.subtotal,
+    vat_amount: priceBreakdown.vat_amount,
+    discount: priceBreakdown.discount_amount,
+    discount_percent: priceBreakdown.discount_percent,
+    total: priceBreakdown.total,
+    status: 'pending',
+    period_start: startDate,
+    period_end: endDate,
+    due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+  });
+
+  res.status(201).json({
+    success: true,
+    data: {
+      subscription,
+      invoice
+    }
+  });
+});
+
+// Run billing checks (for cron jobs) - Super Admin only
+export const runBillingChecks = catchAsync(async (req: AuthRequest, res: Response) => {
+  // Import scheduler functions
+  const { runBillingChecks: executeChecks, processRenewalPayment } = await import('../utils/scheduler');
+  
+  const result = await executeChecks();
+
+  res.json({
+    success: true,
+    data: result,
+    message: 'Billing checks completed successfully'
+  });
+});
+
+// Renew subscription after payment (called by super admin)
+export const renewSubscription = catchAsync(async (req: AuthRequest, res: Response) => {
+  const { id } = req.params;
+  const { invoice_id } = req.body;
+
+  const subscription = await Subscription.findById(id);
+  if (!subscription) {
+    throw new AppError('Subscription not found', 404);
+  }
+
+  // Import scheduler functions
+  const { processRenewalPayment: activateSubscription } = await import('../utils/scheduler');
+
+  let newSubscription;
+  if (invoice_id) {
+    // Activate using invoice
+    newSubscription = await activateSubscription(invoice_id);
+  } else {
+    // Just activate without invoice (manual activation)
+    subscription.status = 'active';
+    await subscription.save();
+
+    // Activate the business
+    await Business.findByIdAndUpdate(subscription.business_id, {
+      is_active: true
+    });
+
+    newSubscription = subscription;
+  }
+
+  res.json({
+    success: true,
+    data: newSubscription,
+    message: 'Subscription renewed successfully'
   });
 });

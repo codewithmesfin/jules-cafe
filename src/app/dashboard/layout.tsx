@@ -47,8 +47,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (user.status === 'onboarding') { router.push('/company-setup'); return; }
     const inactiveStatuses = ['inactive', 'pending', 'suspended'];
     if (inactiveStatuses.includes(user.status)) { router.push('/inactive'); return; }
+    // Redirect inactive businesses to billing page
+    if (user.businessInactive && !pathname.startsWith('/dashboard/billing')) {
+      router.push('/dashboard/billing');
+      return;
+    }
     if (!user.default_business_id && user.role !== 'saas_admin') { router.push('/company-setup'); }
-  }, [user, loading, router]);
+  }, [user, loading, router, pathname]);
 
   // Close dropdown when clicking outside
   useEffect(() => {

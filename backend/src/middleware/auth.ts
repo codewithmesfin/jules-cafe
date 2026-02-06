@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import User from '../models/User';
 import Business from '../models/Business';
+import Subscription from '../models/Subscription';
 import catchAsync from '../utils/catchAsync';
 import AppError from '../utils/appError';
 
@@ -45,6 +46,29 @@ export const protect = catchAsync(async (req: AuthRequest, res: Response, next: 
     const business = await Business.findById(req.user.default_business_id);
     if (business) {
       req.business = business;
+
+      // Check if business is inactive due to subscription expiration
+      if (!business.is_active) {
+        // Check if subscription has expired
+        const subscription = await Subscription.findOne({ 
+          business_id: business._id,
+          status: 'active'
+        }).sort({ end_date: -1 });
+
+        if (subscription && new Date(subscription.end_date) < new Date()) {
+          // Subscription has expired - mark user for billing redirect
+          req.user.businessInactive = true;
+          req.user.subscriptionExpired = true;
+        } else if (subscription && subscription.status === 'pending') {
+          // Subscription pending payment
+          req.user.businessInactive = true;
+          req.user.subscriptionPending = true;
+        } else {
+          // Business manually deactivated by super admin
+          req.user.businessInactive = true;
+          req.user.businessDeactivated = true;
+        }
+      }
     }
   }
 
@@ -85,6 +109,31 @@ export const businessIsolation = catchAsync(async (req: AuthRequest, res: Respon
 
   // Add business filter to request for use in controllers
   (req as any).businessId = req.user.default_business_id;
+
+  next();
+});
+
+/**
+ * CheckBusinessStatus middleware - Redirect to billing if business is inactive
+ */
+export const checkBusinessStatus = catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
+  if (!req.user) {
+    return next(new AppError('Not authenticated', 401));
+  }
+
+  // Skip for super admins and users without business
+  if (req.user.role === 'saas_admin' || !req.user.default_business_id) {
+    return next();
+  }
+
+  // Check if business is inactive
+  if (req.user.businessInactive) {
+    // Return a flag that frontend can use to redirect
+    res.locals.businessInactive = true;
+    res.locals.subscriptionExpired = req.user.subscriptionExpired || false;
+    res.locals.subscriptionPending = req.user.subscriptionPending || false;
+    res.locals.businessDeactivated = req.user.businessDeactivated || false;
+  }
 
   next();
 });

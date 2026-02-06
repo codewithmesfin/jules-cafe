@@ -1,20 +1,18 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useNotification } from '@/context/NotificationContext';
 import { 
   CreditCard, Download, FileText, Calendar, CheckCircle, 
   AlertCircle, TrendingUp, Clock, DollarSign, Building2,
-  X, Loader2, Send, XCircle
+  X, Loader2, Send, XCircle, RefreshCw
 } from 'lucide-react';
 
-// Pricing configuration (prices are INCLUDING VAT)
+// Pricing configuration - Only 100 ETB/day including VAT
 const PRICING = {
-  basic: { daily: 100, name: 'Basic', features: ['Up to 5 users', 'Basic POS', 'Inventory', 'Reports', 'Email Support'] },
-  pro: { daily: 250, name: 'Pro', features: ['Up to 20 users', 'Full POS', 'Advanced Inventory', 'Analytics', 'API Access', 'Priority Support'] },
-  enterprise: { daily: 500, name: 'Enterprise', features: ['Unlimited users', 'Full POS', 'Advanced Inventory', 'Custom Analytics', 'Full API', 'Dedicated Support'] }
+  standard: { daily: 100, name: 'Standard', features: ['Unlimited users', 'Full POS', 'Inventory', 'Analytics', 'Priority Support'] }
 };
 
 const VAT_RATE = 15;
@@ -59,7 +57,7 @@ interface Payment {
 
 interface Subscription {
   _id: string;
-  plan: 'basic' | 'pro' | 'enterprise';
+  plan: 'standard';
   status: 'active' | 'cancelled' | 'expired' | 'pending';
   start_date: string;
   end_date: string;
@@ -83,10 +81,11 @@ interface PriceCalculation {
 }
 
 export default function BillingPage() {
-  const { user, jwt } = useAuth();
+  const { user, jwt, refreshUser } = useAuth();
+  const router = useRouter();
   const { showNotification } = useNotification();
   const searchParams = useSearchParams();
-  const [activeTab, setActiveTab] = useState<'overview' | 'plans' | 'invoices' | 'payment'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'invoices' | 'payment'>('overview');
   const [loading, setLoading] = useState(true);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -94,10 +93,18 @@ export default function BillingPage() {
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showSubscribeModal, setShowSubscribeModal] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<{ plan: string; billing_cycle: string } | null>(null);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+  const [autoCreating, setAutoCreating] = useState(false);
+
+  // Redirect if business is inactive and user tries to access other pages
+  useEffect(() => {
+    if (user && user.businessInactive) {
+      // User is on billing page - show full message but allow access
+      return;
+    }
+  }, [user]);
   
   // Form state for payment
   const [paymentForm, setPaymentForm] = useState({
@@ -113,8 +120,8 @@ export default function BillingPage() {
   });
 
   // Calculate price (prices are already including VAT)
-  const calculatePrice = (plan: string, billingCycle: string): PriceCalculation => {
-    const planData = PRICING[plan as keyof typeof PRICING];
+  const calculatePrice = (billingCycle: string): PriceCalculation => {
+    const planData = PRICING.standard;
     const days = billingCycle === 'yearly' ? 365 : 30;
     const dailyWithVAT = planData.daily;
     
@@ -131,7 +138,7 @@ export default function BillingPage() {
 
     return {
       plan: planData.name,
-      plan_key: plan,
+      plan_key: 'standard',
       billing_cycle: billingCycle,
       days,
       daily_rate: planData.daily,
@@ -145,14 +152,35 @@ export default function BillingPage() {
     };
   };
 
-  // Handle plan query parameter from pricing page
-  useEffect(() => {
-    const planParam = searchParams.get('plan');
-    if (planParam && ['basic', 'pro', 'enterprise'].includes(planParam)) {
-      setSelectedPlan({ plan: planParam, billing_cycle: 'monthly' });
-      setShowSubscribeModal(true);
+  // Auto-create subscription for new businesses
+  const autoCreateSubscription = async () => {
+    if (!jwt) return;
+    
+    setAutoCreating(true);
+    try {
+      const response = await fetch('http://localhost:8000/api/billing/subscription/auto', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${jwt}`
+        }
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        showNotification('Subscription created successfully!', 'success');
+        fetchBillingData();
+      } else if (data.message !== 'Subscription already exists') {
+        showNotification(data.message || 'Failed to create subscription', 'error');
+      }
+    } catch (error) {
+      console.error('Error creating subscription:', error);
+      showNotification('Failed to create subscription. Please try again.', 'error');
+    } finally {
+      setAutoCreating(false);
     }
-  }, [searchParams]);
+  };
 
   // Fetch data
   useEffect(() => {
@@ -211,10 +239,10 @@ export default function BillingPage() {
 
   // Create new subscription
   const handleCreateSubscription = async () => {
-    if (!jwt || !selectedPlan) return;
+    if (!jwt) return;
     
     setSubmitting(true);
-    console.log('Creating subscription for plan:', selectedPlan.plan, 'cycle:', selectedPlan.billing_cycle);
+    console.log('Creating subscription with cycle:', billingCycle);
 
     try {
       const response = await fetch('http://localhost:8000/api/billing/subscription', {
@@ -224,8 +252,8 @@ export default function BillingPage() {
           Authorization: `Bearer ${jwt}`
         },
         body: JSON.stringify({ 
-          plan: selectedPlan.plan, 
-          billing_cycle: selectedPlan.billing_cycle 
+          plan: 'standard', 
+          billing_cycle: billingCycle 
         })
       });
 
@@ -238,7 +266,6 @@ export default function BillingPage() {
         showNotification('Subscription created successfully!', 'success');
         fetchBillingData();
         setShowSubscribeModal(false);
-        setSelectedPlan(null);
         setActiveTab('invoices');
       } else {
         showNotification(data.message || 'Failed to create subscription. Please make sure you have a business set up.', 'error');
@@ -289,6 +316,16 @@ export default function BillingPage() {
           notes: ''
         });
         fetchBillingData();
+        // Refresh user data to update businessInactive status
+        if (refreshUser) {
+          await refreshUser();
+        }
+        // Check if business is now active and redirect to dashboard
+        setTimeout(() => {
+          if (user && !user.businessInactive) {
+            router.push('/dashboard');
+          }
+        }, 1500);
       } else {
         showNotification('error', data.message || 'Failed to submit payment');
       }
@@ -304,11 +341,6 @@ export default function BillingPage() {
     setSelectedInvoice(invoice);
     setPaymentForm(prev => ({ ...prev, invoice_id: invoice._id }));
     setShowPaymentModal(true);
-  };
-
-  const openSubscribeModal = (plan: string) => {
-    setSelectedPlan({ plan, billing_cycle: billingCycle });
-    setShowSubscribeModal(true);
   };
 
   const getStatusBadge = (status: string) => {
@@ -334,6 +366,8 @@ export default function BillingPage() {
     );
   }
 
+  const priceCalculation = calculatePrice(billingCycle);
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -342,14 +376,72 @@ export default function BillingPage() {
           <h1 className="text-2xl font-bold text-gray-900">Billing & Subscription</h1>
           <p className="text-gray-500 mt-1">Manage your subscription, invoices, and payments</p>
         </div>
+        {!subscription && (
+          <button
+            onClick={autoCreateSubscription}
+            disabled={autoCreating}
+            className="px-4 py-2 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:opacity-50"
+          >
+            {autoCreating ? 'Creating...' : 'Create Subscription'}
+          </button>
+        )}
       </div>
+
+      {/* Inactive Business Warning Banner */}
+      {user?.businessInactive && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+              <AlertCircle className="w-5 h-5 text-red-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-sm font-semibold text-red-800">
+                {user.subscriptionExpired ? 'Subscription Expired' : 
+                 user.subscriptionPending ? 'Payment Pending' : 
+                 'Business Inactive'}
+              </h3>
+              <p className="text-sm text-red-700 mt-1">
+                {user.subscriptionExpired 
+                  ? 'Your subscription has expired. Please renew your subscription to continue using the system.'
+                  : user.subscriptionPending
+                  ? 'Your subscription is pending payment. Please make a payment to activate your account.'
+                  : 'Your business account is inactive. Please complete payment or contact support to activate your account.'
+                }
+              </p>
+              <div className="mt-3 flex items-center gap-4 text-sm">
+                <span className="text-red-600 font-medium">
+                  Price: 100 ETB/day (Standard Plan)
+                </span>
+                <span className="text-red-500">
+                  Including 15% VAT
+                </span>
+              </div>
+              <div className="mt-4 flex gap-3">
+                <button
+                  onClick={async () => {
+                    if (refreshUser) {
+                      await refreshUser();
+                      // Check if business is now active
+                      setTimeout(() => {
+                        window.location.reload();
+                      }, 500);
+                    }
+                  }}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors"
+                >
+                  Refresh Status
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="border-b border-gray-200">
         <nav className="flex gap-6">
           {[
             { id: 'overview', label: 'Overview', icon: TrendingUp },
-            { id: 'plans', label: 'Plans', icon: CreditCard },
             { id: 'invoices', label: 'Invoices', icon: FileText },
             { id: 'payment', label: 'Payment History', icon: Building2 },
           ].map((tab) => (
@@ -478,206 +570,150 @@ export default function BillingPage() {
 
       {/* Overview Tab - No Subscription */}
       {activeTab === 'overview' && !subscription && (
-        <div className="bg-white rounded-2xl border border-gray-200 p-8 text-center">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <CreditCard className="text-gray-400" size={32} />
-          </div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">No Active Subscription</h2>
-          <p className="text-gray-500 mb-6">Subscribe to a plan to start using the system.</p>
-          <button
-            onClick={() => setActiveTab('plans')}
-            className="px-6 py-2.5 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors"
-          >
-            View Plans
-          </button>
-        </div>
-      )}
-
-      {/* Plans Tab */}
-      {activeTab === 'plans' && (
-        <div className="space-y-6">
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
-            <AlertCircle className="text-amber-600 mt-0.5" size={20} />
-            <div>
-              <h3 className="font-medium text-amber-800">Pricing Information</h3>
-              <p className="text-sm text-amber-700 mt-1">
-                All prices are in Ethiopian Birr (ETB). Displayed prices include 15% VAT. 
-                Yearly billing gets a 20% discount on the subtotal.
-              </p>
+        <div className="bg-white rounded-2xl border border-gray-200 p-8">
+          <div className="text-center">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <CreditCard className="text-gray-400" size={32} />
             </div>
-          </div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">No Active Subscription</h2>
+            <p className="text-gray-500 mb-6">Subscribe to access the full features of the system.</p>
+            
+            {/* Pricing Card */}
+            <div className="max-w-md mx-auto bg-gray-50 rounded-xl p-6 mb-6">
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Standard Plan</h3>
+              <div className="flex items-baseline justify-center gap-1 mb-4">
+                <span className="text-4xl font-bold text-gray-900">100</span>
+                <span className="text-gray-500">ETB/day</span>
+              </div>
+              <p className="text-sm text-gray-500 mb-4">Including 15% VAT</p>
+              
+              <div className="flex justify-center gap-4 mb-4">
+                <button
+                  onClick={() => setBillingCycle('monthly')}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    billingCycle === 'monthly'
+                      ? 'bg-gray-900 text-white'
+                      : 'bg-white border border-gray-300 text-gray-700'
+                  }`}
+                >
+                  Monthly
+                </button>
+                <button
+                  onClick={() => setBillingCycle('yearly')}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    billingCycle === 'yearly'
+                      ? 'bg-gray-900 text-white'
+                      : 'bg-white border border-gray-300 text-gray-700'
+                  }`}
+                >
+                  Yearly
+                  <span className="ml-1 text-xs text-emerald-600">(Save 20%)</span>
+                </button>
+              </div>
 
-          {/* Billing Toggle */}
-          <div className="flex justify-center">
-            <div className="inline-flex items-center bg-white rounded-full p-1 shadow-sm border border-gray-200">
+              <div className="text-lg font-semibold text-gray-900 mb-4">
+                Total: {priceCalculation.total.toFixed(0)} ETB / {billingCycle === 'yearly' ? 'year' : 'month'}
+              </div>
+
               <button
-                onClick={() => setBillingCycle('monthly')}
-                className={`px-6 py-2 rounded-full text-sm font-medium transition-all ${
-                  billingCycle === 'monthly'
-                    ? 'bg-gray-900 text-white'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
+                onClick={handleCreateSubscription}
+                disabled={submitting}
+                className="w-full px-6 py-2.5 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:opacity-50"
               >
-                Monthly
-              </button>
-              <button
-                onClick={() => setBillingCycle('yearly')}
-                className={`px-6 py-2 rounded-full text-sm font-medium transition-all ${
-                  billingCycle === 'yearly'
-                    ? 'bg-gray-900 text-white'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Yearly
-                <span className="ml-2 text-xs bg-emerald-500 text-white px-2 py-0.5 rounded-full">
-                  Save 20%
-                </span>
+                {submitting ? 'Creating...' : 'Subscribe Now'}
               </button>
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {Object.entries(PRICING).map(([key, plan]) => {
-              const price = calculatePrice(key, billingCycle);
-
-              return (
-                <div key={key} className="bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
-                  <div className="p-6 border-b border-gray-100">
-                    <h3 className="text-xl font-bold text-gray-900">{plan.name}</h3>
-                    <div className="mt-4">
-                      <span className="text-4xl font-bold text-gray-900">{price.total.toFixed(0)}</span>
-                      <span className="text-gray-500 ml-2">ETB/{billingCycle === 'yearly' ? 'year' : 'month'}</span>
-                    </div>
-                    <div className="mt-2 text-sm text-gray-500">
-                      {plan.daily} ETB/day (includes 15% VAT)
-                    </div>
-                    {key === 'pro' && (
-                      <div className="mt-2 inline-block px-2 py-1 bg-emerald-100 text-emerald-700 text-xs font-medium rounded">
-                        Most Popular
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="p-6">
-                    <ul className="space-y-3 mb-6">
-                      {plan.features.map((feature, idx) => (
-                        <li key={idx} className="flex items-center gap-2 text-sm text-gray-600">
-                          <CheckCircle size={16} className="text-emerald-500" />
-                          {feature}
-                        </li>
-                      ))}
-                    </ul>
-
-                    <button
-                      onClick={() => openSubscribeModal(key)}
-                      className="w-full py-2.5 px-4 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
-                    >
-                      Subscribe {billingCycle === 'yearly' ? 'Yearly' : 'Monthly'}
-                    </button>
-                  </div>
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-left">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="text-amber-600 mt-0.5" size={20} />
+                <div className="text-sm text-amber-700">
+                  <p className="font-medium">Important</p>
+                  <p>Your business will be activated only after payment is verified. Please make a bank transfer after subscribing.</p>
                 </div>
-              );
-            })}
+              </div>
+            </div>
           </div>
         </div>
       )}
 
       {/* Invoices Tab */}
       {activeTab === 'invoices' && (
-        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-          <div className="p-6 border-b border-gray-100">
-            <h2 className="text-lg font-semibold text-gray-900">Invoice History</h2>
-            <p className="text-gray-500 text-sm mt-1">View and pay your invoices</p>
-          </div>
-          
+        <div className="space-y-6">
           {invoices.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">
-              <FileText className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-              <p>No invoices yet</p>
-              <button onClick={() => setActiveTab('plans')} className="mt-4 text-gray-900 font-medium hover:underline">
-                Subscribe to a plan
-              </button>
+            <div className="bg-white rounded-2xl border border-gray-200 p-8 text-center">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <FileText className="text-gray-400" size={32} />
+              </div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">No Invoices Yet</h2>
+              <p className="text-gray-500 mb-4">Create a subscription to generate your first invoice.</p>
+              {!subscription && (
+                <button
+                  onClick={autoCreateSubscription}
+                  disabled={autoCreating}
+                  className="px-6 py-2.5 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors"
+                >
+                  {autoCreating ? 'Creating...' : 'Create Subscription'}
+                </button>
+              )}
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-gray-50">
+                <h3 className="font-semibold text-gray-900">Invoices</h3>
+                <button
+                  onClick={() => {
+                    fetchBillingData();
+                    if (refreshUser) refreshUser();
+                  }}
+                  className="px-3 py-1 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded-lg transition-colors flex items-center gap-1"
+                >
+                  <RefreshCw size={14} /> Refresh
+                </button>
+              </div>
               <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
+                <thead>
+                  <tr className="bg-gray-50 border-b border-gray-200">
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plan</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Period</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {invoices.map((invoice) => (
                     <tr key={invoice._id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-medium text-gray-900">{invoice.invoice_number}</span>
+                      <td className="px-6 py-4">
+                        <p className="text-sm font-medium text-gray-900">#{invoice.invoice_number || invoice._id.slice(-8)}</p>
+                        <p className="text-xs text-gray-500">{new Date(invoice.created_at).toLocaleDateString()}</p>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm text-gray-900">{invoice.plan}</span>
-                        <span className="text-xs text-gray-500 ml-1">({invoice.billing_cycle})</span>
+                      <td className="px-6 py-4">
+                        <p className="text-sm text-gray-900">{invoice.plan}</p>
+                        <p className="text-xs text-gray-500">{invoice.billing_cycle}</p>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm text-gray-500">
-                          {new Date(invoice.period_start).toLocaleDateString()} - {new Date(invoice.period_end).toLocaleDateString()}
-                        </span>
+                      <td className="px-6 py-4">
+                        <p className="text-sm font-medium text-gray-900">{invoice.total} ETB</p>
+                        <p className="text-xs text-gray-500">{invoice.days} days</p>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-medium text-gray-900">{invoice.total.toFixed(2)} ETB</span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusBadge(invoice.status)}`}>
+                      <td className="px-6 py-4">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadge(invoice.status)}`}>
                           {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          {invoice.status === 'pending' && !payments.some(p => p.invoice_id === invoice._id) && (
-                            <button
-                              onClick={() => openPaymentModal(invoice)}
-                              className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-white bg-gray-900 hover:bg-gray-800 rounded-lg transition-colors"
-                            >
-                              <Send size={14} />
-                              Pay Now
-                            </button>
-                          )}
-                          {(() => {
-                            const payment = payments.find(p => p.invoice_id === invoice._id);
-                            if (!payment) return null;
-                            
-                            if (payment.status === 'pending') {
-                              return (
-                                <span className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-amber-700 bg-amber-100 rounded-lg">
-                                  <Clock size={14} />
-                                  Payment Pending
-                                </span>
-                              );
-                            } else if (payment.status === 'verified') {
-                              return (
-                                <span className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-emerald-700 bg-emerald-100 rounded-lg">
-                                  <CheckCircle size={14} />
-                                  Payment Verified
-                                </span>
-                              );
-                            } else if (payment.status === 'rejected') {
-                              return (
-                                <span className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-red-700 bg-red-100 rounded-lg">
-                                  <XCircle size={14} />
-                                  Payment Rejected
-                                </span>
-                              );
-                            }
-                            return null;
-                          })()}
-                          <button className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
-                            <Download size={14} />
-                            Download
+                      <td className="px-6 py-4">
+                        <p className="text-sm text-gray-900">{new Date(invoice.due_date).toLocaleDateString()}</p>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        {invoice.status === 'pending' && (
+                          <button
+                            onClick={() => openPaymentModal(invoice)}
+                            className="px-3 py-1 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
+                          >
+                            Pay Now
                           </button>
-                        </div>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -690,51 +726,45 @@ export default function BillingPage() {
 
       {/* Payment History Tab */}
       {activeTab === 'payment' && (
-        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-          <div className="p-6 border-b border-gray-100">
-            <h2 className="text-lg font-semibold text-gray-900">Payment History</h2>
-            <p className="text-gray-500 text-sm mt-1">Track your payment submissions</p>
-          </div>
-          
+        <div className="space-y-6">
           {payments.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">
-              <Building2 className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-              <p>No payment records yet</p>
+            <div className="bg-white rounded-2xl border border-gray-200 p-8 text-center">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Building2 className="text-gray-400" size={32} />
+              </div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">No Payments Yet</h2>
+              <p className="text-gray-500">Payment history will appear here after you make a payment.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
               <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
+                <thead>
+                  <tr className="bg-gray-50 border-b border-gray-200">
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bank</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reference</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payer</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {payments.map((payment) => (
                     <tr key={payment._id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm text-gray-500">{new Date(payment.created_at).toLocaleDateString()}</span>
+                      <td className="px-6 py-4">
+                        <p className="text-sm text-gray-900">{new Date(payment.created_at).toLocaleDateString()}</p>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm text-gray-900">{payment.bank_account.bank_name}</span>
-                        <span className="text-xs text-gray-500 ml-1">({payment.bank_account.account_number})</span>
+                      <td className="px-6 py-4">
+                        <p className="text-sm font-medium text-gray-900">{payment.amount} ETB</p>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-mono text-gray-900">{payment.transaction_reference}</span>
+                      <td className="px-6 py-4">
+                        <p className="text-sm text-gray-900">{payment.bank_account?.bank_name}</p>
+                        <p className="text-xs text-gray-500">{payment.bank_account?.account_number}</p>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm text-gray-900">{payment.payer_name}</span>
+                      <td className="px-6 py-4">
+                        <p className="text-sm text-gray-900">{payment.transaction_reference}</p>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-medium text-gray-900">{payment.amount.toFixed(2)} ETB</span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusBadge(payment.status)}`}>
+                      <td className="px-6 py-4">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadge(payment.status)}`}>
                           {payment.status.charAt(0).toUpperCase() + payment.status.slice(1)}
                         </span>
                       </td>
@@ -747,220 +777,131 @@ export default function BillingPage() {
         </div>
       )}
 
-      {/* Subscribe Modal */}
-      {showSubscribeModal && selectedPlan && (
+      {/* Payment Modal */}
+      {showPaymentModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900">Subscribe to {PRICING[selectedPlan.plan as keyof typeof PRICING]?.name}</h2>
-              <button onClick={() => { setShowSubscribeModal(false); setSelectedPlan(null); }} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">Submit Payment</h2>
+              <button onClick={() => setShowPaymentModal(false)} className="p-2 hover:bg-gray-100 rounded-lg">
                 <X size={20} className="text-gray-500" />
               </button>
             </div>
 
-            <div className="p-6">
-              {/* Price Breakdown */}
-              <div className="bg-gray-50 rounded-xl p-4 mb-6">
-                <h3 className="font-medium text-gray-900 mb-3">Price Breakdown ({selectedPlan.billing_cycle})</h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">{PRICING[selectedPlan.plan as keyof typeof PRICING]?.daily} ETB × {selectedPlan.billing_cycle === 'yearly' ? '365' : '30'} days (incl. VAT)</span>
-                    <span className="text-gray-900">{(PRICING[selectedPlan.plan as keyof typeof PRICING]?.daily * (selectedPlan.billing_cycle === 'yearly' ? 365 : 30)).toFixed(2)} ETB</span>
+            {selectedInvoice && (
+              <div className="p-6 bg-gray-50 mb-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-500">Invoice Amount</p>
+                    <p className="text-2xl font-bold text-gray-900">{selectedInvoice.total} ETB</p>
                   </div>
-                  {selectedPlan.billing_cycle === 'yearly' && (
-                    <div className="flex justify-between text-emerald-600">
-                      <span>Subtotal discount (20%)</span>
-                      <span>-{calculatePrice(selectedPlan.plan, selectedPlan.billing_cycle).discount_amount.toFixed(2)} ETB</span>
-                    </div>
-                  )}
-                  <div className="border-t border-gray-200 pt-2 flex justify-between font-bold">
-                    <span>Total (incl. VAT)</span>
-                    <span>{calculatePrice(selectedPlan.plan, selectedPlan.billing_cycle).total.toFixed(2)} ETB</span>
+                  <div className="text-right">
+                    <p className="text-sm text-gray-500">Due Date</p>
+                    <p className="text-sm font-medium text-gray-900">{new Date(selectedInvoice.due_date).toLocaleDateString()}</p>
                   </div>
                 </div>
               </div>
+            )}
 
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="text-amber-600 mt-0.5" size={20} />
-                  <div className="text-sm">
-                    <p className="font-medium text-amber-800">Next Steps</p>
-                    <p className="text-amber-700 mt-1">
-                      After subscribing, you will receive an invoice. You can then make a bank transfer using one of our registered bank accounts.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <button
-                onClick={handleCreateSubscription}
-                disabled={submitting}
-                className="w-full py-3 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {submitting ? (
-                  <>
-                    <Loader2 className="animate-spin" size={20} />
-                    Creating...
-                  </>
-                ) : (
-                  'Confirm Subscription'
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Payment Modal */}
-      {showPaymentModal && selectedInvoice && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+            <form onSubmit={handleSubmitPayment} className="p-6 space-y-4">
               <div>
-                <h2 className="text-xl font-bold text-gray-900">Submit Payment</h2>
-                <p className="text-gray-500 text-sm mt-1">Invoice: {selectedInvoice.invoice_number}</p>
-              </div>
-              <button onClick={() => setShowPaymentModal(false)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                <X size={20} className="text-gray-500" />
-              </button>
-            </div>
-
-            <div className="p-6">
-              {/* Invoice Summary */}
-              <div className="bg-gray-50 rounded-xl p-4 mb-6">
-                <h3 className="font-medium text-gray-900 mb-3">Payment Summary</h3>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-gray-500">Plan:</span>
-                    <span className="ml-2 text-gray-900">{selectedInvoice.plan}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-500">Amount Due:</span>
-                    <span className="ml-2 font-bold text-gray-900">{selectedInvoice.total.toFixed(2)} ETB</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-500">Due Date:</span>
-                    <span className="ml-2 text-gray-900">{new Date(selectedInvoice.due_date).toLocaleDateString()}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Bank Accounts */}
-              <div className="mb-6">
-                <h3 className="font-medium text-gray-900 mb-3">Bank Accounts for Payment</h3>
-                <div className="space-y-3">
-                  {bankAccounts.map((bank, idx) => (
-                    <div 
-                      key={bank._id}
-                      className={`p-4 border rounded-xl cursor-pointer transition-colors ${
-                        paymentForm.bank_name === bank.bank_name && paymentForm.account_number === bank.account_number
-                          ? 'border-gray-900 bg-gray-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                      onClick={() => setPaymentForm(prev => ({ ...prev, bank_name: bank.bank_name, account_number: bank.account_number, account_name: bank.account_name }))}
-                    >
-                      <div className="flex items-center gap-3">
-                        <Building2 size={20} className="text-gray-400" />
-                        <div>
-                          <p className="font-medium text-gray-900">{bank.bank_name}</p>
-                          <p className="text-sm text-gray-500">{bank.account_name}</p>
-                          <p className="text-sm font-mono text-gray-700">{bank.account_number}</p>
-                        </div>
-                      </div>
-                    </div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Bank Account</label>
+                <select
+                  required
+                  value={paymentForm.bank_name}
+                  onChange={(e) => {
+                    const bank = bankAccounts.find(b => b.bank_name === e.target.value);
+                    setPaymentForm(prev => ({
+                      ...prev,
+                      bank_name: e.target.value,
+                      account_number: bank?.account_number || '',
+                      account_name: bank?.account_name || ''
+                    }));
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
+                >
+                  <option value="">Select bank account</option>
+                  {bankAccounts.map((bank) => (
+                    <option key={bank._id} value={bank.bank_name}>
+                      {bank.bank_name} - {bank.account_number} ({bank.account_name})
+                    </option>
                   ))}
-                </div>
+                </select>
               </div>
 
-              {/* Payment Form */}
-              <form onSubmit={handleSubmitPayment} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Transaction Reference</label>
-                    <input
-                      type="text"
-                      required
-                      value={paymentForm.transaction_reference}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPaymentForm(prev => ({ ...prev, transaction_reference: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
-                      placeholder="e.g., Txn123456"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Payer Name</label>
-                    <input
-                      type="text"
-                      required
-                      value={paymentForm.payer_name}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPaymentForm(prev => ({ ...prev, payer_name: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
-                      placeholder="Full name"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
-                    <input
-                      type="tel"
-                      value={paymentForm.payer_phone}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPaymentForm(prev => ({ ...prev, payer_phone: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
-                      placeholder="e.g., +251911234567"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                    <input
-                      type="email"
-                      value={paymentForm.payer_email}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPaymentForm(prev => ({ ...prev, payer_email: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
-                      placeholder="email@example.com"
-                    />
-                  </div>
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Transaction Reference</label>
+                <input
+                  type="text"
+                  required
+                  value={paymentForm.transaction_reference}
+                  onChange={(e) => setPaymentForm(prev => ({ ...prev, transaction_reference: e.target.value }))}
+                  placeholder="Enter your bank transaction reference"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
+                />
+              </div>
 
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Notes (Optional)</label>
-                  <textarea
-                    value={paymentForm.notes}
-                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setPaymentForm(prev => ({ ...prev, notes: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
-                    rows={2}
-                    placeholder="Any additional information"
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Payer Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={paymentForm.payer_name}
+                    onChange={(e) => setPaymentForm(prev => ({ ...prev, payer_name: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
                   />
                 </div>
-
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-                  <div className="flex items-start gap-3">
-                    <AlertCircle className="text-amber-600 mt-0.5" size={20} />
-                    <div className="text-sm">
-                      <p className="font-medium text-amber-800">Important</p>
-                      <p className="text-amber-700 mt-1">
-                        After making the payment, please keep your transaction receipt. Our team will verify your payment within 24-48 hours.
-                      </p>
-                    </div>
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Payer Phone</label>
+                  <input
+                    type="tel"
+                    required
+                    value={paymentForm.payer_phone}
+                    onChange={(e) => setPaymentForm(prev => ({ ...prev, payer_phone: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
+                  />
                 </div>
+              </div>
 
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Payer Email (Optional)</label>
+                <input
+                  type="email"
+                  value={paymentForm.payer_email}
+                  onChange={(e) => setPaymentForm(prev => ({ ...prev, payer_email: e.target.value }))}
+                  placeholder="Enter your email (optional)"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Notes (Optional)</label>
+                <textarea
+                  value={paymentForm.notes}
+                  onChange={(e) => setPaymentForm(prev => ({ ...prev, notes: e.target.value }))}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowPaymentModal(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full py-3 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-2 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:opacity-50"
                 >
-                  {submitting ? (
-                    <>
-                      <Loader2 className="animate-spin" size={20} />
-                      Submitting...
-                    </>
-                  ) : (
-                    <>
-                      <Send size={20} />
-                      Submit Payment Proof
-                    </>
-                  )}
+                  {submitting ? 'Submitting...' : 'Submit Payment'}
                 </button>
-              </form>
-            </div>
+              </div>
+            </form>
           </div>
         </div>
       )}

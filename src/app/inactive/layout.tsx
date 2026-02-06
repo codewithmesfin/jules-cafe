@@ -1,15 +1,17 @@
 "use client";
 
 import React, { useEffect, useLayoutEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 
 /**
  * Layout for the inactive page - does not include sidebar
  * This ensures inactive users only see the inactive page without any dashboard elements
+ * NOTE: BusinessInactive users are redirected to /dashboard/billing instead of this page
  */
 export default function InactiveLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { user, loading } = useAuth();
   const [checkedStorage, setCheckedStorage] = useState(false);
   const [storedUser, setStoredUser] = useState<any>(null);
@@ -33,19 +35,34 @@ export default function InactiveLayout({ children }: { children: React.ReactNode
   useLayoutEffect(() => {
     // Check stored user first
     if (typeof window !== 'undefined' && storedUser) {
-      if (storedUser.status === 'active') {
+      // BusinessInactive users should go to billing, not inactive page
+      if (storedUser.businessInactive) {
+        router.replace('/dashboard/billing');
+        return;
+      }
+      
+      const isUserActive = storedUser.status === 'active';
+      
+      if (isUserActive) {
         router.replace('/dashboard');
         return;
       }
-      // Inactive user - allow them to see the page
+      // Inactive user (not business) - allow them to see the inactive page
       return;
     }
 
     // Wait for AuthContext if no stored user
     if (!loading && user) {
-      if (user.status === 'active') {
-        let redirectPath = '/dashboard';
-        router.replace(redirectPath);
+      // BusinessInactive users should go to billing, not inactive page
+      if (user.businessInactive) {
+        router.replace('/dashboard/billing');
+        return;
+      }
+      
+      const isUserActive = user.status === 'active';
+      
+      if (isUserActive) {
+        router.replace('/dashboard');
       }
     } else if (!loading && !user && checkedStorage) {
       router.replace('/login');
@@ -61,8 +78,8 @@ export default function InactiveLayout({ children }: { children: React.ReactNode
     );
   }
 
-  // If stored user is active, show loading (will redirect via useLayoutEffect)
-  if (storedUser && storedUser.status === 'active') {
+  // If stored user is active or businessInactive, show loading (will redirect)
+  if ((storedUser && storedUser.status === 'active') || (storedUser && storedUser.businessInactive)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#e60023]"></div>
@@ -70,8 +87,8 @@ export default function InactiveLayout({ children }: { children: React.ReactNode
     );
   }
 
-  // If user from AuthContext is active, don't render (will redirect)
-  if (user && user.status === 'active') {
+  // If user from AuthContext is active or businessInactive, don't render (will redirect)
+  if ((user && user.status === 'active') || (user && user.businessInactive)) {
     return null;
   }
 
@@ -80,6 +97,6 @@ export default function InactiveLayout({ children }: { children: React.ReactNode
     return null;
   }
 
-  // Render the inactive page content without sidebar
+  // Render the inactive page content without sidebar (only for inactive user accounts, not businessInactive)
   return <>{children}</>;
 }

@@ -35,7 +35,7 @@ export const Drawer: React.FC<DrawerProps> = ({
       {/* Backdrop */}
       <div
         className={cn(
-          'fixed inset-0 z-50 bg-black/40 backdrop-blur-sm transition-opacity duration-300',
+          'fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm transition-opacity duration-300',
           isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
         )}
         onClick={onClose}
@@ -44,9 +44,9 @@ export const Drawer: React.FC<DrawerProps> = ({
       {/* Drawer */}
       <div
         className={cn(
-          'fixed z-50 bg-white shadow-2xl transition-transform duration-300 ease-out',
+          'fixed z-[60] bg-white shadow-2xl transition-transform duration-300 ease-out',
           isBottom 
-            ? 'inset-x-0 bottom-0 rounded-t-3xl max-h-[85vh]' 
+            ? 'inset-x-0 bottom-0 rounded-t-3xl max-h-[95vh]' 
             : `inset-y-0 ${position === 'right' ? 'right-0' : 'left-0'} w-full max-w-md`,
           isOpen 
             ? isBottom ? 'translate-y-0' : 'translate-x-0' 

@@ -3,6 +3,7 @@ import Business from '../models/Business';
 import User from '../models/User';
 import Invoice from '../models/Invoice';
 import Payment from '../models/Payment';
+import Subscription from '../models/Subscription';
 import catchAsync from '../utils/catchAsync';
 import AppError from '../utils/appError';
 import { AuthRequest } from '../middleware/auth';
@@ -221,6 +222,38 @@ export const verifyPayment = catchAsync(async (req: AuthRequest, res: Response, 
       paid_date: status === 'verified' ? new Date() : undefined
     }, { new: true });
     console.log('✅ Invoice updated:', updatedInvoice);
+
+    // If payment is verified, activate the business and create new subscription
+    if (status === 'verified' && updatedInvoice) {
+      console.log('🚀 Activating business and creating new subscription...');
+      
+      // Activate the business
+      await Business.findByIdAndUpdate(payment.business_id, {
+        is_active: true
+      });
+      console.log('✅ Business activated:', payment.business_id);
+
+      // Get the original subscription to determine billing cycle
+      const originalSubscription = await Subscription.findById(updatedInvoice.subscription_id);
+      const billing_cycle = originalSubscription?.billing_cycle || 'monthly';
+      const days = billing_cycle === 'yearly' ? 365 : 30;
+
+      // Create new subscription period
+      const startDate = new Date();
+      const endDate = new Date();
+      endDate.setDate(endDate.getDate() + days);
+
+      await Subscription.create({
+        business_id: payment.business_id,
+        plan: 'standard',
+        status: 'active',
+        start_date: startDate,
+        end_date: endDate,
+        billing_cycle,
+        daily_rate: 100
+      });
+      console.log('✅ New subscription created');
+    }
   }
 
   res.status(200).json({

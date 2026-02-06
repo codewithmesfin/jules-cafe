@@ -55,13 +55,25 @@ const NewOrder: React.FC = () => {
   const rootRef = useRef<HTMLDivElement>(null);
   const [dynamicHeight, setDynamicHeight] = useState('100%');
 
+  // Handle dynamic height for desktop, simpler for mobile
   useEffect(() => {
-    if (rootRef.current) {
-      const topOffset = rootRef.current.getBoundingClientRect().top;
-      const bottomPadding = 24; // p-6 on main element
-      setDynamicHeight(`calc(100vh - ${topOffset + bottomPadding}px)`);
-    }
-  }, [orderId]); // Re-calculate if orderId changes (tabs appear/disappear)
+    const updateHeight = () => {
+      if (typeof window !== 'undefined') {
+        const isMobile = window.innerWidth < 1024;
+        if (isMobile) {
+          setDynamicHeight('100dvh');
+        } else if (rootRef.current) {
+          const topOffset = rootRef.current.getBoundingClientRect().top;
+          const bottomPadding = 24;
+          setDynamicHeight(`calc(100vh - ${topOffset + bottomPadding}px)`);
+        }
+      }
+    };
+    
+    updateHeight();
+    window.addEventListener('resize', updateHeight);
+    return () => window.removeEventListener('resize', updateHeight);
+  }, [orderId]);
 
 
 
@@ -201,7 +213,10 @@ const NewOrder: React.FC = () => {
         showNotification('Order updated successfully!');
         router.push('/dashboard/orders');
       } else {
-        await api.orders.create(orderData);
+        await api.orders.create({
+          ...orderData,
+          status: 'preparing'
+        });
         showNotification('Order placed successfully!');
         setCart([]);
         setSelectedTable('');
@@ -245,69 +260,91 @@ const NewOrder: React.FC = () => {
   const cartContent = (
     <div className="flex flex-col h-full max-h-[660px] bg-white lg:rounded-b-3xl">
       {/* Form fields and cart items */}
-      <div className="flex-1 overflow-y-auto p-5 space-y-5">
+      <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
         <div className="space-y-4">
           <div className="space-y-3">
             <div>
               <label className="text-xs font-semibold text-gray-600 flex items-center gap-1 mb-1.5">
                 <Grid size={12} className="text-[#e60023]" /> Table
               </label>
-              <select
-                className="w-full text-sm border border-gray-200 rounded-xl bg-white px-3 py-2.5 focus:ring-2 focus:ring-[#e60023] focus:border-transparent transition-all shadow-sm"
-                value={selectedTable}
-                onChange={(e) => setSelectedTable(e.target.value)}
-              >
-                <option value="">Select Table</option>
-                {tables.map(t => (
-                  <option key={t.id || t._id} value={t.id || t._id}>{t.name} ({t.capacity} seats)</option>
-                ))}
-              </select>
+              <div className="relative">
+                <select
+                  className="w-full text-xs sm:text-sm appearance-none bg-white border border-gray-200 rounded-xl px-3 py-2.5 sm:py-3 focus:ring-2 focus:ring-[#e60023] focus:border-transparent transition-all shadow-sm font-medium truncate cursor-pointer"
+                  value={selectedTable}
+                  onChange={(e) => setSelectedTable(e.target.value)}
+                >
+                  <option value="">Select Table</option>
+                  {tables.map(t => (
+                    <option key={t.id || t._id} value={t.id || t._id}>{t.name} ({t.capacity} seats)</option>
+                  ))}
+                </select>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
             </div>
 
             <div>
               <label className="text-xs font-semibold text-gray-600 flex items-center gap-1 mb-1.5">
                 <User size={12} className="text-gray-500" /> Waiter
               </label>
-              <select
-                className="w-full text-sm border border-gray-200 rounded-xl bg-white px-3 py-2.5 focus:ring-2 focus:ring-[#e60023] focus:border-transparent transition-all shadow-sm"
-                value={selectedWaiter}
-                onChange={(e) => setSelectedWaiter(e.target.value)}
-              >
-                <option value="">Assign Waiter</option>
-                {users.filter(u => u.role === 'waiter').map(u => (
-                  <option key={u.id || u._id} value={u.id || u._id}>{u.full_name}</option>
-                ))}
-              </select>
+              <div className="relative">
+                <select
+                  className="w-full text-xs sm:text-sm appearance-none bg-white border border-gray-200 rounded-xl px-3 py-2.5 sm:py-3 focus:ring-2 focus:ring-[#e60023] focus:border-transparent transition-all shadow-sm font-medium truncate cursor-pointer"
+                  value={selectedWaiter}
+                  onChange={(e) => setSelectedWaiter(e.target.value)}
+                >
+                  <option value="">Assign Waiter</option>
+                  {users.filter(u => u.role === 'waiter').map(u => (
+                    <option key={u.id || u._id} value={u.id || u._id}>{u.full_name}</option>
+                  ))}
+                </select>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
             </div>
 
             <div>
               <label className="text-xs font-semibold text-[#e60023] flex items-center gap-1 mb-1.5">
                 <User size={12} /> Customer *
               </label>
-              <div className="flex items-center gap-2">
-                <select
-                  className="flex-1 text-sm border border-gray-200 rounded-xl bg-white px-3 py-2.5 focus:ring-2 focus:ring-[#e60023] focus:border-transparent transition-all shadow-sm font-medium"
-                  value={selectedCustomer}
-                  onChange={(e) => setSelectedCustomer(e.target.value)}
-                >
-                  <option value="">Select Customer</option>
-                  {customers.map(c => (
-                    <option key={c.id || c._id} value={c.id || c._id}>{c.full_name} ({c.phone})</option>
-                  ))}
-                </select>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                <div className="relative flex-1">
+                  <select
+                    className="w-full text-xs sm:text-sm appearance-none bg-white border border-gray-200 rounded-xl px-3 py-2.5 sm:py-3 focus:ring-2 focus:ring-[#e60023] focus:border-transparent transition-all shadow-sm font-medium truncate cursor-pointer"
+                    value={selectedCustomer}
+                    onChange={(e) => setSelectedCustomer(e.target.value)}
+                  >
+                    <option value="">Select Customer</option>
+                    {customers.map(c => (
+                      <option key={c.id || c._id} value={c.id || c._id}>{c.full_name} ({c.phone})</option>
+                    ))}
+                  </select>
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
                 <button
                   onClick={() => setIsCustomerModalOpen(true)}
-                  className="p-2.5 bg-[#e60023] text-white hover:bg-[#cc0000] rounded-xl shadow-md transition-all hover:scale-105 active:scale-95"
+                  className="sm:w-auto w-full p-2.5 sm:py-3 bg-[#e60023] text-white hover:bg-[#cc0000] rounded-xl shadow-md transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-1 sm:px-4 font-medium"
                   title="Add New Customer"
                 >
-                  <UserPlus size={18} />
+                  <UserPlus size={16} />
+                  <span className="sm:hidden text-sm">Add</span>
                 </button>
               </div>
             </div>
 
             <div>
               <textarea
-                className="w-full text-sm border border-gray-200 rounded-xl bg-white px-3 py-2.5 focus:ring-2 focus:ring-[#e60023] focus:border-transparent transition-all shadow-sm placeholder:text-gray-400"
+                className="w-full text-xs sm:text-sm border border-gray-200 rounded-xl bg-white px-3 py-2.5 sm:py-3 focus:ring-2 focus:ring-[#e60023] focus:border-transparent transition-all shadow-sm placeholder:text-gray-400 resize-none"
                 placeholder="Notes (special requests, allergies...)"
                 rows={2}
                 value={orderNotes}
@@ -363,7 +400,7 @@ const NewOrder: React.FC = () => {
       </div>
 
       {/* Totals and action */}
-      <div className="sticky bottom-0 flex-shrink-0 p-5 bg-white border-t border-gray-100 space-y-4 lg:rounded-b-3xl">
+      <div className="sticky bottom-0 flex-shrink-0 p-4 sm:p-5 bg-white border-t border-gray-100 space-y-4 lg:rounded-b-3xl">
         <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 space-y-3">
           <div className="flex justify-between items-center">
             <span className="text-sm text-gray-500">Subtotal</span>
@@ -415,7 +452,7 @@ const NewOrder: React.FC = () => {
   );
 
   return (
-    <div ref={rootRef} style={{ height: dynamicHeight }} className="flex flex-col lg:flex-row gap-6 relative">
+    <div ref={rootRef} className="flex flex-col lg:flex-row gap-6 relative min-h-screen lg:min-h-0" style={{ height: typeof window !== 'undefined' && window.innerWidth < 1024 ? '100dvh' : dynamicHeight }}>
       <div className="flex-1 flex flex-col min-w-0 h-full">
         <div className="space-y-4 mb-6">
           <div className="flex items-center gap-4">
@@ -482,29 +519,29 @@ const NewOrder: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto pr-2 pb-6 no-scrollbar">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden pr-2 pb-24 no-scrollbar">
           {loading ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
               {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-                <div key={i} className="bg-gray-100 animate-pulse rounded-2xl h-56" />
+                <div key={i} className="bg-gray-100 animate-pulse rounded-xl sm:rounded-2xl h-40 sm:h-48" />
               ))}
             </div>
           ) : filteredItems.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-gray-400 space-y-4">
+            <div className="flex flex-col items-center justify-center py-20 text-gray-400 space-y-4 px-4">
               <div className="p-4 bg-gray-50 rounded-full">
                 <Search size={32} strokeWidth={1.5} />
               </div>
-              <p className="font-medium">No items found matching your criteria</p>
+              <p className="font-medium text-sm sm:text-base">No items found matching your criteria</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
               {filteredItems.map(item => (
                 <div
                   key={item.id || item._id}
-                  className="group relative bg-white border border-gray-100 rounded-2xl p-3 shadow-sm hover:shadow-xl hover:border-orange-200 transition-all cursor-pointer flex flex-col active:scale-95"
+                  className="group relative bg-white border border-gray-100 rounded-xl sm:rounded-2xl p-2 sm:p-3 shadow-sm hover:shadow-xl hover:border-orange-200 transition-all cursor-pointer flex flex-col active:scale-95 touch-manipulation"
                   onClick={() => addToCart(item)}
                 >
-                  <div className="relative aspect-square mb-3 overflow-hidden rounded-xl bg-gray-50">
+                  <div className="relative aspect-square mb-2 sm:mb-3 overflow-hidden rounded-lg sm:rounded-xl bg-gray-50">
                     {item.image_url ? (
                       <img
                         src={item.image_url || undefined}
@@ -513,20 +550,20 @@ const NewOrder: React.FC = () => {
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-gray-300 group-hover:text-orange-300 transition-colors">
-                        <Grid size={48} strokeWidth={1} />
+                        <Grid size={32} strokeWidth={1} />
                       </div>
                     )}
-                    <div className="absolute top-2 right-2">
-                      <div className="bg-white/90 backdrop-blur-md p-1.5 rounded-full shadow-sm">
+                    <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2">
+                      <div className="bg-white/90 backdrop-blur-md p-1 sm:p-1.5 rounded-full shadow-sm">
                         <Plus size={16} className="text-[#e60023]" />
                       </div>
                     </div>
                   </div>
                   <div className="flex-1 flex flex-col">
-                    <h4 className="font-bold text-gray-900 text-sm sm:text-base mb-1 line-clamp-1 group-hover:text-[#e60023] transition-colors">{item.name}</h4>
-                    {item.description && <p className="text-[10px] sm:text-xs text-gray-500 line-clamp-2 mb-2 min-h-[2.5em]">{item.description}</p>}
-                    <div className="mt-auto pt-2 flex justify-between items-center border-t border-gray-50">
-                      <span className="font-black text-[#e60023] text-base">ETB {item.price.toFixed(2)}</span>
+                    <h4 className="font-bold text-gray-900 text-xs sm:text-sm mb-0.5 sm:mb-1 line-clamp-1 group-hover:text-[#e60023] transition-colors">{item.name}</h4>
+                    {item.description && <p className="text-[10px] text-gray-500 line-clamp-2 hidden sm:block mb-1">{item.description}</p>}
+                    <div className="mt-auto pt-1 sm:pt-2 flex justify-between items-center">
+                      <span className="font-black text-[#e60023] text-xs sm:text-sm">ETB {item.price.toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
@@ -554,7 +591,7 @@ const NewOrder: React.FC = () => {
         {cartContent}
       </aside>
 
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4 z-40 flex items-center gap-4 shadow-[0_-8px_30px_rgb(0,0,0,0.12)]">
+      <div className="lg:hidden fixed bottom-16 left-0 right-0 bg-white border-t border-gray-200 p-4 z-[60] flex items-center gap-4 shadow-[0_-8px_30px_rgb(0,0,0,0.12)] safe-area-pb">
         <div className="flex-1">
           <p className="text-[10px] text-gray-500 font-black uppercase tracking-wider">Total Amount</p>
           <p className="text-2xl font-black text-[#e60023]">ETB {total.toFixed(2)}</p>
@@ -577,8 +614,9 @@ const NewOrder: React.FC = () => {
         isOpen={isCartDrawerOpen}
         onClose={() => setIsCartDrawerOpen(false)}
         title="Current Order"
+        position="bottom"
       >
-        <div className="h-[calc(100vh-140px)] flex flex-col">
+        <div className="h-[calc(100dvh-180px)] sm:h-[calc(100vh-140px)] flex flex-col">
           {cartContent}
         </div>
       </Drawer>

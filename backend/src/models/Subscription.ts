@@ -2,7 +2,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 
 export interface ISubscription extends Document {
   business_id: mongoose.Types.ObjectId;
-  plan: 'basic' | 'pro' | 'enterprise';
+  plan: 'standard' | 'basic' | 'pro' | 'enterprise';
   status: 'active' | 'cancelled' | 'expired' | 'pending';
   start_date: Date;
   end_date: Date;
@@ -20,7 +20,7 @@ const SubscriptionSchema = new Schema<ISubscription>({
   },
   plan: {
     type: String,
-    enum: ['basic', 'pro', 'enterprise'],
+    enum: ['standard', 'basic', 'pro', 'enterprise'],
     required: true
   },
   status: {

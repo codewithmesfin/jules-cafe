@@ -678,7 +678,10 @@ export default function SuperAdminSettingsPage() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Default Currency
                     </label>
-                    <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <select 
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 bg-white text-gray-900"
+                      defaultValue="ETB"
+                    >
                       <option value="USD">USD - US Dollar</option>
                       <option value="ETB">ETB - Ethiopian Birr</option>
                       <option value="EUR">EUR - Euro</option>
@@ -688,7 +691,10 @@ export default function SuperAdminSettingsPage() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Timezone
                     </label>
-                    <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <select 
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 bg-white text-gray-900"
+                      defaultValue="Africa/Addis_Ababa"
+                    >
                       <option value="Africa/Addis_Ababa">
                         Africa/Addis_Ababa (UTC+3)
                       </option>

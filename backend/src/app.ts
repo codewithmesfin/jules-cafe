@@ -96,6 +96,33 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/billing', billingRoutes);
 app.use('/api/bank-accounts', bankAccountRoutes);
 
+// Cron job route for automated billing checks (no auth required)
+import cron from 'node-cron';
+import { runBillingChecks } from './utils/scheduler';
+
+// Run billing checks every hour
+cron.schedule('0 * * * *', async () => {
+  console.log('🕐 Running hourly billing checks...');
+  try {
+    await runBillingChecks();
+    console.log('✅ Hourly billing checks completed');
+  } catch (error) {
+    console.error('❌ Hourly billing checks failed:', error);
+  }
+});
+
+// Also run a quick check every 15 minutes for due invoices
+cron.schedule('*/15 * * * *', async () => {
+  console.log('🕐 Running quick overdue check...');
+  try {
+    const { checkOverdueInvoices } = await import('./utils/scheduler');
+    const count = await checkOverdueInvoices();
+    console.log(`✅ Quick overdue check completed: ${count} overdue invoices`);
+  } catch (error) {
+    console.error('❌ Quick overdue check failed:', error);
+  }
+});
+
 app.use('/', publicRoutes);
 
 app.get('/health', (req, res) => res.send('API is running...'));

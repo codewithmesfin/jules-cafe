@@ -15,6 +15,11 @@ export interface User {
   businesses?: Business[];
   is_active: boolean;
   created_at: string;
+  // Business subscription status
+  businessInactive?: boolean;
+  subscriptionExpired?: boolean;
+  subscriptionPending?: boolean;
+  businessDeactivated?: boolean;
 }
 
 export interface Business {
@@ -28,6 +33,7 @@ export interface Business {
   logo?: string;
   banner?: string;
   owner_id?: string;
+  is_active?: boolean;
   created_at: string;
 }
 
@@ -187,9 +193,9 @@ export interface ApiResponse<T> {
   error?: string;
 }
 
-export type SubscriptionPlan = 'starter' | 'professional' | 'enterprise';
+export type SubscriptionPlan = 'standard' | 'professional' | 'enterprise';
 
-export type SubscriptionStatus = 'active' | 'inactive' | 'pending' | 'suspended' | 'past_due';
+export type SubscriptionStatus = 'active' | 'inactive' | 'pending' | 'suspended' | 'past_due' | 'expired' | 'cancelled';
 
 export type PaymentStatus = 'paid' | 'pending' | 'overdue';
 

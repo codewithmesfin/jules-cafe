@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -9,10 +9,6 @@ import { Modal } from '@/components/ui/Modal';
 import { api } from '@/utils/api';
 import {
   Search,
-  Plus,
-  Filter,
-  MoreVertical,
-  Edit,
   Eye,
   Building2,
   MapPin,
@@ -21,7 +17,10 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  RefreshCw
+  RefreshCw,
+  AlertTriangle,
+  ToggleLeft,
+  ToggleRight
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -53,6 +52,15 @@ interface Business {
   subscription_end?: string;
 }
 
+interface Subscription {
+  _id: string;
+  plan: string;
+  status: string;
+  start_date: string;
+  end_date: string;
+  daily_rate: number;
+}
+
 export default function SuperAdminBusinessesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -60,6 +68,7 @@ export default function SuperAdminBusinessesPage() {
   const [error, setError] = useState<string | null>(null);
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [selectedBusiness, setSelectedBusiness] = useState<Business | null>(null);
+  const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
@@ -83,6 +92,23 @@ export default function SuperAdminBusinessesPage() {
     fetchBusinesses();
   }, [fetchBusinesses]);
 
+  const fetchBusinessSubscription = async (businessId: string) => {
+    try {
+      const savedJwt = localStorage.getItem('jwt');
+      const response = await fetch(`http://localhost:8000/api/billing/subscription`, {
+        headers: {
+          'Authorization': `Bearer ${savedJwt}`,
+        },
+      });
+      const data = await response.json();
+      if (data.success && data.data) {
+        setSelectedSubscription(data.data);
+      }
+    } catch (err) {
+      console.error('Error fetching subscription:', err);
+    }
+  };
+
   const handleToggleStatus = async (businessId: string, currentStatus: boolean) => {
     try {
       setActionLoading(businessId);
@@ -99,6 +125,12 @@ export default function SuperAdminBusinessesPage() {
     }
   };
 
+  const handleViewDetails = async (business: Business) => {
+    setSelectedBusiness(business);
+    await fetchBusinessSubscription(business._id);
+    setShowDetailsModal(true);
+  };
+
   const filteredBusinesses = businesses.filter((business) => {
     const matchesSearch =
       business.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -111,7 +143,6 @@ export default function SuperAdminBusinessesPage() {
   });
 
   const totalRevenue = businesses.reduce((sum, b) => sum + (b.subscription_amount || 0), 0);
-  const totalOrders = businesses.reduce((sum, b) => sum + 0, 0); // Orders not available in current API
   const activeBusinesses = businesses.filter((b) => b.is_active).length;
 
   if (loading) {
@@ -291,13 +322,20 @@ export default function SuperAdminBusinessesPage() {
                       </td>
                       <td className="px-6 py-4">
                         <Badge variant="primary">
-                          {business.subscription_plan || 'starter'}
+                          {business.subscription_plan || 'Standard'}
                         </Badge>
                       </td>
                       <td className="px-6 py-4">
-                        <Badge variant={business.is_active ? 'success' : 'error'}>
-                          {business.is_active ? 'Active' : 'Inactive'}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={business.is_active ? 'success' : 'error'}>
+                            {business.is_active ? 'Active' : 'Inactive'}
+                          </Badge>
+                          {!business.is_active && (
+                            <span title="Business is inactive - users cannot access">
+                              <AlertTriangle className="w-4 h-4 text-amber-500" />
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4 text-sm font-medium text-gray-900">
                         ${(business.subscription_amount || 0).toLocaleString()}
@@ -311,10 +349,7 @@ export default function SuperAdminBusinessesPage() {
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <button
-                            onClick={() => {
-                              setSelectedBusiness(business);
-                              setShowDetailsModal(true);
-                            }}
+                            onClick={() => handleViewDetails(business)}
                             className="p-2 hover:bg-gray-100 rounded-lg"
                             title="View Details"
                           >
@@ -323,13 +358,17 @@ export default function SuperAdminBusinessesPage() {
                           <button
                             onClick={() => handleToggleStatus(business._id, business.is_active)}
                             disabled={actionLoading === business._id}
-                            className="p-2 hover:bg-gray-100 rounded-lg"
-                            title="Toggle Status"
+                            className={`p-2 hover:bg-gray-100 rounded-lg transition-colors ${
+                              business.is_active ? 'text-green-600' : 'text-gray-400'
+                            }`}
+                            title={business.is_active ? 'Deactivate Business' : 'Activate Business'}
                           >
                             {actionLoading === business._id ? (
                               <div className="w-4 h-4 animate-spin border-2 border-gray-400 border-t-transparent rounded-full" />
+                            ) : business.is_active ? (
+                              <ToggleRight className="w-8 h-8" />
                             ) : (
-                              <RefreshCw className="w-4 h-4 text-gray-400" />
+                              <ToggleLeft className="w-8 h-8" />
                             )}
                           </button>
                         </div>
@@ -346,37 +385,89 @@ export default function SuperAdminBusinessesPage() {
       {/* Business Details Modal */}
       <Modal
         isOpen={showDetailsModal}
-        onClose={() => setShowDetailsModal(false)}
+        onClose={() => {
+          setShowDetailsModal(false);
+          setSelectedSubscription(null);
+        }}
         title="Business Details"
       >
         {selectedBusiness && (
-          <div className="space-y-4">
+          <div className="space-y-6">
+            {/* Business Header */}
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center">
                 <Building2 className="w-8 h-8 text-blue-600" />
               </div>
-              <div>
+              <div className="flex-1">
                 <h3 className="text-lg font-semibold text-gray-900">
                   {selectedBusiness.name}
                 </h3>
                 <p className="text-sm text-gray-500">{selectedBusiness.legal_name}</p>
-                <Badge variant={selectedBusiness.is_active ? 'success' : 'error'} className="mt-1">
-                  {selectedBusiness.is_active ? 'Active' : 'Inactive'}
-                </Badge>
+                <div className="flex items-center gap-2 mt-2">
+                  <Badge variant={selectedBusiness.is_active ? 'success' : 'error'}>
+                    {selectedBusiness.is_active ? 'Active' : 'Inactive'}
+                  </Badge>
+                  {!selectedBusiness.is_active && (
+                    <span className="text-xs text-amber-600 flex items-center gap-1">
+                      <AlertTriangle className="w-3 h-3" />
+                      Users cannot access
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4 pt-4">
+
+            {/* Subscription Details */}
+            {selectedSubscription ? (
+              <div className="bg-gray-50 rounded-xl p-4">
+                <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                  <Calendar className="w-4 h-4" />
+                  Subscription Details
+                </h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs text-gray-500">Plan</p>
+                    <p className="text-sm font-medium text-gray-900 capitalize">{selectedSubscription.plan}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Status</p>
+                    <Badge variant={selectedSubscription.status === 'active' ? 'success' : 'warning'}>
+                      {selectedSubscription.status}
+                    </Badge>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Daily Rate</p>
+                    <p className="text-sm font-medium text-gray-900">{selectedSubscription.daily_rate} ETB/day</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">End Date</p>
+                    <p className="text-sm font-medium text-gray-900">
+                      {formatDate(selectedSubscription.end_date)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-amber-800">No Active Subscription</p>
+                    <p className="text-xs text-amber-600 mt-1">
+                      This business has no subscription. Users will be redirected to billing.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Business Info */}
+            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-200">
               <div>
                 <p className="text-sm text-gray-500">Owner</p>
                 <p className="text-sm font-medium text-gray-900">
                   {selectedBusiness.owner_name || 'Unknown'}
                 </p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Plan</p>
-                <Badge variant="primary">
-                  {selectedBusiness.subscription_plan || 'starter'}
-                </Badge>
               </div>
               <div>
                 <p className="text-sm text-gray-500">Revenue</p>
@@ -396,15 +487,52 @@ export default function SuperAdminBusinessesPage() {
                   {formatDate(selectedBusiness.created_at, 'MMMM d, yyyy')}
                 </p>
               </div>
-              <div>
-                <p className="text-sm text-gray-500">Subscription End</p>
-                <p className="text-sm font-medium text-gray-900">
-                  {formatDate(selectedBusiness.subscription_end, 'MMMM d, yyyy')}
-                </p>
+            </div>
+
+            {/* Toggle Status Section */}
+            <div className="bg-gray-50 rounded-xl p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Business Status</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {selectedBusiness.is_active 
+                      ? 'Business is active - users can access the system'
+                      : 'Business is inactive - users are redirected to billing'
+                    }
+                  </p>
+                </div>
+                <button
+                  onClick={() => handleToggleStatus(selectedBusiness._id, selectedBusiness.is_active)}
+                  disabled={actionLoading === selectedBusiness._id}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+                    selectedBusiness.is_active
+                      ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                      : 'bg-green-100 text-green-700 hover:bg-green-200'
+                  }`}
+                >
+                  {actionLoading === selectedBusiness._id ? (
+                    <div className="w-4 h-4 animate-spin border-2 border-current border-t-transparent rounded-full" />
+                  ) : selectedBusiness.is_active ? (
+                    <>
+                      <XCircle className="w-4 h-4" />
+                      Deactivate
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-4 h-4" />
+                      Activate
+                    </>
+                  )}
+                </button>
               </div>
             </div>
-            <div className="flex justify-end gap-3 pt-4">
-              <Button variant="secondary" onClick={() => setShowDetailsModal(false)}>
+
+            {/* Action Buttons */}
+            <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+              <Button variant="secondary" onClick={() => {
+                setShowDetailsModal(false);
+                setSelectedSubscription(null);
+              }}>
                 Close
               </Button>
             </div>

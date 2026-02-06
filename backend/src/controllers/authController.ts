@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import User from '../models/User';
 import Business from '../models/Business';
+import Subscription from '../models/Subscription';
 import { sendEmail } from '../utils/mailer';
 import catchAsync from '../utils/catchAsync';
 import AppError from '../utils/appError';
@@ -16,6 +17,59 @@ const generateToken = (id: string) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
     expiresIn: '30d',
   });
+};
+
+// Helper function to check business subscription status
+const checkBusinessSubscriptionStatus = async (user: any) => {
+  if (!user.default_business_id || user.role === 'saas_admin') {
+    return { businessInactive: false };
+  }
+
+  const business = await Business.findById(user.default_business_id);
+  if (!business) {
+    return { businessInactive: false };
+  }
+
+  // Check if business is manually deactivated
+  if (!business.is_active) {
+    return {
+      businessInactive: true,
+      businessDeactivated: true,
+      subscriptionExpired: false,
+      subscriptionPending: false
+    };
+  }
+
+  // Check subscription status
+  const subscription = await Subscription.findOne({
+    business_id: business._id
+  }).sort({ end_date: -1 });
+
+  if (subscription) {
+    // Check if expired
+    if (new Date(subscription.end_date) < new Date()) {
+      // Mark business as inactive due to expiration
+      await Business.findByIdAndUpdate(business._id, { is_active: false });
+      return {
+        businessInactive: true,
+        subscriptionExpired: true,
+        businessDeactivated: false,
+        subscriptionPending: false
+      };
+    }
+
+    // Check if pending payment
+    if (subscription.status === 'pending') {
+      return {
+        businessInactive: true,
+        subscriptionPending: true,
+        businessDeactivated: false,
+        subscriptionExpired: false
+      };
+    }
+  }
+
+  return { businessInactive: false };
 };
 
 export const register = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
@@ -108,6 +162,10 @@ export const login = catchAsync(async (req: Request, res: Response, next: NextFu
       }
     }
   }
+  
+  // Check business subscription status
+  const subscriptionStatus = await checkBusinessSubscriptionStatus(user);
+  
   res.json({
     jwt: generateToken(user._id.toString()),
     user: {
@@ -117,6 +175,7 @@ export const login = catchAsync(async (req: Request, res: Response, next: NextFu
       status: user.status,
       default_business_id: user.default_business_id,
       full_name: user.full_name,
+      ...subscriptionStatus
     },
     businesses,
   });
@@ -144,9 +203,14 @@ export const getMe = catchAsync(async (req: AuthRequest, res: Response, next: Ne
       }
     }
   }
+  
+  // Check business subscription status
+  const subscriptionStatus = await checkBusinessSubscriptionStatus(user);
+  
   res.json({
     ...user.toObject(),
-    businesses
+    businesses,
+    ...subscriptionStatus
   });
 });
 
