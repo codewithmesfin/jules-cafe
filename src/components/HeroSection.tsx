@@ -81,7 +81,7 @@ const Hero: React.FC = () => {
         {/* RIGHT – PINTEREST IMAGE STACK */}
         <div className="order-1 lg:order-2 relative h-[480px] lg:h-[660px] flex justify-center items-center">
 
-          <div className="relative w-[280px] md:w-[360px] lg:w-[400px] aspect-[4/5]">
+          <div className="relative w-[250px] md:w-[300px] lg:w-[350px] aspect-[4/5]">
             {HERO_THEMES.map((theme, i) => {
               const isActive = i === currentIndex;
 
@@ -132,7 +132,7 @@ const Hero: React.FC = () => {
                   {/* SECONDARY IMAGE */}
                   <div
                     className={`absolute right-[-80px] bottom-[-80px]
-                      w-[250px] h-[300px]
+                      w-[200px] h-[250px]
                       rounded-[36px] overflow-hidden
                       border-[8px] border-white shadow-xl
                       transition-all duration-[1300ms]
