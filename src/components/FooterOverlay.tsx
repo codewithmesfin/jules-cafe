@@ -23,7 +23,7 @@ const FooterOverlay: React.FC = () => {
           <p className="text-zinc-400">Discover new dishes, favorite spots, and culinary inspiration.</p>
         </div>
         <div className="flex gap-4">
-          <Link href={"/signup"} className="bg-[#e60023] text-white px-6 py-3 rounded-full font-bold hover:bg-[#ad081b] transition-colors whitespace-nowrap">
+          <Link href={"/signup"} className="bg-[#e17100] text-white px-6 py-3 rounded-full font-bold hover:bg-[#ad081b] transition-colors whitespace-nowrap">
             Sign up
           </Link>
           <Link href={"/login"} className="bg-zinc-800 text-white px-6 py-3 rounded-full font-bold hover:bg-zinc-700 transition-colors whitespace-nowrap border border-zinc-700">

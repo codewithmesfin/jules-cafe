@@ -235,7 +235,7 @@ export default function ProductFormPage() {
                 <Button
                   onClick={handleSave}
                   disabled={saving}
-                  className="rounded-xl bg-[#e60023] hover:bg-[#ad081b] shadow-lg shadow-red-200 disabled:opacity-50"
+                  className="rounded-xl bg-[#e17100] hover:bg-[#ad081b] shadow-lg shadow-red-200 disabled:opacity-50"
                 >
                   {saving ? "Saving..." : isEditing ? "Save Changes" : "Create"}
                 </Button>
@@ -431,7 +431,7 @@ export default function ProductFormPage() {
                   <Button
                     onClick={handleSave}
                     disabled={saving}
-                    className="rounded-xl py-3 bg-[#e60023] hover:bg-[#ad081b]"
+                    className="rounded-xl py-3 bg-[#e17100] hover:bg-[#ad081b]"
                   >
                     {saving ? "Saving..." : "Save"}
                   </Button>

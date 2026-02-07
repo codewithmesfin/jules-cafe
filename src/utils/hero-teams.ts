@@ -2,7 +2,7 @@ import type { Pin } from "./hero-types";
 
 
 
-export const PINTEREST_RED = '#e60023';
+export const PINTEREST_RED = '#e17100';
 export const PINTEREST_TEAL = '#008b7e';
 
 const generatePins = (count: number, category: string): Pin[] => {

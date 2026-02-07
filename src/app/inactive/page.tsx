@@ -156,7 +156,7 @@ export default function InactivePage() {
                     <div className="bg-gray-50 rounded-xl p-4 mb-6">
                         <div className="flex items-center gap-4">
                             <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
-                                <User size={24} className="text-[#e60023]" />
+                                <User size={24} className="text-[#e17100]" />
                             </div>
                             <div className="flex-1">
                                 <p className="text-sm text-gray-500">Logged in as</p>
@@ -295,14 +295,14 @@ export default function InactivePage() {
                         </Button>
                         {statusInfo.actionLink ? (
                             <Link href={statusInfo.actionLink} className="flex-1">
-                                <Button className="w-full bg-gradient-to-r from-[#e60023] to-[#e60023] hover:from-[#e60023] hover:to-[#ad081b]">
+                                <Button className="w-full bg-gradient-to-r from-[#e17100] to-[#e17100] hover:from-[#e17100] hover:to-[#ad081b]">
                                     <span className="flex items-center justify-center gap-2">
                                         {statusInfo.action} <ArrowRight size={16} />
                                     </span>
                                 </Button>
                             </Link>
                         ) : (
-                            <Button className="flex-1 bg-gradient-to-r from-[#e60023] to-[#e60023] hover:from-[#e60023] hover:to-[#ad081b]">
+                            <Button className="flex-1 bg-gradient-to-r from-[#e17100] to-[#e17100] hover:from-[#e17100] hover:to-[#ad081b]">
                                 {statusInfo.action}
                             </Button>
                         )}

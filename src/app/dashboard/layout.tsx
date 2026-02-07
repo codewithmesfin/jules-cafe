@@ -73,9 +73,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, []);
 
   const handleSwitchBusiness = async (businessId: string) => {
-    await switchBusiness(businessId);
-    setShowBusinessSelector(false);
-    window.location.reload();
+    console.log('Switching to business:', businessId);
+    try {
+      await switchBusiness(businessId);
+      setShowBusinessSelector(false);
+    } catch (error) {
+      console.error('Failed to switch business:', error);
+    } finally {
+      console.log('Reloading page...');
+      window.location.reload();
+    }
   };
 
   if (loading || !user) {
@@ -171,7 +178,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div className="flex h-screen bg-slate-50 overflow-hidden font-sans">
       {/* Mobile Sidebar Overlay */}
       {mobileMenuOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-slate-900/50 z-40 lg:hidden transition-opacity"
           onClick={() => setMobileMenuOpen(false)}
         />
@@ -179,24 +186,83 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Mobile Sidebar */}
       <aside className={cn(
-        'fixed top-0 left-0 z-50 h-full w-72 bg-white shadow-2xl transition-transform duration-300 lg:hidden border-r border-gray-200',
+        'fixed top-0 left-0 z-50 h-[100dvh] w-72 bg-white shadow-2xl transition-transform duration-300 lg:hidden border-r border-gray-200',
         mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
       )}>
-        <div className="flex flex-col h-full">
-          {/* Mobile Header */}
-          <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gray-900 rounded-xl flex items-center justify-center text-white shadow-lg shadow-gray-900/20">
-                <ChefHat size={20} />
+        <div className="flex flex-col h-full space-x-10">
+          {/* Mobile Header with Business Selector */}
+          <div className="w-full p-2 border-b border-gray-100 relative bg-gray-50/30">
+            <div ref={businessDropdownRef} className="relative flex justify-between">
+              <div
+                className="flex items-center justify-between p-2.5 bg-white rounded-xl cursor-pointer hover:bg-gray-50 transition-all border border-gray-200/60 shadow-sm"
+                onClick={() => setShowBusinessSelector(!showBusinessSelector)}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gray-900 rounded-xl flex items-center justify-center text-white shadow-lg shadow-gray-900/20 flex-shrink-0">
+                    <ChefHat size={20} />
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-sm font-bold text-gray-900 truncate">{currentBusiness?.name || 'Mevin Cafe'}</span>
+                    <span className="text-xs text-gray-500 font-medium uppercase tracking-wider">Workspace</span>
+                  </div>
+                </div>
+                <ChevronDown
+                  size={16}
+                  className={cn(
+                    'text-gray-400 transition-transform flex-shrink-0',
+                    showBusinessSelector && 'rotate-180'
+                  )}
+                />
               </div>
-              <div className="flex flex-col">
-                <span className="font-bold text-gray-900">{currentBusiness?.name || 'Mevin Cafe'}</span>
-                <span className="text-xs text-gray-500 capitalize">{user.role?.replace('_', ' ')}</span>
-              </div>
+
+              {/* Business Selector Dropdown Mobile */}
+              {showBusinessSelector && (
+                <div className="absolute top-full left-0 right-0 mt-2 py-2 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden">
+                  <div className="px-3 pb-2 mb-2 border-b border-gray-100">
+                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Your Businesses</p>
+                  </div>
+                  {businesses?.map((business: any) => (
+                    <button
+                      key={business._id || business.id}
+                      onClick={(e) => { e.stopPropagation(); handleSwitchBusiness(business._id || business.id); setMobileMenuOpen(false); }}
+                      className={cn(
+                        'w-full flex items-center gap-3 px-3 py-2 mx-2 rounded-lg text-left transition-all',
+                        (currentBusiness?._id || currentBusiness?.id) === (business._id || business.id)
+                          ? 'bg-gray-100 text-gray-900'
+                          : 'hover:bg-gray-50'
+                      )}
+                    >
+                      <div className="w-8 h-8 bg-gray-200 rounded-lg flex items-center justify-center text-gray-700 font-bold text-sm flex-shrink-0">
+                        {business.name?.charAt(0)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold truncate">{business.name}</p>
+                        <p className="text-xs text-gray-400 truncate">{business.email || 'No email'}</p>
+                      </div>
+                      {(currentBusiness?._id || currentBusiness?.id) === (business._id || business.id) && (
+                        <div className="w-2 h-2 bg-emerald-500 rounded-full flex-shrink-0"></div>
+                      )}
+                    </button>
+                  ))}
+                  {user.role === 'admin' && (
+                    <div className="pt-2 mt-2 border-t border-gray-100">
+                      <button
+                        onClick={() => { router.push('/dashboard/settings/businesses/new'); setMobileMenuOpen(false); }}
+                        className="w-full flex items-center gap-3 px-3 py-2 mx-2 rounded-lg text-left text-gray-600 hover:bg-gray-50 transition-all"
+                      >
+                        <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <Plus size={16} />
+                        </div>
+                        <span className="text-sm font-medium">Add New Business</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
-            <button 
+            <button
               onClick={() => setMobileMenuOpen(false)}
-              className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+              className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-xl transition-colors"
             >
               <X size={20} className="text-gray-500" />
             </button>
@@ -267,7 +333,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </nav>
 
           {/* User Profile */}
-          <div className="p-4 mt-auto border-t border-gray-100 bg-gray-50/50">
+          <div className="p-4 safe-area-pb mt-auto border-t border-gray-100 bg-gray-50/50">
             <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 bg-gray-200 rounded-xl flex items-center justify-center text-gray-700 font-semibold text-sm shadow-inner">
                 {userInitials}
@@ -300,7 +366,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               'flex items-center gap-3 p-2.5 bg-white rounded-xl cursor-pointer hover:bg-gray-50 transition-all border border-gray-200/60 shadow-sm',
               !sidebarCollapsed ? 'justify-between' : 'justify-center'
             )}
-            onClick={() => setShowBusinessSelector(!showBusinessSelector)}
+              onClick={() => setShowBusinessSelector(!showBusinessSelector)}
             >
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-gray-900 rounded-xl flex items-center justify-center text-white shadow-lg shadow-gray-900/20 flex-shrink-0">
@@ -314,8 +380,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 )}
               </div>
               {!sidebarCollapsed && (
-                <ChevronDown 
-                  size={16} 
+                <ChevronDown
+                  size={16}
                   className={cn(
                     'text-gray-400 transition-transform flex-shrink-0',
                     showBusinessSelector && 'rotate-180'
@@ -324,7 +390,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               )}
             </div>
 
-            {/* Business Selector Dropdown */}
+            {/* Business Selector Dropdown PC*/}
             {showBusinessSelector && (
               <div className="absolute top-full left-0 right-0 mt-2 py-2 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden">
                 <div className="px-3 pb-2 mb-2 border-b border-gray-100">
@@ -520,11 +586,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Bell size={18} />
               <span className="absolute top-2 right-2 w-2 h-2 bg-error-500 rounded-full"></span>
             </button>
-            
+
             {/* Desktop User Dropdown */}
             <div className="hidden lg:flex items-center gap-3 ml-2 pl-3 border-l border-gray-200">
               <div ref={userDropdownRef} className="relative">
-                <button 
+                <button
                   onClick={() => setShowUserDropdown(!showUserDropdown)}
                   className="flex items-center gap-3 cursor-pointer group"
                 >

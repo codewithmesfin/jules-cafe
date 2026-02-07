@@ -579,13 +579,13 @@ export default function BillingPage() {
               </div>
 
               {/* Yearly Plan */}
-              <div className={`relative bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl p-6 border-2 transition-all ${billingCycle === 'yearly' ? 'border-[#e60023] shadow-lg' : 'border-orange-200'}`}>
-                <div className="absolute -top-3 right-4 px-3 py-1 bg-[#e60023] text-white text-xs font-bold rounded-full">
+              <div className={`relative bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl p-6 border-2 transition-all ${billingCycle === 'yearly' ? 'border-[#e17100] shadow-lg' : 'border-orange-200'}`}>
+                <div className="absolute -top-3 right-4 px-3 py-1 bg-[#e17100] text-white text-xs font-bold rounded-full">
                   20% DISCOUNT
                 </div>
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-[#e60023] rounded-xl flex items-center justify-center">
+                    <div className="w-12 h-12 bg-[#e17100] rounded-xl flex items-center justify-center">
                       <TrendingUp className="text-white" size={24} />
                     </div>
                     <div>
@@ -598,7 +598,7 @@ export default function BillingPage() {
                     name="billing-cycle"
                     checked={billingCycle === 'yearly'}
                     onChange={() => setBillingCycle('yearly')}
-                    className="w-5 h-5 text-[#e60023] focus:ring-[#e60023]"
+                    className="w-5 h-5 text-[#e17100] focus:ring-[#e17100]"
                   />
                 </div>
                 <div className="mb-6">
@@ -609,7 +609,7 @@ export default function BillingPage() {
                 <ul className="space-y-3 mb-6">
                   {PRICING.standard.features.map((feature, index) => (
                     <li key={index} className="flex items-center gap-2 text-sm text-gray-600">
-                      <CheckCircle size={16} className="text-[#e60023]" />
+                      <CheckCircle size={16} className="text-[#e17100]" />
                       {feature}
                     </li>
                   ))}
@@ -950,7 +950,7 @@ export default function BillingPage() {
                 </div>
                 <div className="flex items-center justify-between pt-3 border-t border-gray-200">
                   <p className="font-bold text-gray-900">Total</p>
-                  <p className="font-bold text-xl text-[#e60023]">{billingCycle === 'yearly' ? '29,200 ETB' : '3,000 ETB'}</p>
+                  <p className="font-bold text-xl text-[#e17100]">{billingCycle === 'yearly' ? '29,200 ETB' : '3,000 ETB'}</p>
                 </div>
               </div>
 
