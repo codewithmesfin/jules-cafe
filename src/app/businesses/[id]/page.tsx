@@ -330,7 +330,7 @@ export default function BusinessMenuPage() {
                             <p className="text-sm text-gray-500 line-clamp-2 mb-3">{item.description}</p>
                           )}
                           <span className="text-xl font-bold text-orange-500">
-                            ETB {item.price.toFixed(2)}
+                            Br {item.price.toFixed(2)}
                           </span>
                         </div>
                       </div>

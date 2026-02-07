@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { API_URL } from '@/utils/api';
 
-// Pricing configuration - Only 100 ETB/day including VAT
+// Pricing configuration - Only 100 Br/day including VAT
 const PRICING = {
   standard: { daily: 100, name: 'Standard', features: ['Unlimited users', 'Full POS', 'Inventory', 'Analytics', 'Priority Support'] }
 };
@@ -384,7 +384,7 @@ export default function BillingPage() {
               </p>
               <div className="mt-3 flex items-center gap-4 text-sm">
                 <span className="text-red-600 font-medium">
-                  Price: 100 ETB/day (Standard Plan)
+                  Price: 100 Br/day (Standard Plan)
                 </span>
                 <span className="text-red-500">
                   Including 15% VAT
@@ -469,7 +469,7 @@ export default function BillingPage() {
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Daily Rate</p>
-                    <p className="font-semibold text-gray-900">{subscription.daily_rate} ETB/day</p>
+                    <p className="font-semibold text-gray-900">{subscription.daily_rate} Br/day</p>
                   </div>
                 </div>
               </div>
@@ -530,7 +530,7 @@ export default function BillingPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-500">Total Paid</p>
-                  <p className="text-3xl font-bold text-gray-900">ETB {invoices.filter(i => i.status === 'paid').reduce((acc, inv) => acc + inv.total, 0).toFixed(2)}</p>
+                  <p className="text-3xl font-bold text-gray-900">Br {invoices.filter(i => i.status === 'paid').reduce((acc, inv) => acc + inv.total, 0).toFixed(2)}</p>
                 </div>
                 <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
                   <DollarSign className="text-emerald-600" size={24} />
@@ -564,8 +564,8 @@ export default function BillingPage() {
                   />
                 </div>
                 <div className="mb-6">
-                  <p className="text-4xl font-black text-gray-900 mb-1">100 ETB<span className="text-lg font-normal text-gray-500">/day</span></p>
-                  <p className="text-sm text-gray-500">3,000 ETB/month (30 days)</p>
+                  <p className="text-4xl font-black text-gray-900 mb-1">100 Br<span className="text-lg font-normal text-gray-500">/day</span></p>
+                  <p className="text-sm text-gray-500">3,000 Br/month (30 days)</p>
                   <p className="text-xs text-gray-400 mt-1">Including 15% VAT</p>
                 </div>
                 <ul className="space-y-3 mb-6">
@@ -602,9 +602,9 @@ export default function BillingPage() {
                   />
                 </div>
                 <div className="mb-6">
-                  <p className="text-4xl font-black text-gray-900 mb-1">80 ETB<span className="text-lg font-normal text-gray-500">/day</span></p>
-                  <p className="text-sm text-gray-500">29,200 ETB/year (365 days)</p>
-                  <p className="text-xs text-gray-400 mt-1">Including 15% VAT • Save 6,000 ETB/year</p>
+                  <p className="text-4xl font-black text-gray-900 mb-1">80 Br<span className="text-lg font-normal text-gray-500">/day</span></p>
+                  <p className="text-sm text-gray-500">29,200 Br/year (365 days)</p>
+                  <p className="text-xs text-gray-400 mt-1">Including 15% VAT • Save 6,000 Br/year</p>
                 </div>
                 <ul className="space-y-3 mb-6">
                   {PRICING.standard.features.map((feature, index) => (
@@ -630,7 +630,7 @@ export default function BillingPage() {
               ) : (
                 <>
                   <CreditCard size={20} />
-                  Subscribe Now - {billingCycle === 'yearly' ? '29,200 ETB/year' : '3,000 ETB/month'}
+                  Subscribe Now - {billingCycle === 'yearly' ? '29,200 Br/year' : '3,000 Br/month'}
                 </>
               )}
             </button>
@@ -702,8 +702,8 @@ export default function BillingPage() {
                         <p className="text-xs text-gray-500">{invoice.billing_cycle === 'yearly' ? 'Yearly' : 'Monthly'}</p>
                       </td>
                       <td className="px-6 py-4">
-                        <p className="text-sm font-medium text-gray-900">ETB {invoice.total.toFixed(2)}</p>
-                        {invoice.discount > 0 && <p className="text-xs text-green-600">Discount: ETB {invoice.discount.toFixed(2)}</p>}
+                        <p className="text-sm font-medium text-gray-900">Br {invoice.total.toFixed(2)}</p>
+                        {invoice.discount > 0 && <p className="text-xs text-green-600">Discount: Br {invoice.discount.toFixed(2)}</p>}
                       </td>
                       <td className="px-6 py-4">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadge(invoice.status)}`}>
@@ -751,12 +751,12 @@ export default function BillingPage() {
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-500">Amount:</span>
-                      <span className="text-gray-900 font-medium">ETB {invoice.total.toFixed(2)}</span>
+                      <span className="text-gray-900 font-medium">Br {invoice.total.toFixed(2)}</span>
                     </div>
                     {invoice.discount > 0 && (
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-500">Discount:</span>
-                        <span className="text-green-600">- ETB {invoice.discount.toFixed(2)}</span>
+                        <span className="text-green-600">- Br {invoice.discount.toFixed(2)}</span>
                       </div>
                     )}
                     <div className="flex justify-between text-sm">
@@ -810,7 +810,7 @@ export default function BillingPage() {
                         <p className="text-sm text-gray-900">{new Date(payment.created_at).toLocaleDateString()}</p>
                       </td>
                       <td className="px-6 py-4">
-                        <p className="text-sm font-medium text-gray-900">{payment.amount} ETB</p>
+                        <p className="text-sm font-medium text-gray-900">{payment.amount} Br</p>
                       </td>
                       <td className="px-6 py-4">
                         <p className="text-sm text-gray-900">{payment.bank_account?.bank_name}</p>
@@ -849,7 +849,7 @@ export default function BillingPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-500">Invoice Amount</p>
-                    <p className="text-2xl font-bold text-gray-900">{selectedInvoice.total} ETB</p>
+                    <p className="text-2xl font-bold text-gray-900">{selectedInvoice.total} Br</p>
                   </div>
                   <div className="text-right">
                     <p className="text-sm text-gray-500">Due Date</p>
@@ -999,7 +999,7 @@ export default function BillingPage() {
                 </div>
                 <div className="flex items-center justify-between pt-3 border-t border-gray-200">
                   <p className="font-bold text-gray-900">Total</p>
-                  <p className="font-bold text-xl text-[#e17100]">{billingCycle === 'yearly' ? '29,200 ETB' : '3,000 ETB'}</p>
+                  <p className="font-bold text-xl text-[#e17100]">{billingCycle === 'yearly' ? '29,200 Br' : '3,000 Br'}</p>
                 </div>
               </div>
 

@@ -375,7 +375,7 @@ const NewOrder: React.FC = () => {
                 <div key={item.id || item._id} className="flex items-center gap-3 p-3 bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-md transition-all">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-gray-900 truncate pr-2">{item.name}</p>
-                    <p className="text-xs text-[#e17100] font-bold mt-0.5">ETB {item.base_price.toFixed(2)}</p>
+                    <p className="text-xs text-[#e17100] font-bold mt-0.5">Br {item.base_price.toFixed(2)}</p>
                   </div>
                   <div className="flex items-center gap-2 bg-gray-50 rounded-full px-2 py-1 border border-gray-100">
                     <button
@@ -404,7 +404,7 @@ const NewOrder: React.FC = () => {
         <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 space-y-3">
           <div className="flex justify-between items-center">
             <span className="text-sm text-gray-500">Subtotal</span>
-            <span className="text-sm font-semibold text-gray-900">ETB {subtotal.toFixed(2)}</span>
+            <span className="text-sm font-semibold text-gray-900">Br {subtotal.toFixed(2)}</span>
           </div>
           {discountRate > 0 && (
             <div className="flex justify-between items-center text-sm">
@@ -412,12 +412,12 @@ const NewOrder: React.FC = () => {
                 <span className="bg-green-100 text-green-700 px-1.5 py-0.5 rounded text-xs uppercase">{customerData?.customer_type}</span>
                 Discount ({discountRate}%)
               </span>
-              <span className="text-green-600 font-semibold">-ETB {discountAmount.toFixed(2)}</span>
+              <span className="text-green-600 font-semibold">-Br {discountAmount.toFixed(2)}</span>
             </div>
           )}
           <div className="flex justify-between items-center pt-2 border-t border-gray-100">
             <span className="text-lg font-black text-gray-900">Total</span>
-            <span className="text-xl font-black text-[#e17100]">ETB {total.toFixed(2)}</span>
+            <span className="text-xl font-black text-[#e17100]">Br {total.toFixed(2)}</span>
           </div>
         </div>
         
@@ -563,7 +563,7 @@ const NewOrder: React.FC = () => {
                     <h4 className="font-bold text-gray-900 text-xs sm:text-sm mb-0.5 sm:mb-1 line-clamp-1 group-hover:text-[#e17100] transition-colors">{item.name}</h4>
                     {item.description && <p className="text-[10px] text-gray-500 line-clamp-2 hidden sm:block mb-1">{item.description}</p>}
                     <div className="mt-auto pt-1 sm:pt-2 flex justify-between items-center">
-                      <span className="font-black text-[#e17100] text-xs sm:text-sm">ETB {item.price.toFixed(2)}</span>
+                      <span className="font-black text-[#e17100] text-xs sm:text-sm">Br {item.price.toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
@@ -594,7 +594,7 @@ const NewOrder: React.FC = () => {
       <div className="lg:hidden fixed bottom-16 left-0 right-0 bg-white border-t border-gray-200 p-4 z-[60] flex items-center gap-4 shadow-[0_-8px_30px_rgb(0,0,0,0.12)] safe-area-pb">
         <div className="flex-1">
           <p className="text-[10px] text-gray-500 font-black uppercase tracking-wider">Total Amount</p>
-          <p className="text-2xl font-black text-[#e17100]">ETB {total.toFixed(2)}</p>
+          <p className="text-2xl font-black text-[#e17100]">Br {total.toFixed(2)}</p>
         </div>
         <button
           className="bg-[#e17100] text-white px-6 h-12 rounded-xl flex items-center gap-2 font-black shadow-lg shadow-orange-100 relative active:scale-95 transition-transform"

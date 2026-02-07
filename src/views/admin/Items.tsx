@@ -267,7 +267,7 @@ const Products = () => {
                       ) : null;
                     })()}
                     <span className="font-bold text-slate-900 text-sm sm:text-base">
-                      ${product.price?.toFixed(2) || '0.00'}
+                      Br {product.price?.toFixed(2) || '0.00'}
                     </span>
                   </div>
 

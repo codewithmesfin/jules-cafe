@@ -1,20 +1,15 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Search, Eye, CheckCircle, XCircle, ShoppingBag, Clock, Calendar } from 'lucide-react';
-import { api } from '../../utils/api';
+import { Search, Eye, CheckCircle, XCircle, ShoppingBag, Calendar } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
 import { Card } from '../../components/ui/Card';
 import { useAuth } from '@/context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
-import { cn } from '../../utils/cn';
 
 // Mock formatCurrency
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'ETB' }).format(amount);
-};
 
 const OrdersArchive: React.FC = () => {
   const { user } = useAuth();
@@ -148,7 +143,7 @@ const OrdersArchive: React.FC = () => {
                   <Calendar size={14} />
                   <span>{new Date(order.created_at).toLocaleDateString()}</span>
                 </div>
-                <span className="font-semibold text-slate-900">{formatCurrency(order.total)}</span>
+                <span className="font-semibold text-slate-900">Br {order.total?.toFixed(2) || '0.00'}</span>
               </div>
 
               <div className="flex gap-2">
@@ -210,7 +205,7 @@ const OrdersArchive: React.FC = () => {
                       </span>
                       <span className="text-slate-700">{item.name}</span>
                     </div>
-                    <span className="font-medium text-slate-900">{formatCurrency(item.price * item.quantity)}</span>
+                    <span className="font-medium text-slate-900">Br {(item.price * item.quantity)?.toFixed(2) || '0.00'}</span>
                   </div>
                 ))}
               </div>
@@ -218,7 +213,7 @@ const OrdersArchive: React.FC = () => {
 
             <div className="flex justify-between items-center p-4 bg-slate-900 rounded-xl text-white">
               <span className="font-semibold">Total</span>
-              <span className="text-xl font-bold">{formatCurrency(selectedOrder.total)}</span>
+              <span className="text-xl font-bold">Br {(selectedOrder.total)?.toFixed(2) || '0.00'}</span>
             </div>
           </div>
         </Modal>

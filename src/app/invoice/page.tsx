@@ -112,7 +112,7 @@ const InvoicePage: React.FC = () => {
                   Invoice Number: <span className="font-semibold">{invoiceNumber}</span>
                 </p>
                 <p className="text-sm text-slate-600 mt-1">
-                  Amount Paid: <span className="font-semibold">ETB {grandTotal.toLocaleString()}</span>
+                  Amount Paid: <span className="font-semibold">Br {grandTotal.toLocaleString()}</span>
                 </p>
               </div>
               <Button variant="primary" onClick={() => window.location.href = '/dashboard'}>
@@ -199,10 +199,10 @@ const InvoicePage: React.FC = () => {
                             {item.quantity}
                           </td>
                           <td className="text-right px-6 py-4 text-slate-600">
-                            ETB {item.unitPrice.toLocaleString()}
+                            Br {item.unitPrice.toLocaleString()}
                           </td>
                           <td className="text-right px-6 py-4 font-medium text-slate-900">
-                            ETB {item.total.toLocaleString()}
+                            Br {item.total.toLocaleString()}
                           </td>
                         </tr>
                       ))}
@@ -215,15 +215,15 @@ const InvoicePage: React.FC = () => {
                     <div className="w-64 space-y-3">
                       <div className="flex justify-between text-slate-600">
                         <span>Subtotal</span>
-                        <span>ETB {subtotal.toLocaleString()}</span>
+                        <span>Br {subtotal.toLocaleString()}</span>
                       </div>
                       <div className="flex justify-between text-slate-600">
                         <span>VAT (15%)</span>
-                        <span>ETB {vatAmount.toLocaleString()}</span>
+                        <span>Br {vatAmount.toLocaleString()}</span>
                       </div>
                       <div className="flex justify-between text-lg font-bold text-slate-900 pt-3 border-t border-slate-200">
                         <span>Total</span>
-                        <span>ETB {grandTotal.toLocaleString()}</span>
+                        <span>Br {grandTotal.toLocaleString()}</span>
                       </div>
                     </div>
                   </div>

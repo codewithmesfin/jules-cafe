@@ -9,11 +9,6 @@ import { api } from '../../utils/api';
 import { useNotification } from '../../context/NotificationContext';
 import { cn } from '../../utils/cn';
 
-// Mock formatCurrency
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'ETB' }).format(amount);
-};
-
 interface KPIMetric {
   label: string;
   value: string | number;
@@ -80,25 +75,25 @@ export default function ReportsPage() {
     try {
       setLoading(true);
       const params = `period=${period}`;
-      
+
       // Fetch analytics data from new summary endpoints
       const [salesData, productsData] = await Promise.all([
         api.analytics.getSalesSummary(params),
         api.analytics.getProductsSummary(params)
       ]);
-      
+
       // Transform API data to stats format
       const revenue = salesData?.totalRevenue || 0;
       const orders = salesData?.totalOrders || 0;
       const customers = salesData?.totalCustomers || 0;
       const avgOrder = orders > 0 ? revenue / orders : 0;
-      
+
       const topProducts = (productsData || []).map((p: any) => ({
         name: p.name,
         quantity: p.totalSold || 0,
         revenue: p.totalRevenue || 0
       }));
-      
+
       setStats({
         revenue,
         orders,
@@ -181,7 +176,7 @@ export default function ReportsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
         <StatCard
           label="Revenue"
-          value={formatCurrency(stats.revenue)}
+          value={`Br ${(stats.revenue).toFixed(2) || "0.00"}`}
           change={12}
           icon={<DollarSign size={24} />}
           color="emerald"
@@ -202,7 +197,7 @@ export default function ReportsPage() {
         />
         <StatCard
           label="Avg. Order"
-          value={formatCurrency(stats.avgOrder)}
+          value={`Br ${(stats.avgOrder).toFixed(2) || "0.00"}`}
           change={5}
           icon={<BarChart3 size={24} />}
           color="rose"
@@ -229,7 +224,7 @@ export default function ReportsPage() {
                     <p className="text-sm text-slate-500">{product.quantity} sold</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-semibold text-slate-900">{formatCurrency(product.revenue)}</p>
+                    <p className="font-semibold text-slate-900">Br {(product.revenue)?.toFixed(2) || "0.00"}</p>
                   </div>
                 </div>
               ))
@@ -258,9 +253,9 @@ export default function ReportsPage() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-semibold text-slate-900 text-sm">{formatCurrency(order.total)}</p>
-                    <Badge 
-                      variant={order.status === 'completed' ? 'success' : order.status === 'preparing' ? 'warning' : order.status === 'ready' ? 'info' : 'neutral'} 
+                    <p className="font-semibold text-slate-900 text-sm">Br {(order.total)?.toFixed(2) || "0.00"}</p>
+                    <Badge
+                      variant={order.status === 'completed' ? 'success' : order.status === 'preparing' ? 'warning' : order.status === 'ready' ? 'info' : 'neutral'}
                       size="sm"
                     >
                       {order.status}

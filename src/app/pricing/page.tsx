@@ -124,7 +124,7 @@ const PRICINGPage: React.FC = () => {
                   <span className="text-5xl font-bold text-slate-900">
                     {PRICING_PLAN.dailyPrice}
                   </span>
-                  <span className="text-slate-500 text-lg">ETB/day</span>
+                  <span className="text-slate-500 text-lg">Br/day</span>
                 </div>
               </div>
 
@@ -135,14 +135,14 @@ const PRICINGPage: React.FC = () => {
                     {billingInterval === "year" ? "Yearly" : "Monthly"} payment
                   </span>
                   <span className="text-2xl font-bold text-slate-900">
-                    {totalWithVAT.toFixed(0)} ETB
+                    {totalWithVAT.toFixed(0)} Br
                   </span>
                 </div>
                 {billingInterval === "year" && (
                   <div className="flex items-center gap-2 text-emerald-600 mt-2">
                     <CheckIcon size={16} />
                     <span className="text-sm font-medium">
-                      You save {yearlyDiscount.toFixed(0)} ETB!
+                      You save {yearlyDiscount.toFixed(0)} Br!
                     </span>
                   </div>
                 )}
@@ -194,7 +194,7 @@ const PRICINGPage: React.FC = () => {
             href="/signup"
             className="inline-flex items-center gap-2 px-8 py-4 bg-orange-600 text-white rounded-xl font-semibold hover:bg-orange-700 transition-colors"
           >
-            Start for 100 ETB/day
+            Start for 100 Br/day
             <ArrowRight className="w-5 h-5" />
           </Link>
         </div>

@@ -21,7 +21,7 @@ export default function BusinessSettingsPage() {
   const bannerInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     name: '', legal_name: '', address: '', phone: '', email: '', website: '', 
-    opening_hours: { open: '', close: '' }, tax_rate: 0, currency: 'ETB',
+    opening_hours: { open: '', close: '' }, tax_rate: 0, currency: 'Br',
     description: '', logo: '', banner: ''
   });
 
@@ -83,7 +83,7 @@ export default function BusinessSettingsPage() {
             close: business.opening_hours?.close || '' 
           },
           tax_rate: business.tax_rate || 0,
-          currency: business.currency || 'ETB',
+          currency: business.currency || 'Br',
           description: business.description || '',
           logo: business.logo || '',
           banner: business.banner || ''
@@ -172,7 +172,7 @@ export default function BusinessSettingsPage() {
             />
             <Input
               label="Currency"
-              placeholder="ETB"
+              placeholder="Br"
               value={formData.currency}
               onChange={e => setFormData({...formData, currency: e.target.value})}
             />

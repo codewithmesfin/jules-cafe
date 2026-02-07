@@ -22,7 +22,7 @@ export default function AddBusinessPage() {
     website: '',
     opening_hours: { open: '', close: '' },
     tax_rate: 0,
-    currency: 'ETB',
+    currency: 'Br',
     description: '',
     logo: '',
     banner: ''
@@ -107,7 +107,7 @@ export default function AddBusinessPage() {
             />
             <Input
               label="Currency"
-              placeholder="ETB"
+              placeholder="Br"
               value={formData.currency}
               onChange={e => setFormData({...formData, currency: e.target.value})}
             />

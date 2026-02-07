@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { Mail, Lock, Loader2, AlertCircle, ChefHat } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import Brand from '@/components/brand';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -39,13 +40,11 @@ export default function LoginPage() {
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Logo */}
-        <Link href="/" className="flex flex-col items-center mb-8">
-          <div className="w-16 h-16 bg-slate-900 rounded-[2rem] flex items-center justify-center text-white shadow-lg mb-4">
-            <ChefHat size={32} />
-          </div>
+        <div className="flex flex-col items-center mb-8">
+          <Brand imageOnly />
           <h1 className="text-2xl font-bold text-slate-900">Mevin Cafe</h1>
           <p className="text-slate-500 mt-1">Restaurant Management System</p>
-        </Link>
+        </div>
 
         {/* Login Card */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">

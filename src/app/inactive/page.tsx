@@ -277,7 +277,7 @@ export default function InactivePage() {
                                 <div>
                                     <h4 className="font-medium text-amber-900">Billing Information</h4>
                                     <p className="text-sm text-amber-700 mt-1">
-                                        Subscription: 100 ETB/day (Standard Plan). Payment is made via bank transfer to our registered accounts.
+                                        Subscription: 100 Br/day (Standard Plan). Payment is made via bank transfer to our registered accounts.
                                     </p>
                                 </div>
                             </div>

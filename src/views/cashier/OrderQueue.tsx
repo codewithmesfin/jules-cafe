@@ -200,7 +200,7 @@ const OrderQueue: React.FC = () => {
                     </span>
                   </div>
                   <div className="text-right">
-                    <p className="text-lg font-bold text-slate-900">${order.total_amount?.toFixed(2) || '0.00'}</p>
+                    <p className="text-lg font-bold text-slate-900">Br {order.total_amount?.toFixed(2) || '0.00'}</p>
                   </div>
                 </div>
 
@@ -229,7 +229,7 @@ const OrderQueue: React.FC = () => {
                       <span className="text-slate-600">
                         <span className="text-slate-900 font-medium">{item.quantity}x</span> {item.product_id?.name || 'Item'}
                       </span>
-                      <span className="text-slate-400 text-xs">${(item.price * item.quantity).toFixed(2)}</span>
+                      <span className="text-slate-400 text-xs">Br {(item.price * item.quantity).toFixed(2)}</span>
                     </div>
                   ))}
                   {(order.items?.length || 0) > 3 && (
@@ -309,7 +309,7 @@ const OrderQueue: React.FC = () => {
                       </span>
                       <span className="font-medium text-slate-900">{item.product_id?.name || 'Item'}</span>
                     </div>
-                    <span className="font-medium text-slate-900">${(item.price * item.quantity).toFixed(2)}</span>
+                    <span className="font-medium text-slate-900">Br {(item.price * item.quantity).toFixed(2)}</span>
                   </div>
                 ))}
               </div>
@@ -319,7 +319,7 @@ const OrderQueue: React.FC = () => {
             <div className="pt-4 border-t border-slate-200">
               <div className="flex justify-between text-lg font-bold text-slate-900">
                 <span>Total</span>
-                <span>${selectedOrder.total_amount?.toFixed(2) || '0.00'}</span>
+                <span>Br {selectedOrder.total_amount?.toFixed(2) || '0.00'}</span>
               </div>
             </div>
 

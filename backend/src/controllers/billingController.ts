@@ -8,9 +8,9 @@ import Business from '../models/Business';
 import AppError from '../utils/appError';
 import catchAsync from '../utils/catchAsync';
 
-// Pricing constants - Only 100 ETB/day including 15% VAT
+// Pricing constants - Only 100 Br/day including 15% VAT
 export const PRICING = {
-  standard: { daily: 100, name: 'Standard' } // 100 ETB/day including 15% VAT
+  standard: { daily: 100, name: 'Standard' } // 100 Br/day including 15% VAT
 };
 
 export const VAT_RATE = 15; // 15% VAT
@@ -88,7 +88,7 @@ export const createSubscription = catchAsync(async (req: AuthRequest, res: Respo
     throw new AppError('Invalid billing cycle', 400);
   }
 
-  // Only standard plan available (100 ETB/day)
+  // Only standard plan available (100 Br/day)
   const dailyRate = PRICING.standard.daily;
   const priceBreakdown = calculatePriceBreakdown(dailyRate, billing_cycle);
   
@@ -315,7 +315,7 @@ export const cancelSubscription = catchAsync(async (req: AuthRequest, res: Respo
   });
 });
 
-// Auto-create subscription for new businesses (100 ETB/day, monthly)
+// Auto-create subscription for new businesses (100 Br/day, monthly)
 export const autoCreateSubscription = catchAsync(async (req: AuthRequest, res: Response) => {
   const businessId = req.user?.default_business_id;
 

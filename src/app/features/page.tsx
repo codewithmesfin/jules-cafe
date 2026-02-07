@@ -90,12 +90,12 @@ export default function FeaturesPage() {
       <section className="py-20 px-4 bg-slate-900 text-white">
         <div className="max-w-3xl mx-auto text-center">
           <h2 className="text-3xl font-bold mb-4">Ready to simplify your operations?</h2>
-          <p className="text-slate-300 mb-8">Start for just 100 ETB/day. No credit card required.</p>
+          <p className="text-slate-300 mb-8">Start for just 100 Br/day. No credit card required.</p>
           <Link
             href="/signup"
             className="inline-flex items-center gap-2 px-8 py-4 bg-orange-600 text-white rounded-xl font-semibold hover:bg-orange-700 transition-colors"
           >
-            Start for 100 ETB/day
+            Start for 100 Br/day
             <ArrowRight className="w-5 h-5" />
           </Link>
         </div>

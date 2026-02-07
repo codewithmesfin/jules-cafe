@@ -438,7 +438,7 @@ export default function SuperAdminBusinessesPage() {
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Daily Rate</p>
-                    <p className="text-sm font-medium text-gray-900">{selectedSubscription.daily_rate} ETB/day</p>
+                    <p className="text-sm font-medium text-gray-900">{selectedSubscription.daily_rate} Br/day</p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">End Date</p>

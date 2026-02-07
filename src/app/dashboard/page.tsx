@@ -224,7 +224,7 @@ export default function DashboardPage() {
                 <DollarSign size={18} className="text-emerald-600" />
               </div>
             </div>
-            <p className="text-xl lg:text-2xl font-bold text-gray-900">ETB {stats.total_revenue.toFixed(2)}</p>
+            <p className="text-xl lg:text-2xl font-bold text-gray-900">Br {stats.total_revenue.toFixed(2)}</p>
             <p className="text-xs text-gray-500 mt-1">Today's Revenue</p>
           </div>
 
@@ -306,7 +306,7 @@ export default function DashboardPage() {
                       </div>
                       <div className="flex items-center gap-3">
                         <div className="text-right hidden sm:block">
-                          <p className="font-semibold text-gray-900 text-sm">${(order.total ?? 0).toFixed(2)}</p>
+                          <p className="font-semibold text-gray-900 text-sm">Br {(order.total ?? 0).toFixed(2)}</p>
                           <p className="text-xs text-gray-400">{formatTime(order.created_at)}</p>
                         </div>
                         <Badge variant={getStatusBadge(order.status)} size="sm">
@@ -355,7 +355,7 @@ export default function DashboardPage() {
                         </div>
                         <div>
                           <p className="font-medium text-gray-900 text-sm truncate max-w-[120px] sm:max-w-[150px]">{item.name}</p>
-                          <p className="text-xs text-gray-500">${item.price.toFixed(2)}</p>
+                          <p className="text-xs text-gray-500">Br {item.price.toFixed(2)}</p>
                         </div>
                       </div>
                       <ArrowRight size={14} className="text-gray-300" />

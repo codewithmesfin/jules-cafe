@@ -5,12 +5,13 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, Receipt, Package, Database, Users, Settings,
-  ChevronDown, ChevronLeft, ChevronRight, LogOut, ChefHat, Utensils,
+  ChevronDown, ChevronLeft, ChevronRight, ChefHat, Utensils,
   Plus, ClipboardList, Menu, X, Bell, Search, User, Power, CreditCard
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useAuth } from '@/context/AuthContext';
 import BottomNavigation from '@/components/layout/BottomNavigation';
+import Brand from '@/components/brand';
 
 
 interface SubmenuItem {
@@ -93,7 +94,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="relative">
             <div className="w-16 h-16 border-4 border-gray-200 rounded-full animate-spin border-t-gray-900"></div>
             <div className="absolute inset-0 flex items-center justify-center">
-              <ChefHat className="w-6 h-6 text-gray-900" />
+              <Brand size='8' />
             </div>
           </div>
           <p className="text-gray-600 font-medium">Loading...</p>
@@ -201,8 +202,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 onClick={() => setShowBusinessSelectorMobile(!showBusinessSelectorMobile)}
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gray-900 rounded-xl flex items-center justify-center text-white shadow-lg shadow-gray-900/20 flex-shrink-0">
-                    <ChefHat size={20} />
+                  <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0">
+                    {currentBusiness?.logo ? <img src={
+                    currentBusiness?.logo
+                  } alt={currentBusiness?.name || "logo"}
+                    className='w-10 h-10 rounded object-cover'
+                  /> : <Brand size={"8"} imageOnly />}
                   </div>
                   <div className="flex flex-col min-w-0">
                     <span className="text-sm font-bold text-gray-900 truncate">{currentBusiness?.name || 'Mevin Cafe'}</span>
@@ -372,8 +377,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               onClick={() => setShowBusinessSelector(!showBusinessSelector)}
             >
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gray-900 rounded-xl flex items-center justify-center text-white shadow-lg shadow-gray-900/20 flex-shrink-0">
-                  <ChefHat size={20} />
+                <div className="h-8 w-8 rounded-xl flex items-center justify-center flex-shrink-0">
+
+                  {currentBusiness?.logo ? <img src={
+                    currentBusiness?.logo
+                  } alt={currentBusiness?.name || "logo"}
+                    className='w-10 h-10 rounded object-cover'
+                  /> : <Brand size={"8"} imageOnly />}
                 </div>
                 {!sidebarCollapsed && (
                   <div className="flex flex-col min-w-0">

@@ -41,7 +41,7 @@ const BusinessSchema: Schema = new Schema({
     close: { type: String }
   },
   tax_rate: { type: Number, default: 0 },
-  currency: { type: String, default: 'ETB' },
+  currency: { type: String, default: 'Br' },
   is_active: { type: Boolean, default: true },
 }, {
   timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },
