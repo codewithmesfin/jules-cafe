@@ -26,7 +26,7 @@ const Hero: React.FC = () => {
       </div>
       <div className="relative">
         <div className="rounded-2xl shadow-xl bg-gray-100 h-80 flex items-center justify-center text-gray-400">
-          Product Dashboard Preview
+          <img src="https://www.gotenzo.com/wp-content/uploads/2024/03/Frame-1074-1-1024x682.jpg" alt="" />
         </div>
       </div>
     </div>

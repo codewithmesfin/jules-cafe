@@ -2,7 +2,6 @@
 import React from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/layout/Footer';
-import { EXPLORE_PINS } from '@/utils/hero-teams';
 import Hero from '@/components/HeroSection';
 import FooterOverlay from '@/components/FooterOverlay';
 
