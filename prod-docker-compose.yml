@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   traefik:
@@ -6,14 +6,16 @@ services:
     container_name: abc-cafe-traefik
     restart: unless-stopped
     command:
-      - "--api.insecure=true"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
+
       - "--entrypoints.web.address=:80"
-      - "--entrypoints.websecure.address=:${TRAEFIK_HTTPS_PORT:-8443}"
-      - "--certificatesresolvers.letsencrypt.acme.email=${LETSENCRYPT_EMAIL:-mesfin@mevinai.com}"
+      - "--entrypoints.websecure.address=:443"
+
+      - "--certificatesresolvers.letsencrypt.acme.email=${LETSENCRYPT_EMAIL}"
       - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
       - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+
       - "--log.level=INFO"
     ports:
       - "80:80"
@@ -22,22 +24,27 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - traefik_letsencrypt:/letsencrypt
     networks:
-      - abc-cafe-network
-    labels:
-      - "traefik.enable=true"
+      - default
+
 
   mongodb:
     image: mongo:7
     container_name: abc-cafe-mongodb
     restart: unless-stopped
+    environment:
+      MONGO_INITDB_DATABASE: ${MONGO_DB_NAME}
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
     volumes:
       - mongodb_data:/data/db
-    environment:
-      - MONGO_INITDB_DATABASE=${MONGO_INITDB_DATABASE:-abc_cafe}
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
-      - abc-cafe-network
-    labels:
-      - "traefik.enable=false"
+      - default
+
 
   backend:
     build:
@@ -46,60 +53,68 @@ services:
     container_name: abc-cafe-backend
     restart: unless-stopped
     depends_on:
-      - mongodb
+      mongodb:
+        condition: service_healthy
     environment:
-      - PORT=${BACKEND_PORT:-7000}
-      - MONGO_URI=${MONGO_URI:-mongodb://mongodb:27017/abc_cafe}
-      - JWT_SECRET=${JWT_SECRET}
-      - BASE_URL=${BASE_URL:-https://${API_DOMAIN_NAME}}
-      - FRONTEND_URL=${FRONTEND_URL:-https://${FRONTEND_DOMAIN_NAME}}
-      - EMAIL_HOST=${EMAIL_HOST}
-      - EMAIL_PORT=${EMAIL_PORT}
-      - EMAIL_USER=${EMAIL_USER}
-      - EMAIL_PASS=${EMAIL_PASS}
-      - NODE_ENV=${NODE_ENV:-production}
-      - SAAS_ADMIN_EMAIL=${SAAS_ADMIN_EMAIL}
-      - SAAS_ADMIN_PASSWORD=${SAAS_ADMIN_PASSWORD}
+      PORT: ${BACKEND_PORT}
+      MONGO_URI: ${MONGO_URI}
+      JWT_SECRET: ${JWT_SECRET}
+      NODE_ENV: ${NODE_ENV}
+
+      BASE_URL: ${BASE_URL}
+      FRONTEND_URL: ${FRONTEND_URL}
+
+      EMAIL_HOST: ${EMAIL_HOST}
+      EMAIL_PORT: ${EMAIL_PORT}
+      EMAIL_USER: ${EMAIL_USER}
+      EMAIL_PASS: ${EMAIL_PASS}
+
+      SAAS_ADMIN_EMAIL: ${SAAS_ADMIN_EMAIL}
+      SAAS_ADMIN_PASSWORD: ${SAAS_ADMIN_PASSWORD}
     volumes:
       - backend_uploads:/app/uploads
-    networks:
-      - abc-cafe-network
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.backend.rule=Host(`${API_DOMAIN_NAME}`)"
       - "traefik.http.routers.backend.entrypoints=websecure"
       - "traefik.http.routers.backend.tls.certresolver=letsencrypt"
-      - "traefik.http.services.backend.loadbalancer.server.port=${BACKEND_PORT:-7000}"
+      - "traefik.http.services.backend.loadbalancer.server.port=${BACKEND_PORT}"
+    networks:
+      - default
+
 
   frontend:
     build:
       context: .
       dockerfile: Dockerfile.frontend
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+        NEXT_PUBLIC_SOCKET_URL: ${NEXT_PUBLIC_SOCKET_URL}
     container_name: abc-cafe-frontend
     restart: unless-stopped
     depends_on:
       - backend
-    environment:
-      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-https://${API_DOMAIN_NAME}}
-      - NEXT_PUBLIC_SOCKET_URL=${NEXT_PUBLIC_SOCKET_URL:-https://${API_DOMAIN_NAME}}
-    networks:
-      - abc-cafe-network
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.frontend.rule=Host(`www.${FRONTEND_DOMAIN_NAME}`) || Host(`${FRONTEND_DOMAIN_NAME}`)"
+      - "traefik.http.routers.frontend.rule=Host(`${FRONTEND_DOMAIN_NAME}`) || Host(`www.${FRONTEND_DOMAIN_NAME}`)"
       - "traefik.http.routers.frontend.entrypoints=websecure"
       - "traefik.http.routers.frontend.tls.certresolver=letsencrypt"
       - "traefik.http.services.frontend.loadbalancer.server.port=3000"
+
       - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
-      - "traefik.http.routers.frontend-http.rule=Host(`www.${FRONTEND_DOMAIN_NAME}`) || Host(`${FRONTEND_DOMAIN_NAME}`)"
+      - "traefik.http.routers.frontend-http.rule=Host(`${FRONTEND_DOMAIN_NAME}`) || Host(`www.${FRONTEND_DOMAIN_NAME}`)"
       - "traefik.http.routers.frontend-http.entrypoints=web"
       - "traefik.http.routers.frontend-http.middlewares=redirect-to-https"
+    networks:
+      - default
+
 
 volumes:
   mongodb_data:
   backend_uploads:
   traefik_letsencrypt:
 
+
 networks:
-  abc-cafe-network:
+  default:
     driver: bridge
