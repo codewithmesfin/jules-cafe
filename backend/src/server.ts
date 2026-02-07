@@ -3,10 +3,44 @@ import connectDB from './config/db';
 import dotenv from 'dotenv';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
+import bcrypt from 'bcryptjs';
+import User from './models/User';
 
 dotenv.config();
 
 const PORT = process.env.PORT || 5000;
+
+// Create super admin on startup if env vars are set
+async function createSuperAdmin() {
+  const email = process.env.SAAS_ADMIN_EMAIL;
+  const password = process.env.SAAS_ADMIN_PASSWORD;
+
+  if (!email || !password) {
+    console.log('SAAS_ADMIN_EMAIL or SAAS_ADMIN_PASSWORD not set, skipping super admin creation');
+    return;
+  }
+
+  try {
+    const existingAdmin = await User.findOne({ role: 'saas_admin', email });
+    if (existingAdmin) {
+      console.log('Super admin already exists:', email);
+      return;
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    await User.create({
+      email,
+      password: hashedPassword,
+      full_name: 'Super Admin',
+      role: 'saas_admin',
+      status: 'active',
+      is_active: true
+    });
+    console.log('✅ Super admin created:', email);
+  } catch (error) {
+    console.error('❌ Failed to create super admin:', error);
+  }
+}
 
 // Create HTTP server and Socket.io instance
 const httpServer = createServer(app);
@@ -50,7 +84,8 @@ io.on('connection', (socket) => {
 // Make io accessible in app
 app.set('io', io);
 
-connectDB().then(() => {
+connectDB().then(async () => {
+  await createSuperAdmin();
   httpServer.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
   });
