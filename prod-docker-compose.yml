@@ -9,15 +9,15 @@ services:
       - "--api.insecure=true"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
-      - "--entrypoints.web.address=:${TRAEFIK_HTTP_PORT:-8880}"
+      - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:${TRAEFIK_HTTPS_PORT:-8443}"
       - "--certificatesresolvers.letsencrypt.acme.email=${LETSENCRYPT_EMAIL:-mesfin@mevinai.com}"
       - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
       - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
       - "--log.level=INFO"
     ports:
-      - "${TRAEFIK_HTTP_PORT:-8880}:${TRAEFIK_HTTP_PORT:-8880}"
-      - "${TRAEFIK_HTTPS_PORT:-8443}:${TRAEFIK_HTTPS_PORT:-8443}"
+      - "80:80"
+      - "443:443"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - traefik_letsencrypt:/letsencrypt
