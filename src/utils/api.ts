@@ -1,4 +1,4 @@
-export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+export const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const fetcher = async (url: string, options?: RequestInit): Promise<any> => {
   const jwt = typeof window !== 'undefined' ? localStorage.getItem('jwt') : null;

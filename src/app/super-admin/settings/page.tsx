@@ -95,8 +95,9 @@ export default function SuperAdminSettingsPage() {
   }, []);
 
   const fetchBankAccounts = async () => {
+    const API_URL = process.env.NEXT_PUBLIC_API_URL;
     try {
-      const response = await fetch('http://localhost:8000/api/bank-accounts', {
+      const response = await fetch(`${API_URL}/api/bank-accounts`, {
         headers: { Authorization: `Bearer ${jwt}` }
       });
       const data = await response.json();
@@ -109,10 +110,11 @@ export default function SuperAdminSettingsPage() {
   };
 
   const addBankAccount = async (e: React.FormEvent) => {
+     const API_URL = process.env.NEXT_PUBLIC_API_URL;
     e.preventDefault();
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:8000/api/bank-accounts', {
+      const response = await fetch(`${API_URL}/api/bank-accounts`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -134,9 +136,10 @@ export default function SuperAdminSettingsPage() {
   };
 
   const deleteBankAccount = async (id: string) => {
+     const API_URL = process.env.NEXT_PUBLIC_API_URL;
     if (!confirm('Are you sure you want to delete this bank account?')) return;
     try {
-      const response = await fetch(`http://localhost:8000/api/bank-accounts/${id}`, {
+      const response = await fetch(`${API_URL}/api/bank-accounts/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${jwt}` }
       });

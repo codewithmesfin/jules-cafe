@@ -75,6 +75,7 @@ services:
     networks:
       - default
 
+
   frontend:
     build:
       context: .
@@ -91,7 +92,7 @@ services:
       traefik.http.routers.frontend-http.entrypoints: websecure
       traefik.http.routers.frontend-http.rule: Host(${SITES:?List of sites not set})
       traefik.http.routers.frontend-http.tls.certresolver: main-resolver
-      traefik.http.services.frontend.loadbalancer.server.port: "80"
+      traefik.http.services.frontend.loadbalancer.server.port: ${FRONTEND_PORT}
     networks:
       - default
 

@@ -33,15 +33,15 @@ app.set('trust proxy', 1);
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      imgSrc: ["'self'", 'data:', 'https:', 'http://localhost:8000'],
-      connectSrc: ["'self'", 'http://localhost:8000'],
-      fontSrc: ["'self'"],
-      objectSrc: ["'none'"],
-      mediaSrc: ["'self'", 'http://localhost:8000'],
-      frameSrc: ["'none'"],
+       defaultSrc: ["*"],            // allow everything by default
+        scriptSrc: ["'self'", "'unsafe-inline'", "*"],   // allow all scripts
+        styleSrc: ["'self'", "'unsafe-inline'", "*"],    // allow all styles
+        imgSrc: ["'self'", "data:", "http:", "https:", "*"], // allow images from anywhere
+        connectSrc: ["'self'", "*"],   // allow all connections (API/WebSocket)
+        fontSrc: ["'self'", "*"],      // allow fonts from anywhere
+        objectSrc: ["'none'"],         // still block objects
+        mediaSrc: ["'self'", "*"],     // allow media from anywhere
+        frameSrc: ["*"],                // allow frames from anywhere
     },
   },
   crossOriginEmbedderPolicy: false,

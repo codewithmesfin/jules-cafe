@@ -56,7 +56,7 @@ export default function MenuPage() {
   const fetchBusinessData = async () => {
     try {
       setLoading(true);
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const API_URL = process.env.NEXT_PUBLIC_API_URL;
       
       // Fetch business info
       const businessRes = await fetch(`${API_URL}/public/business/${slug}`);
