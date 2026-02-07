@@ -114,6 +114,7 @@ export const api = {
   },
   customers: {
     getAll: () => fetcher('/api/customers'),
+    getOne: (id: string) => fetcher(`/api/customers/${id}`),
     create: (data: any) => fetcher('/api/customers', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: string, data: any) => fetcher(`/api/customers/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     delete: (id: string) => fetcher(`/api/customers/${id}`, { method: 'DELETE' }),

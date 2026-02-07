@@ -1,45 +1,35 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Edit, Trash2, User as UserIcon, Users, Mail, Phone, Percent } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Search, Plus, Trash2, Users, Mail, Phone, Percent, Edit } from 'lucide-react';
 import { api } from '../../utils/api';
 import { Button } from '../../components/ui/Button';
-import { Input } from '../../components/ui/Input';
 import { Badge } from '../../components/ui/Badge';
-import { Modal } from '../../components/ui/Modal';
 import { Card } from '../../components/ui/Card';
 import { ConfirmationDialog } from '../../components/ui/ConfirmationDialog';
-import { useAuth } from '@/context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { cn } from '../../utils/cn';
 import type { Customer, CustomerType } from '../../types';
 
+const customerTypeOptions: { value: CustomerType; label: string; color: string }[] = [
+  { value: 'regular', label: 'Regular', color: 'bg-slate-100 text-slate-600' },
+  { value: 'member', label: 'Member', color: 'bg-blue-100 text-blue-600' },
+  { value: 'staff', label: 'Staff', color: 'bg-emerald-100 text-emerald-600' },
+  { value: 'vip', label: 'VIP', color: 'bg-amber-100 text-amber-600' },
+  { value: 'wholesale', label: 'Wholesale', color: 'bg-purple-100 text-purple-600' },
+];
+
+const getTypeInfo = (type: CustomerType) => {
+  return customerTypeOptions.find(t => t.value === type) || customerTypeOptions[0];
+};
+
 const Customers: React.FC = () => {
-  const { user } = useAuth();
+  const router = useRouter();
   const { showNotification } = useNotification();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
-
-  // Form state
-  const [formFullName, setFormFullName] = useState('');
-  const [formEmail, setFormEmail] = useState('');
-  const [formPhone, setFormPhone] = useState('');
-  const [formAddress, setFormAddress] = useState('');
-  const [formCustomerType, setFormCustomerType] = useState<CustomerType>('regular');
-  const [formDiscount, setFormDiscount] = useState(0);
-  const [formNotes, setFormNotes] = useState('');
-  const [formIsActive, setFormIsActive] = useState(true);
-
-  const customerTypeOptions: { value: CustomerType; label: string; color: string }[] = [
-    { value: 'regular', label: 'Regular', color: 'bg-slate-100 text-slate-600' },
-    { value: 'member', label: 'Member', color: 'bg-blue-100 text-blue-600' },
-    { value: 'staff', label: 'Staff', color: 'bg-emerald-100 text-emerald-600' },
-    { value: 'vip', label: 'VIP', color: 'bg-amber-100 text-amber-600' },
-    { value: 'wholesale', label: 'Wholesale', color: 'bg-purple-100 text-purple-600' },
-  ];
 
   useEffect(() => {
     fetchCustomers();
@@ -65,39 +55,6 @@ const Customers: React.FC = () => {
     return matchesSearch;
   });
 
-  const handleSave = async () => {
-    if (!formFullName) {
-      showNotification("Please enter customer name", "error");
-      return;
-    }
-
-    try {
-      const customerData = {
-        full_name: formFullName,
-        email: formEmail || undefined,
-        phone: formPhone || undefined,
-        address: formAddress || undefined,
-        customer_type: formCustomerType,
-        discount_percent: formDiscount,
-        notes: formNotes || undefined,
-        is_active: formIsActive
-      };
-
-      if (editingCustomer) {
-        await api.customers.update((editingCustomer.id || editingCustomer._id)!, customerData);
-        showNotification("Customer profile updated");
-      } else {
-        await api.customers.create(customerData);
-        showNotification("New customer added");
-      }
-      setIsModalOpen(false);
-      resetForm();
-      fetchCustomers();
-    } catch (error: any) {
-      showNotification(error.message || "Failed to save customer", "error");
-    }
-  };
-
   const handleDelete = async () => {
     if (customerToDelete) {
       try {
@@ -110,35 +67,6 @@ const Customers: React.FC = () => {
         setCustomerToDelete(null);
       }
     }
-  };
-
-  const resetForm = () => {
-    setEditingCustomer(null);
-    setFormFullName('');
-    setFormEmail('');
-    setFormPhone('');
-    setFormAddress('');
-    setFormCustomerType('regular');
-    setFormDiscount(0);
-    setFormNotes('');
-    setFormIsActive(true);
-  };
-
-  const getTypeInfo = (type: CustomerType) => {
-    return customerTypeOptions.find(t => t.value === type) || customerTypeOptions[0];
-  };
-
-  const openEditModal = (customer: Customer) => {
-    setEditingCustomer(customer);
-    setFormFullName(customer.full_name);
-    setFormEmail(customer.email || '');
-    setFormPhone(customer.phone || '');
-    setFormAddress(customer.address || '');
-    setFormCustomerType(customer.customer_type);
-    setFormDiscount(customer.discount_percent || 0);
-    setFormNotes(customer.notes || '');
-    setFormIsActive(customer.is_active !== false);
-    setIsModalOpen(true);
   };
 
   // Loading skeleton
@@ -167,10 +95,7 @@ const Customers: React.FC = () => {
           <p className="text-slate-500 text-sm">Manage customers and loyalty</p>
         </div>
         <Button
-          onClick={() => {
-            resetForm();
-            setIsModalOpen(true);
-          }}
+          onClick={() => router.push('/dashboard/customers/new')}
         >
           <Plus size={18} className="mr-2" /> Add Customer
         </Button>
@@ -205,8 +130,7 @@ const Customers: React.FC = () => {
             return (
               <div
                 key={customer.id || customer._id}
-                className="bg-white border border-slate-200 rounded-2xl p-4 hover:shadow-lg hover:border-slate-300 transition-all cursor-pointer"
-                onClick={() => openEditModal(customer)}
+                className="bg-white border border-slate-200 rounded-2xl p-4 hover:shadow-lg hover:border-slate-300 transition-all"
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
@@ -219,6 +143,22 @@ const Customers: React.FC = () => {
                         {typeInfo.label}
                       </Badge>
                     </div>
+                  </div>
+                  <div className="flex gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => router.push(`/dashboard/customers/${customer.id || customer._id}/edit`)}
+                    >
+                      <Edit size={14} />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setCustomerToDelete(customer)}
+                    >
+                      <Trash2 size={14} className="text-error-600" />
+                    </Button>
                   </div>
                 </div>
 
@@ -258,104 +198,6 @@ const Customers: React.FC = () => {
           })}
         </div>
       )}
-
-      {/* Add/Edit Modal */}
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          resetForm();
-        }}
-        title={editingCustomer ? 'Edit Customer' : 'Add Customer'}
-        size="lg"
-        footer={
-          <div className="flex gap-3 w-full">
-            <Button variant="outline" onClick={() => { setIsModalOpen(false); resetForm(); }} className="flex-1">
-              Cancel
-            </Button>
-            <Button onClick={handleSave} className="flex-1">
-              {editingCustomer ? 'Update' : 'Create'}
-            </Button>
-          </div>
-        }
-      >
-        <div className="space-y-4">
-          <Input
-            label="Full Name *"
-            placeholder="Customer name"
-            value={formFullName}
-            onChange={(e) => setFormFullName(e.target.value)}
-          />
-
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Email"
-              type="email"
-              placeholder="email@example.com"
-              value={formEmail}
-              onChange={(e) => setFormEmail(e.target.value)}
-            />
-            <Input
-              label="Phone"
-              placeholder="+251..."
-              value={formPhone}
-              onChange={(e) => setFormPhone(e.target.value)}
-            />
-          </div>
-
-          <Input
-            label="Address"
-            placeholder="Street, City..."
-            value={formAddress}
-            onChange={(e) => setFormAddress(e.target.value)}
-          />
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Customer Type</label>
-              <select
-                className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/20"
-                value={formCustomerType}
-                onChange={(e) => setFormCustomerType(e.target.value as CustomerType)}
-              >
-                {customerTypeOptions.map(t => (
-                  <option key={t.value} value={t.value}>{t.label}</option>
-                ))}
-              </select>
-            </div>
-            <Input
-              label="Discount (%)"
-              type="number"
-              min="0"
-              max="100"
-              value={formDiscount || ''}
-              onChange={(e) => setFormDiscount(parseFloat(e.target.value) || 0)}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">Notes</label>
-            <textarea
-              className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/20"
-              rows={3}
-              placeholder="Notes, allergies, preferences..."
-              value={formNotes}
-              onChange={(e) => setFormNotes(e.target.value)}
-            />
-          </div>
-          
-          <div className="flex items-center gap-3">
-            <input
-              type="checkbox"
-              id="is_active"
-              className="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
-              checked={formIsActive}
-              onChange={(e) => setFormIsActive(e.target.checked)}
-            />
-            <label htmlFor="is_active" className="text-sm font-medium text-slate-700">Active customer</label>
-          </div>
-        </div>
-      </Modal>
 
       {/* Delete Confirmation */}
       <ConfirmationDialog

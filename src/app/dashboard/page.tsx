@@ -166,7 +166,7 @@ export default function DashboardPage() {
       <div className="space-y-6">
         
         {/* Quick Actions - Mobile First Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 lg:gap-4">
           <Link href="/dashboard/orders/new" className="group">
             <Card hover className="p-4 h-full">
               <div className="flex items-center gap-3">

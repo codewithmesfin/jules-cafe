@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Clock, Edit2, ShoppingBag, CheckCircle, Play, XCircle, ChevronRight, Filter } from 'lucide-react';
+import { Clock, Edit2, ShoppingBag, CheckCircle, Play, XCircle, ChevronRight, Filter, Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { api } from '../../utils/api';
 import { Button } from '../../components/ui/Button';
@@ -117,7 +117,7 @@ const OrderQueue: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex  justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Orders</h1>
           <p className="text-slate-500 text-sm">Manage and track orders</p>
@@ -125,7 +125,7 @@ const OrderQueue: React.FC = () => {
 
         <Link href="/dashboard/orders/new">
           <Button size="sm">
-            <ShoppingBag size={16} className="mr-1" /> New Order
+            <Plus size={16} className="mr-1" /> New Order
           </Button>
         </Link>
       </div>

@@ -209,11 +209,11 @@ const InventoryView: React.FC = () => {
   const filteredInventory = inventory.filter(item => {
     // Filter by tab type (ingredient vs product)
     if (item.item_type !== activeTab) return false;
-    
+
     // Filter by search term
     const itemId = getItemId(item);
     if (!itemId) return false;
-    
+
     const name = getItemName(item, activeTab, ingredients, products);
     return name.toLowerCase().includes(searchTerm.toLowerCase());
   });
@@ -221,11 +221,11 @@ const InventoryView: React.FC = () => {
   const lowStockCount = filteredInventory.filter(i => {
     return (i.quantity_available || 0) <= (i.reorder_level || 0);
   }).length;
-  
+
   const totalStockValue = filteredInventory.reduce((sum, i) => sum + (i.quantity_available || 0), 0);
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
+    <div className="space-y-6 animate-in fade-in duration-500 mb-24 md:mb-3">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -300,7 +300,7 @@ const InventoryView: React.FC = () => {
               <p className="text-xs text-gray-500 font-medium">Transactions</p>
               <p className="text-xl font-bold text-gray-900">{transactions.length}</p>
             </div>
-            <button 
+            <button
               onClick={() => fetchData()}
               className="p-2 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-gray-600"
               title="Refresh"
@@ -326,10 +326,20 @@ const InventoryView: React.FC = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <div className="flex gap-2">
+            <div className="hidden md:flex gap-2">
               {canCreate('inventory') && (
                 <Button onClick={() => openInvModal()}>
                   <Plus size={16} className="mr-1" /> Add Stock
+                </Button>
+              )}
+            </div>
+            {/* Mobile  */}
+            <div className="flex md:hidden gap-2 fixed bottom-20 right-10">
+              {canCreate('inventory') && (
+                <Button onClick={() => openInvModal()}
+                className='shadow-3xl'
+                >
+                  <Plus size={16} className="mr-1" />
                 </Button>
               )}
             </div>
@@ -503,10 +513,11 @@ const InventoryView: React.FC = () => {
                     ingredients.map(i => {
                       const ingId = i.id || i._id;
                       return (
-                      <option key={ingId} value={ingId}>
-                        {i.name} ({getIngredientBaseUnit(ingId || '')})
-                      </option>
-                    )})
+                        <option key={ingId} value={ingId}>
+                          {i.name} ({getIngredientBaseUnit(ingId || '')})
+                        </option>
+                      )
+                    })
                   ) : (
                     products.map(p => (
                       <option key={p.id || p._id} value={p.id || p._id}>

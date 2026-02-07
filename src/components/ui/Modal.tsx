@@ -35,8 +35,8 @@ export const Modal: React.FC<ModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in">
-      <div 
+    <div className="fixed inset-0 z-50 flex items-center sm:items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in">
+      <div
         className={cn(
           'bg-white rounded-xl shadow-xl w-full overflow-hidden animate-scale-in',
           sizes[size] || sizes.md,
@@ -46,8 +46,8 @@ export const Modal: React.FC<ModalProps> = ({
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 sticky top-0 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
           <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
           {showClose && (
-            <button 
-              onClick={onClose} 
+            <button
+              onClick={onClose}
               className="p-2 -mr-2 -my-2 rounded-xl hover:bg-slate-100 transition-colors text-slate-500"
             >
               <X className="w-5 h-5" />

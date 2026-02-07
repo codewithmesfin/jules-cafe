@@ -106,7 +106,7 @@ const Products = () => {
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Mobile Header */}
-      <div className="lg:hidden bg-white border-b border-slate-200 sticky top-0 z-30">
+      <div className="lg:hidden bg-white border-b border-slate-200 rounded-xl">
         <div className="px-4 py-3 space-y-3">
           <div className="flex items-center justify-between">
             <h1 className="text-xl font-bold text-slate-900">Products</h1>
@@ -160,8 +160,8 @@ const Products = () => {
       </div>
 
       {/* Desktop Header */}
-      <div className="hidden lg:block sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-6 py-4">
+      <div className="hidden lg:block bg-white/95 backdrop-blur-md border-b border-slate-200">
+        <div className="w-full mx-auto px-6 py-4">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto flex-1">
               <div className="relative flex-1 max-w-md">
@@ -199,7 +199,7 @@ const Products = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 lg:px-6 py-4 lg:py-6">
+      <div className="w-full mx-auto py-4 lg:py-6">
         {/* Products Grid */}
         {filteredProducts.length === 0 ? (
           <Card className="py-16">

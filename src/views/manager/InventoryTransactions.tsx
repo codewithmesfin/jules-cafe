@@ -86,7 +86,7 @@ const InventoryTransactionsView: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Transactions</h1>
           <p className="text-slate-500 text-sm">Track all inventory movements</p>
@@ -139,6 +139,9 @@ const InventoryTransactionsView: React.FC = () => {
                   ? "bg-slate-900 text-white"
                   : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
               )}
+              style={{
+                minWidth:"auto"
+              }}
             >
               {type}
             </button>
