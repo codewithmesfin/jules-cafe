@@ -34,6 +34,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showBusinessSelector, setShowBusinessSelector] = useState(false);
+  const [showBusinessSelectorMobile, setShowBusinessSelectorMobile] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -184,18 +185,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         />
       )}
 
+
+
       {/* Mobile Sidebar */}
       <aside className={cn(
-        'fixed top-0 left-0 z-50 h-[100dvh] w-72 bg-white shadow-2xl transition-transform duration-300 lg:hidden border-r border-gray-200',
+        'fixed top-0 left-0 z-40 h-[100dvh] w-72 bg-white shadow-2xl transition-transform duration-300 lg:hidden border-r border-gray-200',
         mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
       )}>
         <div className="flex flex-col h-full space-x-10">
           {/* Mobile Header with Business Selector */}
           <div className="w-full p-2 border-b border-gray-100 relative bg-gray-50/30">
-            <div ref={businessDropdownRef} className="relative flex justify-between">
+            <div ref={businessDropdownRef} className="relative">
               <div
                 className="flex items-center justify-between p-2.5 bg-white rounded-xl cursor-pointer hover:bg-gray-50 transition-all border border-gray-200/60 shadow-sm"
-                onClick={() => setShowBusinessSelector(!showBusinessSelector)}
+                onClick={() => setShowBusinessSelectorMobile(!showBusinessSelectorMobile)}
               >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-gray-900 rounded-xl flex items-center justify-center text-white shadow-lg shadow-gray-900/20 flex-shrink-0">
@@ -216,17 +219,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </div>
 
               {/* Business Selector Dropdown Mobile */}
-              {showBusinessSelector && (
-                <div className="absolute top-full left-0 right-0 mt-2 py-2 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden">
+              {showBusinessSelectorMobile && (
+                <div className="absolute z-50 top-full left-0 right-0 mt-2 py-2 bg-white border border-gray-200 rounded-xl shadow-xl overflow-visible">
                   <div className="px-3 pb-2 mb-2 border-b border-gray-100">
                     <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Your Businesses</p>
                   </div>
                   {businesses?.map((business: any) => (
                     <button
                       key={business._id || business.id}
-                      onClick={(e) => { e.stopPropagation(); handleSwitchBusiness(business._id || business.id); setMobileMenuOpen(false); }}
+                      onClick={(e) => { e.stopPropagation(); handleSwitchBusiness(business._id || business.id); }}
                       className={cn(
-                        'w-full flex items-center gap-3 px-3 py-2 mx-2 rounded-lg text-left transition-all',
+                        'w-full flex items-center gap-3 px-3 py-3 mx-2 rounded-lg text-left transition-all cursor-pointer',
                         (currentBusiness?._id || currentBusiness?.id) === (business._id || business.id)
                           ? 'bg-gray-100 text-gray-900'
                           : 'hover:bg-gray-50'
@@ -262,7 +265,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
             <button
               onClick={() => setMobileMenuOpen(false)}
-              className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-xl transition-colors"
+              className="absolute top-3 right-3 p-2 hover:bg-gray-100 rounded-xl transition-colors z-20"
             >
               <X size={20} className="text-gray-500" />
             </button>
@@ -392,7 +395,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             {/* Business Selector Dropdown PC*/}
             {showBusinessSelector && (
-              <div className="absolute top-full left-0 right-0 mt-2 py-2 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden">
+              <div className="absolute top-full left-0 right-0 mt-2 py-2 bg-white border border-gray-200 rounded-xl shadow-xl z-20 overflow-hidden">
                 <div className="px-3 pb-2 mb-2 border-b border-gray-100">
                   <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Your Businesses</p>
                 </div>
@@ -609,7 +612,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
                 {/* User Dropdown Menu */}
                 {showUserDropdown && (
-                  <div className="absolute top-full right-0 mt-2 py-2 bg-white border border-gray-200 rounded-xl shadow-xl z-50 min-w-52 overflow-hidden">
+                  <div className="absolute top-full right-0 mt-2 py-2 bg-white border border-gray-200 rounded-xl shadow-xl z-20 min-w-52 overflow-hidden">
                     <div className="px-3 py-2 border-b border-gray-100 bg-gray-50/50">
                       <p className="text-sm font-bold text-gray-900">{user.full_name || 'User'}</p>
                       <p className="text-xs text-gray-500">{user.email}</p>
