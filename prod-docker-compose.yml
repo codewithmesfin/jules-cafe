@@ -1,5 +1,3 @@
-
-
 services:
   traefik:
     image: traefik:v3.0
@@ -66,15 +64,13 @@ services:
     volumes:
       - backend_uploads:/app/uploads
     labels:
-      traefik.enable: "true"
-      traefik.http.routers.frontend-http.entrypoints: websecure
-      traefik.http.routers.frontend-http.rule: Host(${SITES:?List of sites not set})
-      traefik.http.routers.frontend-http.tls.certresolver: main-resolver
-      traefik.http.services.frontend.loadbalancer.server.port: ${BACKEND_PORT}
-      
+      - "traefik.enable=true"
+      - "traefik.http.routers.backend-http.entrypoints=websecure"
+      - "traefik.http.routers.backend-http.rule=Host(`${API_DOMAIN_NAME}`)"
+      - "traefik.http.routers.backend-http.tls.certresolver=letsencrypt"
+      - "traefik.http.services.backend.loadbalancer.server.port=${BACKEND_PORT}"
     networks:
       - default
-
 
   frontend:
     build:
@@ -87,12 +83,14 @@ services:
     restart: unless-stopped
     depends_on:
       - backend
+    environment:
+      PORT: ${FRONTEND_PORT}
     labels:
-      traefik.enable: "true"
-      traefik.http.routers.frontend-http.entrypoints: websecure
-      traefik.http.routers.frontend-http.rule: Host(${SITES:?List of sites not set})
-      traefik.http.routers.frontend-http.tls.certresolver: main-resolver
-      traefik.http.services.frontend.loadbalancer.server.port: ${FRONTEND_PORT}
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend-http.entrypoints=websecure"
+      - "traefik.http.routers.frontend-http.rule=Host(`${FRONTEND_DOMAIN_NAME}`)"
+      - "traefik.http.routers.frontend-http.tls.certresolver=letsencrypt"
+      - "traefik.http.services.frontend.loadbalancer.server.port=${FRONTEND_PORT}"
     networks:
       - default
 
