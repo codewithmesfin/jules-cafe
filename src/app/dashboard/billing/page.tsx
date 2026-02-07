@@ -678,7 +678,8 @@ export default function BillingPage() {
                   <RefreshCw size={14} /> Refresh
                 </button>
               </div>
-              <table className="w-full">
+              <div className="overflow-x-auto">
+              <table className="w-full hidden md:table">
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-200">
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice</th>
@@ -726,6 +727,54 @@ export default function BillingPage() {
                   ))}
                 </tbody>
               </table>
+              
+              {/* Mobile Card View */}
+              <div className="md:hidden space-y-4">
+                {invoices.map((invoice) => (
+                  <div key={invoice._id} className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{invoice.invoice_number}</p>
+                        <p className="text-xs text-gray-500">{new Date(invoice.created_at).toLocaleDateString()}</p>
+                      </div>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadge(invoice.status)}`}>
+                        {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500">Plan:</span>
+                      <span className="text-gray-900">{PRICING[invoice.plan as keyof typeof PRICING]?.name || invoice.plan}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500">Cycle:</span>
+                      <span className="text-gray-900">{invoice.billing_cycle === 'yearly' ? 'Yearly' : 'Monthly'}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500">Amount:</span>
+                      <span className="text-gray-900 font-medium">ETB {invoice.total.toFixed(2)}</span>
+                    </div>
+                    {invoice.discount > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-500">Discount:</span>
+                        <span className="text-green-600">- ETB {invoice.discount.toFixed(2)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500">Due Date:</span>
+                      <span className="text-gray-900">{new Date(invoice.due_date).toLocaleDateString()}</span>
+                    </div>
+                    {invoice.status === 'pending' && (
+                      <button
+                        onClick={() => openPaymentModal(invoice)}
+                        className="w-full px-3 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors mt-2"
+                      >
+                        Pay Now
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              </div>
             </div>
           )}
         </div>
