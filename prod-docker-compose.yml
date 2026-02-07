@@ -66,11 +66,12 @@ services:
     volumes:
       - backend_uploads:/app/uploads
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.backend.rule=Host(`${API_DOMAIN_NAME}`)"
-      - "traefik.http.routers.backend.entrypoints=websecure"
-      - "traefik.http.routers.backend.tls.certresolver=letsencrypt"
-      - "traefik.http.services.backend.loadbalancer.server.port=${BACKEND_PORT}"
+      traefik.enable: "true"
+      traefik.http.routers.frontend-http.entrypoints: websecure
+      traefik.http.routers.frontend-http.rule: Host(${SITES:?List of sites not set})
+      traefik.http.routers.frontend-http.tls.certresolver: main-resolver
+      traefik.http.services.frontend.loadbalancer.server.port: ${BACKEND_PORT}
+      
     networks:
       - default
 
