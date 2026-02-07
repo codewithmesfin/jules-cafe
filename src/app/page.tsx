@@ -1,60 +1,42 @@
 "use client"
 import React from 'react';
 import Navbar from '@/components/Navbar';
+import Footer from '@/components/layout/Footer';
 import { EXPLORE_PINS } from '@/utils/hero-teams';
 import Hero from '@/components/HeroSection';
-import MasonryGrid from '@/components/MasonryGrid';
 import FooterOverlay from '@/components/FooterOverlay';
 
 const Home: React.FC = () => {
-  return <div>
+  return <div className="bg-white min-h-screen">
     <Navbar />
     <div>
       {/* Main Brand Intro Section */}
-      <section id="hero" className="border-b border-gray-50">
+      <section id="hero" className="border-b border-slate-100">
         <Hero />
       </section>
 
-      {/* Content Section: Trending and Grid */}
-      <section id="explore" className="bg-white min-h-screen pt-12 lg:pt-20">
-        <div className="max-w-[2000px] mx-auto px-4 md:px-8">
-          <div className="flex flex-col items-center mb-10 md:mb-16 text-center">
-            <h2 className="text-3xl lg:text-4xl font-bold mb-6 lg:mb-8 text-black">See what's trending</h2>
-            <div className="flex gap-2.5 md:gap-4 flex-wrap justify-center max-w-3xl">
-              {[
-                { label: 'Summer fashion', emoji: '👗' },
-                { label: 'Nail art', emoji: '💅' },
-                { label: 'Home office', emoji: '💻' },
-                { label: 'Dessert recipes', emoji: '🍰' },
-                { label: 'Travel tips', emoji: '✈️' }
-              ].map(tag => (
-                <button
-                  key={tag.label}
-                  className="group px-6 py-3.5 rounded-full bg-gray-50 font-bold hover:bg-gray-100 transition-all flex items-center gap-2 border border-transparent active:scale-95 shadow-sm hover:shadow"
-                >
-                  <span className="text-xl group-hover:scale-110 transition-transform">{tag.emoji}</span>
-                  <span>{tag.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Dynamic Feed */}
-          <div className="relative">
-            <MasonryGrid pins={EXPLORE_PINS} />
-
-            {/* Visual anchor for loading */}
-            <div className="flex justify-center py-20">
-              <button className="bg-black text-white px-10 py-4 rounded-full font-bold hover:bg-zinc-800 transition-all shadow-xl hover:-translate-y-1 active:scale-95 text-lg">
-                Load more ideas
-              </button>
-            </div>
+      {/* Benefits */}
+      <section className="bg-gray-50 py-20">
+        <div className="max-w-6xl mx-auto px-6">
+          <h2 className="text-3xl font-bold text-center mb-12">Designed to Make Your Life Easier</h2>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            {["Save Time", "Reduce Waste", "Manage Anywhere", "Grow Confidently"].map((benefit) => (
+              <div key={benefit} className="p-6 bg-white rounded-2xl shadow text-center">
+                <h3 className="font-semibold text-lg mb-2">{benefit}</h3>
+                <p className="text-gray-600 text-sm">
+                  Everything updates in real time so you always stay in control.
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
+
     </div>
     {/* Sticky Bottom Call to Action for Guests */}
     <FooterOverlay />
+    {/* Main Footer */}
+    <Footer />
   </div>
 };
 

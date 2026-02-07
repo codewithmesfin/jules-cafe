@@ -669,7 +669,7 @@ export default function SuperAdminSettingsPage() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Platform Name
                     </label>
-                    <Input defaultValue="ABC Cafe" />
+                    <Input defaultValue="Mevin Cafe" />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -747,7 +747,7 @@ export default function SuperAdminSettingsPage() {
             <Input
               value={newBank.account_name}
               onChange={e => setNewBank({ ...newBank, account_name: e.target.value })}
-              placeholder="e.g., ABC Cafe SaaS Services"
+              placeholder="e.g., Mevin Cafe SaaS Services"
               required
             />
           </div>

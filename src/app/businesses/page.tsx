@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
+import Footer from '@/components/layout/Footer';
 import { MapPin, ArrowRight, Loader2, Store, Clock, Star } from 'lucide-react';
 
 interface Business {
@@ -140,7 +141,7 @@ export default function BusinessesPage() {
                     </div>
                     
                     <div className="flex-1 min-w-0">
-                      <h2 className="text-lg font-semibold text-slate-900 truncate group-hover:text-blue-600 transition-colors">
+                      <h2 className="text-lg font-semibold text-slate-900 truncate group-hover:text-orange-600 transition-colors">
                         {business.name}
                       </h2>
                       <p className="text-sm text-slate-500 truncate">{business.legal_name}</p>
@@ -170,7 +171,7 @@ export default function BusinessesPage() {
 
                   {/* View Menu Button */}
                   <div className="flex items-center justify-between mt-4">
-                    <div className="flex items-center gap-1 text-sm font-medium text-slate-700 group-hover:text-blue-600 transition-colors">
+                    <div className="flex items-center gap-1 text-sm font-medium text-slate-700 group-hover:text-orange-600 transition-colors">
                       <span>View Menu</span>
                       <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
                     </div>
@@ -197,6 +198,9 @@ export default function BusinessesPage() {
           </Link>
         </div>
       </main>
+
+      {/* Common Footer */}
+      <Footer />
     </div>
   );
 }

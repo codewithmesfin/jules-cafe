@@ -11,7 +11,7 @@ export const sendEmail = async (options: { email: string; subject: string; messa
   });
 
   const mailOptions = {
-    from: 'Abc Cafe <noreply@abccafe.com>',
+    from: 'Mevin Cafe <noreply@abccafe.com>',
     to: options.email,
     subject: options.subject,
     text: options.message,

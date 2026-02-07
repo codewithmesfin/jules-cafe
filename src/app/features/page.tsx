@@ -2,6 +2,8 @@
 
 import React from 'react';
 import Link from 'next/link';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/layout/Footer';
 import { 
   Coffee, 
   Utensils, 
@@ -16,7 +18,6 @@ import {
   CreditCard,
   TrendingUp,
   Menu,
-  Calendar,
   DollarSign,
   BarChart3
 } from 'lucide-react';
@@ -159,36 +160,8 @@ const features = [
 export default function FeaturesPage() {
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-amber-600 rounded-xl flex items-center justify-center">
-                <Coffee className="w-6 h-6 text-white" />
-              </div>
-              <span className="text-xl font-bold text-slate-900">ABC Cafe</span>
-            </div>
-            <div className="hidden md:flex items-center gap-8">
-              <Link href="/features" className="text-amber-600 font-semibold">
-                Features
-              </Link>
-              <Link href="/use-cases" className="text-slate-600 hover:text-slate-900 transition-colors">
-                Use Cases
-              </Link>
-              <Link href="/login" className="text-slate-600 hover:text-slate-900 transition-colors">
-                Sign In
-              </Link>
-              <Link 
-                href="/signup" 
-                className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
-              >
-                Get Started
-              </Link>
-            </div>
-          </div>
-        </div>
-      </nav>
+      {/* Main Navbar */}
+      <Navbar />
 
       {/* Hero Section */}
       <section className="pt-32 pb-20 px-4 sm:px-6 lg:px-8">
@@ -215,8 +188,8 @@ export default function FeaturesPage() {
                 }`}
               >
                 <div className="flex-1">
-                  <div className="w-16 h-16 bg-amber-100 rounded-2xl flex items-center justify-center mb-6">
-                    <feature.icon className="w-8 h-8 text-amber-600" />
+                  <div className="w-16 h-16 bg-orange-100 rounded-2xl flex items-center justify-center mb-6">
+                    <feature.icon className="w-8 h-8 text-orange-600" />
                   </div>
                   <h2 className="text-3xl font-bold text-slate-900 mb-4">{feature.title}</h2>
                   <p className="text-lg text-slate-600 mb-6">{feature.description}</p>
@@ -250,38 +223,21 @@ export default function FeaturesPage() {
             Ready to Supercharge Your Cafe?
           </h2>
           <p className="text-lg text-slate-300 mb-8">
-            Start your free 14-day trial today and see how ABC Cafe can transform your operations.
+            Start managing your restaurant for just 100 ETB/day. 
+            No credit card required.
           </p>
           <Link 
             href="/signup" 
-            className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-amber-600 text-white rounded-xl font-semibold hover:bg-amber-700 transition-all hover:scale-105"
+            className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-orange-600 text-white rounded-xl font-semibold hover:bg-orange-700 transition-all hover:scale-105"
           >
-            Start Free Trial
+            Start for 100 ETB/day
             <ArrowRight className="w-5 h-5" />
           </Link>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-slate-900 text-white py-8 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-amber-600 rounded-lg flex items-center justify-center">
-                <Coffee className="w-5 h-5 text-white" />
-              </div>
-              <span className="font-bold">ABC Cafe</span>
-            </div>
-            <p className="text-slate-400 text-sm">© 2024 ABC Cafe. All rights reserved.</p>
-            <div className="flex items-center gap-6">
-              <Link href="/" className="text-slate-400 hover:text-white transition-colors text-sm">Home</Link>
-              <Link href="/use-cases" className="text-slate-400 hover:text-white transition-colors text-sm">Use Cases</Link>
-              <Link href="/signup" className="text-slate-400 hover:text-white transition-colors text-sm">Get Started</Link>
-            </div>
-          </div>
-        </div>
-      </footer>
+      {/* Common Footer */}
+      <Footer />
     </div>
   );
 }
-

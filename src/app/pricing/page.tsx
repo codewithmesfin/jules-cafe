@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
+import Footer from '@/components/layout/Footer';
 import { CheckIcon, StarIcon, ArrowRight, Shield, Zap, CreditCard, Clock, HelpCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -355,14 +356,14 @@ const PRICINGPage: React.FC = () => {
             Ready to Get Started?
           </h2>
           <p className="text-xl text-slate-300 mb-10">
-            Join hundreds of businesses already using ABC Cafe to grow their business.
+            Join hundreds of businesses already using Mevin Cafe to grow their business.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
               onClick={handleSelectPlan}
               className="bg-gradient-to-r from-orange-500 to-amber-500 text-white px-8 py-4 rounded-2xl font-bold text-lg hover:from-orange-600 hover:to-amber-600 transition-all shadow-lg shadow-orange-500/30"
             >
-              Start Free Trial
+              Start for 100 ETB/day
             </button>
             <Link
               href="/businesses"
@@ -398,18 +399,8 @@ const PRICINGPage: React.FC = () => {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-slate-900 text-white py-12">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <span className="text-2xl">☕</span>
-            <span className="text-xl font-bold">ABC Cafe</span>
-          </div>
-          <p className="text-slate-400 text-sm">
-            © {new Date().getFullYear()} ABC Cafe Management System. All rights reserved.
-          </p>
-        </div>
-      </footer>
+      {/* Common Footer */}
+      <Footer />
     </div>
   );
 };

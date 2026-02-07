@@ -25,13 +25,13 @@ interface BankAccount {
 const bankAccounts: BankAccount[] = [
   {
     bankName: 'Commercial Bank of Ethiopia',
-    accountName: 'ABC Cafe SaaS Services',
+    accountName: 'Mevin Cafe SaaS Services',
     accountNumber: '1001234567890',
     branch: 'Head Office',
   },
   {
     bankName: 'Awash Bank',
-    accountName: 'ABC Cafe SaaS Services',
+    accountName: 'Mevin Cafe SaaS Services',
     accountNumber: '0132345678901',
     branch: 'Bole Branch',
   },
@@ -397,7 +397,7 @@ const InvoicePage: React.FC = () => {
       <footer className="bg-slate-900 text-white py-8 mt-auto">
         <div className="max-w-4xl mx-auto px-4 text-center">
           <p className="text-slate-400">
-            © 2024 ABC Cafe. All rights reserved.
+            © 2024 Mevin Cafe. All rights reserved.
           </p>
         </div>
       </footer>

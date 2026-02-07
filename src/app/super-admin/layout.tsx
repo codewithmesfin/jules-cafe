@@ -107,7 +107,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
                 <Home className="w-6 h-6 text-white" />
               </div>
               {!sidebarCollapsed && (
-                <span className="font-bold text-xl text-gray-800">ABC Cafe</span>
+                <span className="font-bold text-xl text-gray-800">Mevin Cafe</span>
               )}
             </Link>
             <button

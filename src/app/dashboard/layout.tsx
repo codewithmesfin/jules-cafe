@@ -190,7 +190,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <ChefHat size={20} />
               </div>
               <div className="flex flex-col">
-                <span className="font-bold text-gray-900">{currentBusiness?.name || 'ABC Cafe'}</span>
+                <span className="font-bold text-gray-900">{currentBusiness?.name || 'Mevin Cafe'}</span>
                 <span className="text-xs text-gray-500 capitalize">{user.role?.replace('_', ' ')}</span>
               </div>
             </div>
@@ -308,7 +308,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </div>
                 {!sidebarCollapsed && (
                   <div className="flex flex-col min-w-0">
-                    <span className="text-sm font-bold text-gray-900 truncate">{currentBusiness?.name || 'ABC Cafe'}</span>
+                    <span className="text-sm font-bold text-gray-900 truncate">{currentBusiness?.name || 'Mevin Cafe'}</span>
                     <span className="text-xs text-gray-500 font-medium uppercase tracking-wider">Workspace</span>
                   </div>
                 )}
