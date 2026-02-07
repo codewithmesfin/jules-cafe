@@ -202,11 +202,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 onClick={() => setShowBusinessSelectorMobile(!showBusinessSelectorMobile)}
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <div className="w-8 h-8">
                     {currentBusiness?.logo ? <img src={
                     currentBusiness?.logo
                   } alt={currentBusiness?.name || "logo"}
-                    className='w-10 h-10 rounded object-cover'
+                    className='w-10 h-10 rounded object-contain'
                   /> : <Brand size={"8"} imageOnly />}
                   </div>
                   <div className="flex flex-col min-w-0">
@@ -377,14 +377,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               onClick={() => setShowBusinessSelector(!showBusinessSelector)}
             >
               <div className="flex items-center gap-3">
-                <div className="h-8 w-8 rounded-xl flex items-center justify-center flex-shrink-0">
-
-                  {currentBusiness?.logo ? <img src={
+                 <div className="w-8 h-8">
+                    {currentBusiness?.logo ? <img src={
                     currentBusiness?.logo
                   } alt={currentBusiness?.name || "logo"}
-                    className='w-10 h-10 rounded object-cover'
+                    className='w-10 h-10 rounded object-contain'
                   /> : <Brand size={"8"} imageOnly />}
-                </div>
+                  </div>
                 {!sidebarCollapsed && (
                   <div className="flex flex-col min-w-0">
                     <span className="text-sm font-bold text-gray-900 truncate">{currentBusiness?.name || 'Mevin Cafe'}</span>
