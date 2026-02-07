@@ -81,8 +81,8 @@ const NewOrder: React.FC = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [prodList, catList, tblList, usrList, custList] = await Promise.all([
-          api.products.getAll(),
+        const [prodResponse, catList, tblList, usrList, custList] = await Promise.all([
+          api.products.getAvailable(),
           api.categories.getAll(),
           api.tables.getAll(),
           api.users.getAll(),
@@ -91,14 +91,18 @@ const NewOrder: React.FC = () => {
 
         const getArray = (response: any) => Array.isArray(response) ? response : response.data || [];
 
-        setProducts(getArray(prodList));
+        // Handle the new response format with available/unavailable products
+        const availableData = prodResponse.data || prodResponse;
+        const prodList = Array.isArray(availableData) ? availableData : (availableData.available || []);
+        
+        setProducts(prodList);
         setCategories(getArray(catList));
         setTables(getArray(tblList));
         setUsers(getArray(usrList));
         setCustomers(getArray(custList));
 
         if (orderId) {
-          fetchOrderDetails(orderId, getArray(prodList));
+          fetchOrderDetails(orderId, prodList);
         }
       } catch (error: any) {
         console.error('Failed to fetch data:', error);

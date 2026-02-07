@@ -48,4 +48,15 @@ const OrderSchema: Schema = new Schema({
 OrderSchema.index({ business_id: 1, order_status: 1 });
 OrderSchema.index({ customer_id: 1 });
 
+// Generate unique order number before saving
+OrderSchema.pre('save', async function(next) {
+  if (!this.order_number) {
+    // Generate order number using timestamp and random suffix
+    const timestamp = Date.now().toString(36).toUpperCase();
+    const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+    this.order_number = `ORD-${timestamp}-${random}`;
+  }
+  next();
+});
+
 export default mongoose.model<IOrder>('Order', OrderSchema);

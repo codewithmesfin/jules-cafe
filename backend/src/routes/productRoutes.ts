@@ -4,7 +4,8 @@ import {
   getProduct,
   createProduct,
   updateProduct,
-  deleteProduct
+  deleteProduct,
+  getAvailableProducts
 } from '../controllers/productController';
 import { protect, restrictTo } from '../middleware/auth';
 
@@ -15,6 +16,8 @@ router.use(protect);
 router.route('/')
   .get(getAllProducts)
   .post(restrictTo('admin', 'manager'), createProduct);
+
+router.get('/available', getAvailableProducts);
 
 router.route('/:id')
   .get(getProduct)

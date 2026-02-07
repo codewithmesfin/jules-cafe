@@ -52,13 +52,27 @@ const convertQuantity = async (
  * Checks if there is enough stock for a list of order items.
  * Supports both ingredient and product inventory tracking.
  * Handles UoM conversions between recipe unit and inventory unit.
+ * @param businessId - The business ID
+ * @param items - Array of order items with product_id and quantity
+ * @param productsMap - Optional map of product IDs to names for better error messages
  */
-export const checkInventoryForOrderItems = async (businessId: string, items: any[]) => {
+export const checkInventoryForOrderItems = async (
+  businessId: string, 
+  items: any[],
+  productsMap?: Map<string, string>
+) => {
   const missingIngredients: string[] = [];
 
   for (const item of items) {
     // Find all recipe entries for this product
     const recipes = await Recipe.find({ product_id: item.product_id });
+
+    // If no recipes exist for this product, we cannot verify inventory
+    if (!recipes || recipes.length === 0) {
+      const productName = productsMap?.get(item.product_id.toString()) || `Product (ID: ${item.product_id})`;
+      missingIngredients.push(`No recipe defined for ${productName}`);
+      continue;
+    }
 
     for (const recipe of recipes) {
       // Get ingredient details with unit populated

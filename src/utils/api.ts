@@ -58,6 +58,7 @@ export const api = {
   products: {
     getAll: () => fetcher('/api/products'),
     getOne: (id: string) => fetcher(`/api/products/${id}`),
+    getAvailable: () => fetcher('/api/products/available'),
     create: (data: any) => fetcher('/api/products', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: string, data: any) => fetcher(`/api/products/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     delete: (id: string) => fetcher(`/api/products/${id}`, { method: 'DELETE' }),
