@@ -34,7 +34,7 @@ const connectDB = async () => {
       console.log('Legacy document cleanup completed');
     }
 
-    const saasAdminEmail = process.env.SAAS_ADMIN_EMAIL || 'admin@lunixpos.com';
+    const saasAdminEmail = process.env.SAAS_ADMIN_EMAIL || 'mesfin@mevinai.com';
     const saasAdminExists = await User.findOne({ role: 'saas_admin' });
 
     if (!saasAdminExists) {
