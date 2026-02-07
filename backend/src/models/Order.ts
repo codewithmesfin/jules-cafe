@@ -12,6 +12,9 @@ export interface IOrder extends Document {
   payment_method?: 'cash' | 'card' | 'mobile' | 'other';
   notes?: string;
   order_number?: string;
+  discount_percent?: number;
+  discount_amount?: number;
+  subtotal_amount?: number;
   created_at: Date;
   updated_at: Date;
 }
@@ -43,6 +46,9 @@ const OrderSchema: Schema = new Schema({
   },
   notes: { type: String },
   order_number: { type: String, unique: true },
+  discount_percent: { type: Number, default: 0 },
+  discount_amount: { type: Number, default: 0 },
+  subtotal_amount: { type: Number, default: 0 },
 }, { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } });
 
 OrderSchema.index({ business_id: 1, order_status: 1 });

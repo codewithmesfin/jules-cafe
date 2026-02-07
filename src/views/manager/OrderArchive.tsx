@@ -6,35 +6,78 @@ import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
 import { Card } from '../../components/ui/Card';
+import { api } from '../../utils/api';
 import { useAuth } from '@/context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 
-// Mock formatCurrency
+interface OrderItem {
+  product_id?: { name: string };
+  name?: string;
+  quantity: number;
+  price: number;
+}
+
+interface Order {
+  id?: string;
+  _id?: string;
+  order_number?: string;
+  number?: string;
+  customer_id?: { full_name: string };
+  customer?: { name: string };
+  total_amount?: number;
+  total?: number;
+  order_status?: string;
+  status?: string;
+  created_at?: string;
+  items?: OrderItem[];
+  discount_percent?: number;
+  discount_amount?: number;
+  subtotal_amount?: number;
+}
 
 const OrdersArchive: React.FC = () => {
   const { user } = useAuth();
   const { showNotification } = useNotification();
   const [searchTerm, setSearchTerm] = useState('');
-  const [orders, setOrders] = useState<any[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
-  useEffect(() => { fetchOrders(); }, []);
+  useEffect(() => { 
+    if (user?.default_business_id) {
+      fetchOrders();
+    }
+  }, [user?.default_business_id]);
 
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      // Mock data for demonstration
-      const mockOrders = [
-        { id: '1', number: 'ORD-2024-001', customer: { name: 'John Doe' }, total: 45, status: 'completed', created_at: new Date().toISOString(), items: [{ name: 'Burger', quantity: 2, price: 15 }, { name: 'Coke', quantity: 1, price: 5 }] },
-        { id: '2', number: 'ORD-2024-002', customer: { name: 'Jane Smith' }, total: 32, status: 'preparing', created_at: new Date().toISOString(), items: [{ name: 'Pizza', quantity: 1, price: 25 }, { name: 'Salad', quantity: 1, price: 7 }] },
-        { id: '3', number: 'ORD-2024-003', customer: { name: 'Mike Johnson' }, total: 67, status: 'completed', created_at: new Date().toISOString(), items: [{ name: 'Steak', quantity: 2, price: 30 }, { name: 'Wine', quantity: 1, price: 7 }] },
-        { id: '4', number: 'ORD-2024-004', customer: { name: 'Sarah Wilson' }, total: 28, status: 'cancelled', created_at: new Date().toISOString(), items: [{ name: 'Pasta', quantity: 1, price: 18 }, { name: 'Soup', quantity: 1, price: 5 }] },
-        { id: '5', number: 'ORD-2024-005', customer: { name: 'Tom Brown' }, total: 55, status: 'completed', created_at: new Date().toISOString(), items: [{ name: 'Fish', quantity: 1, price: 35 }, { name: 'Rice', quantity: 1, price: 5 }] },
-      ];
-      setOrders(mockOrders);
+      // Fetch real orders from API
+      const response = await api.orders.getAll();
+      const ordersData = Array.isArray(response) ? response : response.data || [];
+      
+      // Transform data to match component structure
+      const transformedOrders = ordersData.map((order: any) => ({
+        id: order.id || order._id,
+        order_number: order.order_number || order.number,
+        number: order.order_number,
+        customer_id: order.customer_id,
+        customer: order.customer_id?.full_name || { name: order.customer?.name || 'Guest' },
+        total_amount: order.total_amount || order.total,
+        total: order.total_amount || order.total,
+        order_status: order.order_status || order.status,
+        status: order.order_status || order.status,
+        created_at: order.created_at,
+        items: order.items || [],
+        discount_percent: order.discount_percent,
+        discount_amount: order.discount_amount,
+        subtotal_amount: order.subtotal_amount
+      }));
+      
+      setOrders(transformedOrders);
     } catch (error) {
       console.error('Failed to fetch orders:', error);
+      showNotification('Failed to load orders', 'error');
     } finally {
       setLoading(false);
     }
@@ -44,8 +87,9 @@ const OrdersArchive: React.FC = () => {
     setSelectedOrder(order);
   };
 
-  const handleUpdateStatus = async (id: string, status: string) => {
+  const handleUpdateStatus = async (orderId: string, status: string) => {
     try {
+      await api.orders.update(orderId, { order_status: status });
       showNotification(`Order status updated to ${status}`);
       setSelectedOrder(null);
       fetchOrders();
@@ -53,6 +97,8 @@ const OrdersArchive: React.FC = () => {
       showNotification('Failed to update order status', 'error');
     }
   };
+
+  const getOrderId = (order: Order) => order.id || order._id || '';
 
   const filteredOrders = orders.filter(order =>
     order.number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -124,11 +170,11 @@ const OrdersArchive: React.FC = () => {
           </div>
         ) : (
           filteredOrders.map((order) => (
-            <Card key={order.id} className="hover:shadow-lg transition-shadow">
+            <Card key={getOrderId(order)} className="hover:shadow-lg transition-shadow">
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <p className="font-bold text-slate-900">#{order.number}</p>
-                  <p className="text-sm text-slate-500">{order.customer?.name || 'Guest'}</p>
+                  <p className="font-bold text-slate-900">#{order.order_number}</p>
+                  <p className="text-sm text-slate-500">{order.customer?.name || order.customer_id?.full_name || 'Guest'}</p>
                 </div>
                 <Badge 
                   variant={order.status === 'completed' ? 'success' : order.status === 'cancelled' ? 'error' : 'warning'}
@@ -141,9 +187,9 @@ const OrdersArchive: React.FC = () => {
               <div className="flex items-center justify-between text-sm text-slate-500 mb-4">
                 <div className="flex items-center gap-1">
                   <Calendar size={14} />
-                  <span>{new Date(order.created_at).toLocaleDateString()}</span>
+                  <span>{order.created_at ? new Date(order.created_at).toLocaleDateString() : 'N/A'}</span>
                 </div>
-                <span className="font-semibold text-slate-900">Br {order.total?.toFixed(2) || '0.00'}</span>
+                <span className="font-semibold text-slate-900">Br {order.total?.toFixed(2) || order.total_amount?.toFixed(2) || '0.00'}</span>
               </div>
 
               <div className="flex gap-2">
@@ -167,13 +213,13 @@ const OrdersArchive: React.FC = () => {
               <Button
                 variant="outline"
                 className="flex-1 text-rose-600 border-rose-200 hover:bg-rose-50"
-                onClick={() => handleUpdateStatus(selectedOrder.id, 'cancelled')}
+                onClick={() => handleUpdateStatus(getOrderId(selectedOrder), 'cancelled')}
               >
                 <XCircle size={16} className="mr-1" /> Cancel
               </Button>
               <Button
                 className="flex-1"
-                onClick={() => handleUpdateStatus(selectedOrder.id, 'completed')}
+                onClick={() => handleUpdateStatus(getOrderId(selectedOrder), 'completed')}
                 disabled={selectedOrder.status === 'completed'}
               >
                 <CheckCircle size={16} className="mr-1" /> Complete
@@ -184,8 +230,8 @@ const OrdersArchive: React.FC = () => {
           <div className="space-y-4">
             <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
               <div>
-                <p className="font-semibold text-slate-900">#{selectedOrder.number}</p>
-                <p className="text-sm text-slate-500">{selectedOrder.customer?.name || 'Guest'}</p>
+                <p className="font-semibold text-slate-900">#{selectedOrder.order_number}</p>
+                <p className="text-sm text-slate-500">{selectedOrder.customer?.name || selectedOrder.customer_id?.full_name || 'Guest'}</p>
               </div>
               <Badge 
                 variant={selectedOrder.status === 'completed' ? 'success' : selectedOrder.status === 'cancelled' ? 'error' : 'warning'}
@@ -203,7 +249,7 @@ const OrdersArchive: React.FC = () => {
                       <span className="w-6 h-6 bg-slate-200 rounded-full flex items-center justify-center text-xs font-medium text-slate-600">
                         {item.quantity}
                       </span>
-                      <span className="text-slate-700">{item.name}</span>
+                      <span className="text-slate-700">{item.product_id?.name || item.name || 'Item'}</span>
                     </div>
                     <span className="font-medium text-slate-900">Br {(item.price * item.quantity)?.toFixed(2) || '0.00'}</span>
                   </div>
@@ -211,9 +257,23 @@ const OrdersArchive: React.FC = () => {
               </div>
             </div>
 
+            {/* Discount Information */}
+            {(selectedOrder.discount_percent || 0) > 0 && (
+              <div className="p-3 bg-green-50 rounded-lg border border-green-100">
+                <div className="flex justify-between text-sm text-green-700">
+                  <span>Subtotal</span>
+                  <span>Br {selectedOrder.subtotal_amount?.toFixed(2) || selectedOrder.total?.toFixed(2) || '0.00'}</span>
+                </div>
+                <div className="flex justify-between text-sm text-green-600 font-medium">
+                  <span>Discount ({selectedOrder.discount_percent}%)</span>
+                  <span>- Br {selectedOrder.discount_amount?.toFixed(2) || '0.00'}</span>
+                </div>
+              </div>
+            )}
+
             <div className="flex justify-between items-center p-4 bg-slate-900 rounded-xl text-white">
               <span className="font-semibold">Total</span>
-              <span className="text-xl font-bold">Br {(selectedOrder.total)?.toFixed(2) || '0.00'}</span>
+              <span className="text-xl font-bold">Br {selectedOrder.total?.toFixed(2) || selectedOrder.total_amount?.toFixed(2) || '0.00'}</span>
             </div>
           </div>
         </Modal>

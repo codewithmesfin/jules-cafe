@@ -29,6 +29,7 @@ export const createOrder = catchAsync(async (req: AuthRequest, res: Response, ne
   try {
     // 2. Calculate total amount and verify products
     let totalAmount = 0;
+    let subtotalAmount = 0;
     const itemsToCreate = [];
 
     for (const item of items) {
@@ -36,11 +37,20 @@ export const createOrder = catchAsync(async (req: AuthRequest, res: Response, ne
       if (!product) {
         throw new AppError(`Product not found: ${item.product_id}`, 404);
       }
-      totalAmount += product.price * item.quantity;
+      const itemSubtotal = product.price * item.quantity;
+      subtotalAmount += itemSubtotal;
+      
+      // If frontend sends discounted total, use it; otherwise use subtotal
+      if (req.body.total_price !== undefined) {
+        totalAmount = req.body.total_price;
+      } else {
+        totalAmount += itemSubtotal;
+      }
+
       itemsToCreate.push({
         product_id: product._id,
         quantity: item.quantity,
-        price: product.price,
+        price: item.price || product.price, // Use frontend price if provided
         business_id: businessId,
         creator_id: userId
       });
@@ -54,6 +64,9 @@ export const createOrder = catchAsync(async (req: AuthRequest, res: Response, ne
       table_id: table_id || undefined,
       order_type: order_type || 'dine-in',
       notes,
+      discount_percent: req.body.discount_percent || 0,
+      discount_amount: req.body.discount_amount || 0,
+      subtotal_amount: subtotalAmount,
       total_amount: totalAmount,
       payment_method,
       order_status: 'preparing'

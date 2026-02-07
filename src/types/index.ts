@@ -149,11 +149,13 @@ export interface Order {
   order_type: 'dine-in' | 'takeaway' | 'delivery';
   order_status: 'preparing' | 'ready' | 'delivered' | 'completed' | 'cancelled';
   total_amount: number;
+  subtotal_amount?: number;
   discount_percent: number;
   discount_amount: number;
   payment_status: 'unpaid' | 'partial' | 'paid';
   payment_method?: 'cash' | 'card' | 'mobile' | 'other';
   notes?: string;
+  order_number?: string;
   created_at: string;
 }
 

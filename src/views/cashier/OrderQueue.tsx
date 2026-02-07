@@ -316,8 +316,21 @@ const OrderQueue: React.FC = () => {
             </div>
 
             {/* Total */}
-            <div className="pt-4 border-t border-slate-200">
-              <div className="flex justify-between text-lg font-bold text-slate-900">
+            <div className="pt-4 border-t border-slate-200 space-y-2">
+              {/* Subtotal */}
+              <div className="flex justify-between text-slate-600">
+                <span>Subtotal</span>
+                <span>Br {selectedOrder.subtotal_amount?.toFixed(2) || selectedOrder.total_amount?.toFixed(2)}</span>
+              </div>
+              {/* Discount */}
+              {(selectedOrder.discount_percent || 0) > 0 && (
+                <div className="flex justify-between text-green-600">
+                  <span>Discount ({selectedOrder.discount_percent}%)</span>
+                  <span>- Br {selectedOrder.discount_amount?.toFixed(2) || '0.00'}</span>
+                </div>
+              )}
+              {/* Final Total */}
+              <div className="flex justify-between text-lg font-bold text-slate-900 pt-2 border-t border-slate-100">
                 <span>Total</span>
                 <span>Br {selectedOrder.total_amount?.toFixed(2) || '0.00'}</span>
               </div>
